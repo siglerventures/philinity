@@ -603,7 +603,7 @@ main {
 
 <!-- HEADER -->
 <header>
-  <div class="logo">Philinity<span> ◆ Command Center</span></div>
+  <div class="logo" onclick="window.location.href='https://siglerventures.github.io/philinity/'" style="cursor:pointer">Philinity<span> ◆ Command Center</span></div>
   <div class="header-meta">
     <div class="header-time" id="clock">—</div>
     <div class="status-dot"></div>
@@ -1686,5 +1686,18 @@ document.getElementById('chat-input').addEventListener('keydown', function(e) {
 // Init
 initFirebase();
 </script>
+<footer style="
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 14px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: rgba(232,228,220,0.25);
+  letter-spacing: 0.12em;
+  background: rgba(10,10,12,0.85);
+  position: relative;
+  z-index: 1;
+">Philinity Command Center ©️ Rev 1.1</footer>
 </body>
 </html>
