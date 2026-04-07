@@ -626,11 +626,16 @@ main {
   </div>
 
   <div class="nav-label">Life</div>
-  <div class="nav-item" data-page="dining">
-    <span class="nav-icon">🍽</span> Dining Guide
-  </div>
   <div class="nav-item" data-page="drinks">
     <span class="nav-icon">🥃</span> Cocktails
+  </div>
+
+  <div class="nav-label">Apps</div>
+  <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/eats/','_blank')">
+    <span class="nav-icon">🍽</span> Dining Guide ↗
+  </div>
+  <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/taskboard/','_blank')">
+    <span class="nav-icon">✅</span> Task Board ↗
   </div>
 </nav>
 
@@ -640,7 +645,7 @@ main {
   <!-- ══════════ OVERVIEW ══════════ -->
   <div class="page active" id="page-home">
     <div class="page-title">
-      <h1>Good evening, Phil</h1>
+      <h1 id="greeting">Good day, Phil</h1>
       <span class="sub">Philinity Command Center</span>
     </div>
 
@@ -1401,12 +1406,13 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDemo_replace_with_real",
+  apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
   authDomain: "philinity-893d2.firebaseapp.com",
   databaseURL: "https://philinity-893d2-default-rtdb.firebaseio.com",
   projectId: "philinity-893d2",
-  storageBucket: "philinity-893d2.appspot.com",
-  appId: "1:demo:web:demo"
+  storageBucket: "philinity-893d2.firebasestorage.app",
+  messagingSenderId: "443020781676",
+  appId: "1:443020781676:web:614ec91c9ba33076eb9049"
 };
 
 let ANTHROPIC_KEY = '';
@@ -1425,7 +1431,7 @@ async function initFirebase() {
   }
 }
 
-// ── Clock ──
+// ── Clock & Greeting ──
 function updateClock() {
   const now = new Date();
   document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {
@@ -1435,6 +1441,15 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
+
+function updateGreeting() {
+  const hour = new Date().toLocaleString('en-US', {hour: 'numeric', hour12: false, timeZone: 'America/Denver'});
+  const h = parseInt(hour);
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const el = document.getElementById('greeting');
+  if (el) el.textContent = g + ', Phil';
+}
+updateGreeting();
 
 // ── Navigation ──
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -1568,7 +1583,7 @@ window.sendMessage = async function() {
 
   try {
     if (!ANTHROPIC_KEY) {
-      addMessage('ai', '⚠️ API key not loaded from Firebase. Please check your `config/anthropic_key` in the philinity-893d2 database.');
+      addMessage('ai', '⚠️ API key not loaded from Firebase. Make sure your Anthropic key is saved at `config/anthropic_key` in the philinity-893d2 Realtime Database. You can add it in the Firebase Console → Realtime Database → philinity-893d2 → config → anthropic_key.');
       setLoading(false);
       return;
     }
