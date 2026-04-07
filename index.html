@@ -589,6 +589,241 @@ main {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 
+/* ─── KNOWLEDGE BASE ─── */
+.kb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.kb-cat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.kb-cat-card:hover { border-color: var(--gold); transform: translateY(-1px); }
+.kb-cat-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+.kb-cat-img img { width:100%; height:100%; object-fit:cover; }
+.kb-cat-body { padding: 14px; }
+.kb-cat-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.kb-cat-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+.kb-add-btn {
+  background: var(--gold-dim);
+  border: 1px dashed rgba(201,169,110,0.4);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--gold);
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  min-height: 160px;
+}
+.kb-add-btn:hover { background: rgba(201,169,110,0.2); }
+
+/* Entry list inside category */
+.kb-entry {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: all 0.2s;
+}
+.kb-entry:hover { border-color: var(--border-bright); }
+.kb-entry-img {
+  width: 70px; height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--surface);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  overflow: hidden;
+}
+.kb-entry-img img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
+.kb-entry-body { flex: 1; min-width: 0; }
+.kb-entry-title { font-size: 0.9rem; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.kb-entry-note { font-size: 0.75rem; color: var(--text-dim); line-height: 1.5; }
+.kb-entry-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.kb-icon-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.kb-icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+.kb-back-btn {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-dim); font-size: 0.8rem; cursor: pointer;
+  margin-bottom: 16px; padding: 6px 0;
+}
+.kb-back-btn:hover { color: var(--gold); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 16px;
+  width: 100%; max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+}
+.modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--gold); }
+.form-input::placeholder { color: var(--text-muted); }
+textarea.form-input { resize: vertical; min-height: 80px; }
+
+/* Image drop zone */
+.drop-zone {
+  border: 2px dashed var(--border-bright);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+}
+.drop-zone.drag-over { border-color: var(--gold); background: var(--gold-dim); }
+.drop-zone-label { font-size: 0.78rem; color: var(--text-muted); }
+.drop-preview { display: none; position: relative; }
+.drop-preview img { width:100%; border-radius:8px; max-height:160px; object-fit:cover; }
+.drop-clear {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(0,0,0,0.7); border: none; color: white;
+  border-radius: 50%; width: 24px; height: 24px;
+  cursor: pointer; font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* DD items */
+.dd-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.dd-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 10px;
+  cursor: grab; user-select: none;
+}
+.dd-item.dragging { opacity: 0.4; }
+.dd-item-handle { color: var(--text-muted); font-size: 0.7rem; cursor: grab; }
+.dd-item-text { flex: 1; font-size: 0.8rem; color: var(--text); }
+.dd-item-del { color: var(--text-muted); cursor: pointer; font-size: 0.8rem; border: none; background: none; }
+.dd-item-del:hover { color: var(--red); }
+.dd-add-row { display: flex; gap: 6px; margin-top: 6px; }
+.dd-add-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 10px; color: var(--text);
+  font-family: 'Outfit', sans-serif; font-size: 0.8rem; outline: none;
+}
+.dd-add-input:focus { border-color: var(--gold); }
+.dd-add-btn {
+  padding: 7px 12px; border-radius: 7px; border: none;
+  background: var(--gold-dim); color: var(--gold); cursor: pointer; font-size: 0.8rem;
+}
+.dd-add-btn:hover { background: rgba(201,169,110,0.25); }
+
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.btn-save {
+  flex: 1; padding: 11px; border-radius: 10px; border: none;
+  background: var(--gold); color: var(--bg); font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.btn-save:hover { background: #d4b880; }
+.btn-cancel {
+  padding: 11px 18px; border-radius: 10px; border: 1px solid var(--border-bright);
+  background: transparent; color: var(--text-dim); font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-cancel:hover { border-color: var(--red); color: var(--red); }
+.btn-delete {
+  padding: 11px 14px; border-radius: 10px; border: 1px solid rgba(196,106,90,0.3);
+  background: transparent; color: var(--red); font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-delete:hover { background: rgba(196,106,90,0.1); }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--gold);
+  color: var(--gold); padding: 10px 20px; border-radius: 20px;
+  font-size: 0.8rem; font-family: 'DM Mono', monospace;
+  z-index: 9999; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
 /* Mobile */
 @media (max-width: 768px) {
   .shell { grid-template-columns: 1fr; }
@@ -647,6 +882,10 @@ main {
   <div class="nav-label">Life</div>
   <div class="nav-item" data-page="drinks">
     <span class="nav-icon">🥃</span> Cocktails
+  </div>
+
+  <div class="nav-item" data-page="knowledge">
+    <span class="nav-icon">📚</span> Knowledge Base
   </div>
 
   <div class="nav-label">Apps</div>
@@ -1416,6 +1655,103 @@ main {
     </div>
   </div>
 
+
+  <!-- ══════════ KNOWLEDGE BASE ══════════ -->
+  <div class="page" id="page-knowledge">
+    <div class="page-title">
+      <h1 id="kb-page-title">Knowledge Base</h1>
+      <span class="sub" id="kb-page-sub">Philinity · Living reference · Firebase synced</span>
+    </div>
+
+    <!-- Category view -->
+    <div id="kb-cat-view">
+      <div class="kb-grid" id="kb-cat-grid"></div>
+    </div>
+
+    <!-- Entry view (inside a category) -->
+    <div id="kb-entry-view" style="display:none">
+      <div class="kb-back-btn" onclick="kbShowCats()">← Back to categories</div>
+      <div id="kb-entry-list"></div>
+      <button class="kb-add-btn" style="min-height:50px;margin-top:8px" onclick="kbOpenEntryModal()">+ Add Entry</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Category Modal -->
+  <div class="modal-overlay" id="kb-cat-modal">
+    <div class="modal-box">
+      <div class="modal-title" id="kb-cat-modal-title">New Category</div>
+      <div class="form-group">
+        <label class="form-label">Category Name</label>
+        <input class="form-input" id="kb-cat-name" placeholder="e.g. Pool Chemicals">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji Icon</label>
+        <input class="form-input" id="kb-cat-emoji" placeholder="e.g. 🏊" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category Photo (optional)</label>
+        <div class="drop-zone" id="kb-cat-drop" ondrop="kbHandleDrop(event,'cat')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" onclick="document.getElementById('kb-cat-file').click()">
+          <div class="drop-zone-label" id="kb-cat-drop-label">📷 Tap or drag image here</div>
+          <div class="drop-preview" id="kb-cat-drop-preview">
+            <img id="kb-cat-preview-img" src="">
+            <button class="drop-clear" onclick="event.stopPropagation();kbClearImg('cat')">✕</button>
+          </div>
+        </div>
+        <input type="file" id="kb-cat-file" accept="image/*" capture="environment" style="display:none" onchange="kbHandleFile(event,'cat')">
+        <input class="form-input" id="kb-cat-img-url" placeholder="Or paste image URL" style="margin-top:6px" oninput="kbHandleUrl(this.value,'cat')">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="kbSaveCat()">Save Category</button>
+        <button class="btn-cancel" onclick="kbCloseCatModal()">Cancel</button>
+        <button class="btn-delete" id="kb-cat-del-btn" onclick="kbDeleteCat()" style="display:none">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry Modal -->
+  <div class="modal-overlay" id="kb-entry-modal">
+    <div class="modal-box">
+      <div class="modal-title" id="kb-entry-modal-title">New Entry</div>
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input class="form-input" id="kb-entry-title-input" placeholder="e.g. Pentair MasterTemp 250HD">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes / Details</label>
+        <textarea class="form-input" id="kb-entry-notes" placeholder="Model number, where purchased, settings, tips..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Details (drag to reorder)</label>
+        <div class="dd-list" id="kb-dd-list"></div>
+        <div class="dd-add-row">
+          <input class="dd-add-input" id="kb-dd-input" placeholder="Add detail..." onkeydown="if(event.key==='Enter')kbAddDDItem()">
+          <button class="dd-add-btn" onclick="kbAddDDItem()">+ Add</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Photo</label>
+        <div class="drop-zone" id="kb-entry-drop" ondrop="kbHandleDrop(event,'entry')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" onclick="document.getElementById('kb-entry-file').click()">
+          <div class="drop-zone-label" id="kb-entry-drop-label">📷 Tap or drag image here</div>
+          <div class="drop-preview" id="kb-entry-drop-preview">
+            <img id="kb-entry-preview-img" src="">
+            <button class="drop-clear" onclick="event.stopPropagation();kbClearImg('entry')">✕</button>
+          </div>
+        </div>
+        <input type="file" id="kb-entry-file" accept="image/*" capture="environment" style="display:none" onchange="kbHandleFile(event,'entry')">
+        <input class="form-input" id="kb-entry-img-url" placeholder="Or paste image URL" style="margin-top:6px" oninput="kbHandleUrl(this.value,'entry')">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="kbSaveEntry()">Save Entry</button>
+        <button class="btn-cancel" onclick="kbCloseEntryModal()">Cancel</button>
+        <button class="btn-delete" id="kb-entry-del-btn" onclick="kbDeleteEntry()" style="display:none">Delete</button>
+      </div>
+    </div>
+  </div>
+
+
 </main>
 </div>
 
@@ -1570,7 +1906,209 @@ Neighbors / ADU: Synergy Summit will connect to Philinity via future breezeway.
 
 Phil's goals: Deepen faith, submit Synergy Summit permits, build AutoFlag to $50M, achieve emotional steadiness.
 
-Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% healed.`;
+Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% healed.
+
+## KIDS — FULL CONTACT INFO
+- **Brenton** VanTassell — btvantassell@gmail.com · 801-580-7579 · 291 E Pennsylvania St, Boise ID 83706 · DOB Aug 23, 1995
+- **Austen** VanTassell — vantassellot@gmail.com · 208-891-9414 · 17568 Barefoot Ridge Way, Nampa ID 83687 · DOB Sep 11, 2000
+- **Jaiden** — jvtborderlands@gmail.com · 208-519-0934 · 17568 Barefoot Ridge Way, Nampa ID 83687 · DOB May 17, 2002
+- **Kaylin** — kaylin.sigler@gmail.com · 208-914-3109 · 1412 W A St Apt 304, Moscow ID 83843 · DOB Dec 14, 2002
+- **Larissa** — larissa.sigler@gmail.com · 208-559-1678 · 12805 W Berghan St, Boise ID 83709 · DOB Jun 26, 2004
+- **Sierra** VanTassell — SierraKVanTassell@gmail.com · 208-713-8714 · DOB Mar 28, 2005
+
+## POOL CHEMICALS
+- EASYTEST 7-Way Pool Test Strips
+- In The Swim pH Increase
+- In The Swim Alkalinity Increaser
+- In The Swim Super Floc Out Pool Water Clarifier
+- In The Swim pH Reducer
+- In The Swim Algaecide 60 Plus
+Pool is Latham Olympia 14'x30' fiberglass, 11,200 gallons, Ocean Blue G2. Always reference this specific pool for chemical questions.
+
+## FIRE SPRINKLER — THORPE
+- Office: 208-936-3337 · Direct: 208-391-0989
+- Alicia Minichiello (VP): alicia@thorpe.biz
+- Anthony: Anthony@thorpe.biz
+- Website: thorpefiresprinklersystems.com
+
+## INSURANCE
+- Byron Diehl — Deal Insurance · 208-466-2465
+- Tips: Check deductible & out-of-pocket. Use GoodRx for prescriptions. Check Select Health. Idaho Health Plan is state-run brokerage.
+
+## WINDOW DIMENSIONS (key windows)
+- Pool Area: SW/SE Fixed Windows 8'×9' (96"×108") — multiple panels
+- Living Room West Wall: 16'×9' (4 sections)
+- Pool Multiglide South & East Exterior + Interior: 16'×9' each
+- Dining Room Multiglide Door: 16'×9'
+- Front Pivot Door: 5'×8'
+- Master Dual Slider: 10'×8'
+- Office French Door Slider: 12'×8'
+- Office Balcony Window: 12'×8'
+- Gym Slider: 7'×7'
+- Master Shower Fixed Window: 6'×6'
+- Wine Bar Glass: 6'×9'
+- All windows made by Panda (Woodgrain Windows & Doors, Tanner Dame 801-835-6948)
+
+## WIFI — IMPORTANT RULE
+When someone asks about WiFi: only share the GUEST network → SSID: Philinity-Guest / Password: Synergy2024
+Only share the main network (Philinitys / Synergy1002!) if they specifically ask for admin or primary network info.
+
+## FURNITURE — COMPLETE LIST
+
+LIVING ROOM (Jubilee Furniture, Order #13588OL, 702-413-1253):
+- Steffi Leather Sofa Set with LED Light — Top Grain Italian Leather, Bright White (3302) + Dark Black trim (3301)
+- 6 Power Recliners on all seats — $2,700
+- Color Changing Upgrade + Remote — $99
+- Matching Coffee Table — $600
+- Matching Ottoman — $399
+- 5 Cup Holders + 5 USB Ports (front edge of armrests) — $740
+- Total after 10% discount + shipping: $8,233
+
+MASTER BEDROOM (Jubilee Furniture):
+- Monica Multifunctional Smart Bed — King, White Top Grain Leather, Right-Hand Facing — $3,550
+- All wooden parts changed to black (free). Massage chair stripe changed to black (free). Delivery 12-16 weeks.
+
+MASTER MATTRESS (Sleep Number, Kyle McGill, 208-376-0928, Quote #95018805318):
+- Flextop King i8 Sleep Number Smart Bed — $3,599.40
+- FlexFit 2 Smart Adjustable Base (Head/Foot adjust, Partner Snore, Lighting, Zero Gravity) — $2,474.25
+- Pillow ComfortFit Curved Standard — $83.99
+- Delivery + Tax — $618.46
+- Total: $6,776.10
+- Chosen for: adjustable firmness, sleep tracking, FlexTop split mattress
+
+GUEST BEDROOM:
+- Guest Bed Frame with LED Lights — $251.42
+
+KITCHEN TABLE & CHAIRS:
+- Orren Ellis "Xenna" Extendable Table 35"W x 63"-101"L x 29.5"H — $1,700
+- Kitchen Chairs Black & White x10 — $675 ($68 each)
+
+BAR STOOLS:
+- Black Bar Stools for Kitchen Island x4 — $520 ($130 each)
+- White Bar Stools for Wine Bar x4 — $520 ($130 each)
+
+OFFICE FURNITURE:
+- 46" Adjustable Desk (no drawers) — $238
+- 5' Adjustable Height Desk with 2 drawers — $358
+
+OUTDOOR FURNITURE:
+- 2-Person Metal Porch Swing — $790
+- 10-Piece Wicker Outdoor Patio Fire Pit Sectional Sofa Set — $1,439
+
+FURNITURE GRAND TOTAL: ~$34,088.52
+
+## APPLIANCES — COMPLETE LIST
+
+KITCHEN & LAUNDRY:
+- Dacor 48" Pro 6-Burner Dual-Fuel Range — $13,499
+- Dacor Range Hood 48"x18" — $3,199
+- Dacor 12" High Duct Cover 48" Wide — $619
+- Dacor 30" Electric Wall Oven — $4,899
+- Dacor Column Fridge 30" Right Side — $6,999
+- Dacor Column Freezer 30" Left Side — $7,499
+- Dacor Installation Kit RAC00CPAAAA — $249
+- Dacor Graphite Contemporary 30" Panels x2 — $2,198
+- Dacor Warming Drawer w/Matching Panel — $1,899
+- Samsung 27" Smart Electric Dryer x2 — $2,232
+- Samsung 27" Smart Washing Machine x2 — $2,232
+- Samsung Stack Kit SKK-8K x2 — $62
+- Cove Dishwasher DW2450 x2 — $4,634
+- KitchenAid Panel Ready Trash Compactor — $959
+
+OTHER APPLIANCES:
+- Wine Bar Under Counter Fridge/Freezer — $249
+- Costco Vinotemp 155-Bottle Dual Zone Wine Cooler — $1,276
+- Samsung 24" AirDresser 5-Hanger Steam — $684
+
+CENTRAL VACUUM:
+- Edge Maxum 9000 Complete System (installed by Coltrin) — $1,649
+- In-Wall 50' Retractable Hoses x7 — $4,893
+- Edge Powerhead Retractable Kit — $799
+- In-Wall 20' Hose x3 — $1,197
+- Faceport w/LED Kitchen Island Dust Pan — $349
+
+APPLIANCE TOTAL: ~$57,748 (including rebates)
+
+## ELECTRICAL PANELS — FULL CIRCUIT MAP
+
+PANEL C (Critical Panel):
+Circuit 1/2: A/C #1 Upstairs | Circuit 3/4: A/C #2 Downstairs | Circuit 5/7: A/C #3 Pool Room | Circuit 6/8: Hot Tub | Circuit 9: Garage Doors (GFCI) | Circuit 10a: Garage Outlets (20A GFCI) | Circuit 10b: Garage Lights (15A) | Circuit 11: Fire Sprinkler System | Circuit 12a: Fridge & Freezer (GFCI) | Circuit 12b: Pantry Freezer | Circuit 13a: Kitchen Plugmold | Circuit 13b: Wine Cooler (GFCI) | Circuit 14: Walk-In Fridge (GFCI) | Circuit 15: Kitchen Plugmold #2 (GFCI) | Circuit 16: Guest Bed/Bath Lighting (AFCI) | Circuit 17: Office Outlets | Circuit 18: Upstairs Guest Bed & Bath Light | Circuit 19: Entry Lighting / Pool Lights (GFCI) | Circuit 20/21: Master Bedroom Outlets (AFCI) | Circuit 22: Master Bed & Bath Lighting | Circuit 23a: Kitchen/Dining Lighting (15A) | Circuit 24a/b: Upstairs Alexa Outlets | Circuit 24b: Downstairs Alexa Outlets (20A) | Circuit 25a: Master Bath Outlets (GFCI) | Circuit 25b: Upstairs Hallway Lights | Circuit 26/28: Water Pump (GFCI) | Circuit 27a: Office/Patio Lighting | Circuit 27b: Theater/Gym Lighting | Circuit 29/31: Rivian Car Charger | Circuit 30/32: POOL PANEL
+
+PANEL B (Secondary Panel):
+Circuit 1/3: EV Charger (Small Garage) | Circuit 2/4: Oven | Circuit 5/6/7: Garage Heated Floor (GFCI) | Circuit 8/10: Cadette Heater | Circuit 9a: Garage & Exterior Outlets | Circuit 9b: Exterior Rear Outlets (GFCI) | Circuit 11a/b: Mud Room/Pantry/Island Outlets | Circuit 12/14: Central Vac | Circuit 13a: Oven Hood | Circuit 13b: Wall Mount Oven | Circuit 15: Wall Mount Oven | Circuit 15b: Trash Compactor | Circuit 16: Kitchen Plugmold (GFCI) | Circuit 17a/b: Entry/Living Outlets | Circuit 18a: Dishwasher/Garbage Disposal | Circuit 18b: Island Dishwasher & Garbage Disposal | Circuit 19a/b: Powder/Guest Bathroom Outlets | Circuit 20/22: Guest Bedroom & Bar/Wine Outlets (AFCI) | Circuit 21: Dehumidifier (GFCI) | Circuit 23: A/C #4 Theater/Gym | Circuit 24a: Guest Washing Machine (20A) | Circuit 24b: Pool Bathroom HVL | Circuit 25b: Warming Drawer | Circuit 26/28: Guest Dryer | Circuit 27: Master Tub (GFCI) | Circuit 29/31: Steam Spa | Circuit 30/32: Sub Panel (Craft Room) 100 AMP
+
+PANEL D (Non-Span, Craft Room):
+Circuit 1a: Laundry Outlets | Circuit 1b: Gym Outlets | Circuit 2a: Theater Outlets | Circuit 2b: Master Closet Outlets | Circuit 3a: Theater Bathroom Outlets | Circuit 3b: Theater Bathroom HVL | Circuit 4a: Laundry HVL | Circuit 4b: Upstairs Guest Bathroom Outlets | Circuit 5: Air Dryer | Circuit 6a: Upstairs Guest Bathroom HVL | Circuit 6 middle: RV Circuit in Garage & Outside | Circuit 7/9: Upstairs Guest Bedroom Outlets (AFCI) | Circuit 8: 30 amp | Circuit 10/12: Heater #2 | Circuit 11: Master Bath HVL (GFI) | Circuit 13/15: Heater #1 | Circuit 14/16: Balcony Heater | Circuit 17/19: Heater #3 | Circuit 18/20: Gym Patio Heater | Circuit 21/23: Upstairs Dryer #2 | Circuit 22/24: Upstairs Dryer #1 | Circuit 25a/b: Upstairs Washer #1 & #2 | Circuit 26: Master Fireplace | Circuit 27a: Gym Drinking Fountain | Circuit 27b: Projector | Circuit 28a: Master Closet Outlets | Circuit 28b: Master Bathroom Outlets | Circuit 29: Smoke Detector | Circuit 30: ERVs
+
+KEY CIRCUIT ANSWERS:
+- Pool is on Circuit 30 & 32, Panel C (Critical Panel)
+- Hot Tub is on Circuit 6 & 8, Panel C
+- Pool Lights are on Circuit 19, Panel C (Entry Lighting / Pool Lights)
+- Dehumidifier is on Circuit 21, Panel B
+- Projector (Theater) is on Circuit 27b, Panel D
+- Master Fireplace is on Circuit 26, Panel D
+- Steam Spa is on Circuit 29 & 31, Panel B
+- Master Tub is on Circuit 27, Panel B
+- Rivian Car Charger is on Circuit 29 & 31, Panel C
+- EV Charger (small garage) is on Circuit 1 & 3, Panel B
+- Central Vac is on Circuit 12 & 14, Panel B
+- Water Pump is on Circuit 26 & 28, Panel C
+
+## PLUMBING FIXTURES — ROOM BY ROOM
+
+KITCHEN:
+- Undermount Sink: Kraus KGD-442Black 33"x22"x10" dual mount granite
+- Kitchen Faucet: Delta Lenta Touch Single-Handle Pull-Down Sprayer (voice add-on available: Part# EP100855)
+- Garbage Disposal: Moen GXC75c Host Series 3/4 HP (Costco)
+- Hot Water Faucet: InSinkErator F-GN1100MBLK
+- Instant Hot Water Tank: InSinkErator HWT-00
+- Soap Dispenser: Matte Black
+- Pot Filler: PHASAT wall-mounted folding pot filler
+- Air Switch: Dual outlet black button air switch
+
+ISLAND:
+- Sink: Kraus KGD-441BLACK 25" single bowl granite
+- Faucet: Moen Nio Touchless Pull Down Smart Faucet with Voice Control (Matte Black, Model S75005EVBL)
+- Garbage Disposal: Moen GXC75c 3/4 HP
+- Glass Rinser: Amazon B094MVL5QS
+- Soap Dispenser: Matte Black hand pump
+
+WINE BAR:
+- Sink: AguaStella AS1514XSS with glass rinser
+- Faucet: FORIOUS Matte Black 10" pull-down
+- Garbage Disposal: Moen GXC75c 3/4 HP
+- Under Counter Fridge/Freezer: 33" tall mini fridge with freezer
+- Soap Dispenser: Matte Black
+
+MASTER BATHROOM:
+- Sinks: Tysun Oval Vessel Sink 24"x14" Boat Shape x2 (Phil's choice)
+- Faucets: Tall rotating spout with pull-down sprayer x2
+- Shower Panels: ELLO&ALLO LED 6-head tower x2
+- Toilet: VOVO Smart Tankless Toilet with heated seat, warm air dryer, UV sanitizer, auto flush (Model TCB-8100B)
+- Heated Towel Rack: 4-Bar WiFi Towel Warmer
+- Steam Spa: SteamSpa Black Series WiFi/Bluetooth 12kW QuickStart
+- Bathtub: Empava 71"x47" Alcove Whirlpool with 16 jets (EMPV-71JT667B)
+- Instant Hot Water: InSinkErator HWT-00
+
+POOL BATHROOM:
+- Shower Panel: ELLO&ALLO 6-Function
+- Heated Towel Rack: KEG 4-bar with timer
+- Wall Hung Toilet: Swiss Madison SM-WT450 with dual flush
+- Soap Dispenser: Matte Black
+
+OFFICE BATHROOM:
+- Vanity: 35" Black Modern Faux Marble Floating Vanity with ceramic sink
+- Faucet: FUZ High Arc Waterfall with 2 crystal knobs
+- Toilet: Swiss Madison SM-WT450MB wall hung with dual flush black
+- Shower Panel: ELLO&ALLO 6-Function
+
+GYM:
+- Drinking Fountain: Elkay LBWD00BKC ezH2O Liv Built-in Filtered Water Dispenser
+
+OFFICE (BAR AREA):
+- Sink: AguaStella black undermount with glass rinser
+- Bar Faucet: Matte black
+- Mini Fridge: 33.1"H x 18.7"L x 17.3"W`;
 
 // ── Chat State ──
 let messages = [];
@@ -1690,8 +2228,320 @@ document.getElementById('chat-input').addEventListener('keydown', function(e) {
   }
 });
 
+
+// ══════════ KNOWLEDGE BASE ══════════
+const KB_PATH = 'philinity/knowledge';
+let kbCategories = [];
+let kbCurrentCat = null;
+let kbEditingCatId = null;
+let kbEditingEntryId = null;
+let kbCatImgData = '';
+let kbEntryImgData = '';
+let kbDDItems = [];
+
+async function kbInit() {
+  const snap = await get(ref(db, KB_PATH + '/categories'));
+  if (snap.exists()) {
+    kbCategories = Object.values(snap.val());
+  } else {
+    // Seed default categories
+    kbCategories = [
+      { id: 'pool-spa', name: 'Pool & Spa', emoji: '🏊', img: '', entries: {} },
+      { id: 'appliances', name: 'Appliances', emoji: '🔌', img: '', entries: {} },
+      { id: 'furniture', name: 'Furniture', emoji: '🛋', img: '', entries: {} },
+      { id: 'systems', name: 'Systems & Circuits', emoji: '⚡', img: '', entries: {} },
+      { id: 'maintenance', name: 'Maintenance & Repairs', emoji: '🔧', img: '', entries: {} },
+      { id: 'contacts', name: 'Contacts', emoji: '📞', img: '', entries: {} },
+      { id: 'purchases', name: 'New Purchases', emoji: '🛒', img: '', entries: {} },
+      { id: 'notes', name: 'General Notes', emoji: '📝', img: '', entries: {} },
+    ];
+    await kbSaveCatsToFB();
+  }
+  kbRenderCats();
+}
+
+async function kbSaveCatsToFB() {
+  const obj = {};
+  kbCategories.forEach(c => { obj[c.id] = c; });
+  const { set: fbSet, ref: fbRef } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+  await fbSet(fbRef(db, KB_PATH + '/categories'), obj);
+}
+
+function kbRenderCats() {
+  const grid = document.getElementById('kb-cat-grid');
+  if (!grid) return;
+  grid.innerHTML = kbCategories.map(cat => {
+    const count = cat.entries ? Object.keys(cat.entries).length : 0;
+    const imgHtml = cat.img
+      ? `<div class="kb-cat-img"><img src="${cat.img}" alt="${cat.name}" loading="lazy"></div>`
+      : `<div class="kb-cat-img">${cat.emoji || '📁'}</div>`;
+    return `<div class="kb-cat-card" onclick="kbOpenCat('${cat.id}')">
+      ${imgHtml}
+      <div class="kb-cat-body">
+        <div class="kb-cat-title">${cat.emoji} ${cat.name}</div>
+        <div class="kb-cat-count">${count} ${count === 1 ? 'entry' : 'entries'}</div>
+      </div>
+    </div>`;
+  }).join('') + `<div class="kb-add-btn" onclick="kbOpenCatModal()">＋ New Category</div>`;
+}
+
+function kbOpenCat(catId) {
+  kbCurrentCat = kbCategories.find(c => c.id === catId);
+  if (!kbCurrentCat) return;
+  document.getElementById('kb-page-title').textContent = kbCurrentCat.emoji + ' ' + kbCurrentCat.name;
+  document.getElementById('kb-page-sub').textContent = 'Edit category';
+  document.getElementById('kb-cat-view').style.display = 'none';
+  document.getElementById('kb-entry-view').style.display = 'block';
+  kbRenderEntries();
+}
+
+function kbShowCats() {
+  kbCurrentCat = null;
+  document.getElementById('kb-page-title').textContent = 'Knowledge Base';
+  document.getElementById('kb-page-sub').textContent = 'Philinity · Living reference · Firebase synced';
+  document.getElementById('kb-cat-view').style.display = 'block';
+  document.getElementById('kb-entry-view').style.display = 'none';
+  kbRenderCats();
+}
+
+function kbRenderEntries() {
+  const list = document.getElementById('kb-entry-list');
+  if (!kbCurrentCat || !list) return;
+  const entries = kbCurrentCat.entries ? Object.values(kbCurrentCat.entries) : [];
+  if (entries.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:30px;font-size:0.82rem">No entries yet — add the first one below</div>`;
+    return;
+  }
+  list.innerHTML = entries.map(e => {
+    const imgHtml = e.img
+      ? `<div class="kb-entry-img"><img src="${e.img}" alt="${e.title}" loading="lazy"></div>`
+      : `<div class="kb-entry-img">${kbCurrentCat.emoji || '📁'}</div>`;
+    const details = (e.details || []).map(d => `<span class="tag" style="display:inline-block;margin:1px">${d}</span>`).join('');
+    return `<div class="kb-entry">
+      ${imgHtml}
+      <div class="kb-entry-body">
+        <div class="kb-entry-title">${e.title}</div>
+        ${e.notes ? `<div class="kb-entry-note">${e.notes}</div>` : ''}
+        ${details ? `<div style="margin-top:6px">${details}</div>` : ''}
+      </div>
+      <div class="kb-entry-actions">
+        <button class="kb-icon-btn" onclick="kbOpenEntryModal('${e.id}')" title="Edit">✏️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Category Modal ──
+function kbOpenCatModal(catId) {
+  kbEditingCatId = catId || null;
+  kbCatImgData = '';
+  const cat = catId ? kbCategories.find(c => c.id === catId) : null;
+  document.getElementById('kb-cat-modal-title').textContent = cat ? 'Edit Category' : 'New Category';
+  document.getElementById('kb-cat-name').value = cat ? cat.name : '';
+  document.getElementById('kb-cat-emoji').value = cat ? cat.emoji : '';
+  document.getElementById('kb-cat-img-url').value = '';
+  document.getElementById('kb-cat-del-btn').style.display = cat ? 'block' : 'none';
+  kbClearImg('cat');
+  if (cat && cat.img) {
+    document.getElementById('kb-cat-preview-img').src = cat.img;
+    document.getElementById('kb-cat-drop-label').style.display = 'none';
+    document.getElementById('kb-cat-drop-preview').style.display = 'block';
+    kbCatImgData = cat.img;
+  }
+  document.getElementById('kb-cat-modal').classList.add('open');
+}
+function kbCloseCatModal() { document.getElementById('kb-cat-modal').classList.remove('open'); }
+
+async function kbSaveCat() {
+  const name = document.getElementById('kb-cat-name').value.trim();
+  if (!name) { kbToast('Category name required'); return; }
+  const emoji = document.getElementById('kb-cat-emoji').value.trim() || '📁';
+  const img = kbCatImgData || document.getElementById('kb-cat-img-url').value.trim();
+  if (kbEditingCatId) {
+    const cat = kbCategories.find(c => c.id === kbEditingCatId);
+    if (cat) { cat.name = name; cat.emoji = emoji; cat.img = img; }
+  } else {
+    const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') + '-' + Date.now();
+    kbCategories.push({ id, name, emoji, img, entries: {} });
+  }
+  await kbSaveCatsToFB();
+  kbCloseCatModal();
+  kbRenderCats();
+  kbToast('✓ Category saved');
+}
+
+async function kbDeleteCat() {
+  if (!kbEditingCatId || !confirm('Delete this category and all its entries?')) return;
+  kbCategories = kbCategories.filter(c => c.id !== kbEditingCatId);
+  await kbSaveCatsToFB();
+  kbCloseCatModal();
+  kbRenderCats();
+  kbToast('🗑 Deleted');
+}
+
+// ── Entry Modal ──
+function kbOpenEntryModal(entryId) {
+  kbEditingEntryId = entryId || null;
+  kbEntryImgData = '';
+  kbDDItems = [];
+  const entry = entryId && kbCurrentCat && kbCurrentCat.entries ? kbCurrentCat.entries[entryId] : null;
+  document.getElementById('kb-entry-modal-title').textContent = entry ? 'Edit Entry' : 'New Entry';
+  document.getElementById('kb-entry-title-input').value = entry ? entry.title : '';
+  document.getElementById('kb-entry-notes').value = entry ? entry.notes || '' : '';
+  document.getElementById('kb-entry-img-url').value = '';
+  document.getElementById('kb-entry-del-btn').style.display = entry ? 'block' : 'none';
+  kbClearImg('entry');
+  if (entry && entry.img) {
+    document.getElementById('kb-entry-preview-img').src = entry.img;
+    document.getElementById('kb-entry-drop-label').style.display = 'none';
+    document.getElementById('kb-entry-drop-preview').style.display = 'block';
+    kbEntryImgData = entry.img;
+  }
+  kbDDItems = entry && entry.details ? [...entry.details] : [];
+  kbRenderDDList();
+  document.getElementById('kb-entry-modal').classList.add('open');
+}
+function kbCloseEntryModal() { document.getElementById('kb-entry-modal').classList.remove('open'); }
+
+async function kbSaveEntry() {
+  const title = document.getElementById('kb-entry-title-input').value.trim();
+  if (!title) { kbToast('Title required'); return; }
+  if (!kbCurrentCat) return;
+  const img = kbEntryImgData || document.getElementById('kb-entry-img-url').value.trim();
+  const id = kbEditingEntryId || title.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
+  if (!kbCurrentCat.entries) kbCurrentCat.entries = {};
+  kbCurrentCat.entries[id] = {
+    id, title,
+    notes: document.getElementById('kb-entry-notes').value.trim(),
+    details: kbDDItems,
+    img,
+    updated: Date.now()
+  };
+  await kbSaveCatsToFB();
+  kbCloseEntryModal();
+  kbRenderEntries();
+  kbRenderCats();
+  kbToast('✓ Entry saved');
+}
+
+async function kbDeleteEntry() {
+  if (!kbEditingEntryId || !kbCurrentCat || !confirm('Delete this entry?')) return;
+  delete kbCurrentCat.entries[kbEditingEntryId];
+  await kbSaveCatsToFB();
+  kbCloseEntryModal();
+  kbRenderEntries();
+  kbRenderCats();
+  kbToast('🗑 Deleted');
+}
+
+// ── DD Items ──
+function kbRenderDDList() {
+  const list = document.getElementById('kb-dd-list');
+  if (!list) return;
+  list.innerHTML = kbDDItems.map((item, i) =>
+    `<div class="dd-item" draggable="true" data-i="${i}"
+      ondragstart="kbDragStart(event,${i})" ondragover="event.preventDefault()" ondrop="kbDragDrop(event,${i})">
+      <span class="dd-item-handle">⠿</span>
+      <span class="dd-item-text">${item}</span>
+      <button class="dd-item-del" onclick="kbRemoveDDItem(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+let kbDragSrcIdx = null;
+function kbDragStart(e, i) { kbDragSrcIdx = i; e.currentTarget.classList.add('dragging'); }
+function kbDragDrop(e, i) {
+  e.preventDefault();
+  if (kbDragSrcIdx === null || kbDragSrcIdx === i) return;
+  const moved = kbDDItems.splice(kbDragSrcIdx, 1)[0];
+  kbDDItems.splice(i, 0, moved);
+  kbDragSrcIdx = null;
+  kbRenderDDList();
+}
+function kbAddDDItem() {
+  const inp = document.getElementById('kb-dd-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  kbDDItems.push(val);
+  inp.value = '';
+  kbRenderDDList();
+}
+function kbRemoveDDItem(i) { kbDDItems.splice(i, 1); kbRenderDDList(); }
+
+// ── Image handling ──
+function kbCompressImage(dataUrl, callback) {
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    const MAX = 600;
+    let w = img.width, h = img.height;
+    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+    else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', 0.7));
+  };
+  img.src = dataUrl;
+}
+function kbHandleFile(event, type) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => kbLoadImgPreview(e.target.result, type);
+  reader.readAsDataURL(file);
+}
+function kbHandleDrop(event, type) {
+  event.preventDefault();
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop').classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => kbLoadImgPreview(e.target.result, type);
+  reader.readAsDataURL(file);
+}
+function kbLoadImgPreview(dataUrl, type) {
+  kbCompressImage(dataUrl, compressed => {
+    if (type === 'cat') { kbCatImgData = compressed; }
+    else { kbEntryImgData = compressed; }
+    document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-preview-img').src = compressed;
+    document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-label').style.display = 'none';
+    document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-preview').style.display = 'block';
+  });
+}
+function kbHandleUrl(url, type) {
+  if (!url) return;
+  if (type === 'cat') { kbCatImgData = url; }
+  else { kbEntryImgData = url; }
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-preview-img').src = url;
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-label').style.display = 'none';
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-preview').style.display = 'block';
+}
+function kbClearImg(type) {
+  if (type === 'cat') { kbCatImgData = ''; }
+  else { kbEntryImgData = ''; }
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-preview-img').src = '';
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-label').style.display = 'block';
+  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-preview').style.display = 'none';
+}
+
+// ── Toast ──
+function kbToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Close modals on overlay click
+document.getElementById('kb-cat-modal').addEventListener('click', e => { if(e.target===e.currentTarget) kbCloseCatModal(); });
+document.getElementById('kb-entry-modal').addEventListener('click', e => { if(e.target===e.currentTarget) kbCloseEntryModal(); });
+
+// Init KB when page is clicked
+document.querySelector('[data-page="knowledge"]').addEventListener('click', () => {
+  if (kbCategories.length === 0) kbInit();
+});
+
 // Init
 initFirebase();
+
 </script>
 <footer style="
   grid-column: 1 / -1;
@@ -1705,6 +2555,6 @@ initFirebase();
   background: rgba(10,10,12,0.85);
   position: relative;
   z-index: 1;
-">Philinity Command Center ©️ Rev 1.1</footer>
+">Philinity Command Center ©️ Rev 1.4</footer>
 </body>
 </html>
