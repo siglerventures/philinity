@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <title>Philinity — Sigler Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 :root {
@@ -1809,8 +1810,6 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 </div>
 
 <!-- Collapsible Nav — must be plain script, not module, for onclick to work -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 
 function toggleNavGroup(group) {
@@ -1839,11 +1838,11 @@ function navigateTo(page) {
       if (caret) caret.classList.add('open');
     }
   }
-  // Re-render KB categories whenever KB page is opened
+  // Re-render KB when knowledge page opened (guard in case not loaded yet)
   if (page === 'knowledge') {
     setTimeout(function() {
-      kbRenderCatList();
-    }, 50);
+      if (typeof kbRenderCatList === 'function') kbRenderCatList();
+    }, 100);
   }
 }
 
@@ -2696,6 +2695,6 @@ if (document.readyState === 'loading') {
   background: rgba(10,10,12,0.85);
   position: relative;
   z-index: 1;
-">Philinity Command Center ©️ Rev 2.4</footer>
+">Philinity Command Center ©️ Rev 2.6</footer>
 </body>
 </html>
