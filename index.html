@@ -607,6 +607,81 @@ main {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 
+/* ─── CONTACTS ─── */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.contact-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.contact-card:hover { border-color: var(--gold); background: var(--surface2); }
+.contact-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,169,110,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0;
+  overflow: hidden;
+}
+.contact-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.contact-info { flex: 1; min-width: 0; }
+.contact-name { font-size: 0.88rem; font-weight: 500; color: var(--text); margin-bottom: 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.contact-role { font-size: 0.7rem; color: var(--gold); margin-bottom: 4px; font-family:'DM Mono',monospace; letter-spacing:0.05em; }
+.contact-detail { font-size: 0.72rem; color: var(--text-muted); line-height: 1.6; }
+.contact-cat-badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 0.62rem; font-family:'DM Mono',monospace;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.contacts-search {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  padding: 10px 16px 10px 40px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 16px;
+}
+.contacts-search:focus { border-color: var(--gold); }
+.contacts-search::placeholder { color: var(--text-muted); }
+
+/* ─── AI PROJECT BUBBLES ─── */
+.ai-proj-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(201,169,110,0.07);
+  border: 1px solid rgba(201,169,110,0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.ai-proj-bubble:hover { background: rgba(201,169,110,0.14); border-color: rgba(201,169,110,0.4); transform: translateX(2px); }
+.ai-proj-emoji { font-size: 1.3rem; flex-shrink: 0; }
+.ai-proj-body { flex: 1; min-width: 0; }
+.ai-proj-name { font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ai-proj-sub { font-family: 'DM Mono', monospace; font-size: 0.55rem; color: var(--text-muted); letter-spacing: 0.08em; margin-top: 2px; }
+.ai-proj-arrow { color: var(--text-muted); font-size: 0.8rem; flex-shrink: 0; }
+
 /* ─── KNOWLEDGE BASE ─── */
 .kb-grid {
   display: grid;
@@ -868,12 +943,8 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <!-- SIDEBAR -->
 <nav>
   <!-- Dashboard — always visible, no collapse -->
-  <div class="nav-label" style="cursor:default">🏛 Dashboard</div>
-  <div class="nav-item active" data-page="home">
-    <span class="nav-icon">⚡</span> Overview
-  </div>
-  <div class="nav-item" data-page="ai">
-    <span class="nav-icon">✦</span> AI Assistant
+  <div class="nav-item active" data-page="ai" style="margin:8px 8px 4px;border-radius:10px;background:var(--gold-dim);border:1px solid rgba(201,169,110,0.3);color:var(--gold);font-weight:400">
+    <span class="nav-icon">✦</span> Philinity AI
   </div>
 
   <!-- 🏠 Home -->
@@ -901,6 +972,8 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     <span>🌿 Life</span><span class="nav-caret" id="caret-life">›</span>
   </div>
   <div class="nav-group" id="group-life" style="display:none">
+    <div class="nav-item" data-page="home"><span class="nav-icon">📊</span> Overview</div>
+    <div class="nav-item" data-page="contacts"><span class="nav-icon">👥</span> Contacts</div>
     <div class="nav-item" data-page="drinks"><span class="nav-icon">🥃</span> Cocktails</div>
     <div class="nav-item" data-page="knowledge"><span class="nav-icon">📚</span> Knowledge Base</div>
   </div>
@@ -918,7 +991,11 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     </div>
   </div>
 
-  <div style="padding: 16px 12px 8px; margin-top: auto;">
+  <div style="padding: 8px 12px 4px; text-align:center; font-family:'DM Mono',monospace; font-size:0.55rem; color:rgba(232,228,220,0.2); letter-spacing:0.1em;">
+    Philinity Command Center ©️ Rev 3.0
+  </div>
+
+  <div style="padding: 0 12px 12px; margin-top: 0;">
     <button onclick="navigateTo('knowledge')" style="
       width: 100%;
       padding: 10px 14px;
@@ -943,7 +1020,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <main>
 
   <!-- ══════════ OVERVIEW ══════════ -->
-  <div class="page active" id="page-home">
+  <div class="page" id="page-home">
     <div class="page-title">
       <h1 id="greeting">Good day, Phil</h1>
       <span class="sub">Philinity Command Center</span>
@@ -1002,37 +1079,53 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   </div>
 
   <!-- ══════════ AI ASSISTANT ══════════ -->
-  <div class="page" id="page-ai">
-    <div class="page-title">
-      <h1>AI Assistant</h1>
-      <span class="sub">Powered by Claude · Full context loaded</span>
+    <div class="page active" id="page-ai">
+
+    <!-- Hero Banner -->
+    <div style="background:linear-gradient(135deg,#0f0f14 0%,#1a1520 40%,#0f1418 100%);border:1px solid rgba(201,169,110,0.2);border-radius:16px;padding:28px 32px 24px;margin-bottom:16px;position:relative;overflow:hidden;flex-shrink:0">
+      <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(201,169,110,0.08) 0%,transparent 70%);pointer-events:none"></div>
+      <div style="position:absolute;bottom:-40px;left:60px;width:150px;height:150px;background:radial-gradient(circle,rgba(124,155,170,0.06) 0%,transparent 70%);pointer-events:none"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.25em;color:var(--gold);text-transform:uppercase;margin-bottom:8px">✦ Philinity Command Center</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--text);line-height:1.1;margin-bottom:6px" id="greeting">Good evening, Phil</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);max-width:420px;line-height:1.6">Your personal AI knows Philinity, Sigler Ventures, every circuit, fixture, appliance, cocktail recipe, and restaurant order.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:180px" id="ai-project-bubbles">
+          <!-- Rendered by JS from Firebase -->
+        </div>
+        <button onclick="openAIProjectsModal()" title="Edit AI Projects" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:4px 8px">✏️ Edit</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🏗 Synergy Summit · Permits Ready</div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🏡 Columbia Listed · $699K</div>
+        <div style="background:rgba(196,106,90,0.1);border:1px solid rgba(196,106,90,0.25);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--red)">⚠ Kildew Payment · Apr 1</div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🌊 Pool · Circuit 30 & 32 Panel C</div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)" id="clock-pill">—</div>
+        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.18);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.0</div>
+      </div>
     </div>
 
+    <!-- Chat -->
     <div class="chat-wrapper">
-      <div class="chat-header">
-        <div class="chat-header-icon">✦</div>
-        <div>
-          <div class="chat-header-title">Philinity AI</div>
-          <div class="chat-header-sub">HOME · INVESTMENTS · DINING · LIFE</div>
-        </div>
-      </div>
-
-      <div class="chat-quick">
-        <button class="quick-btn" onclick="quickSend('What are my current financial obligations this month?')">Monthly obligations</button>
-        <button class="quick-btn" onclick="quickSend('What is the status of Synergy Summit?')">Synergy Summit</button>
-        <button class="quick-btn" onclick="quickSend('What should I order at Barbacoa?')">Barbacoa order</button>
-        <button class="quick-btn" onclick="quickSend('How do I make Phil\\'s Smok\\'n Old Fashioned?')">Old Fashioned recipe</button>
-        <button class="quick-btn" onclick="quickSend('What is the Columbia Project waterfall for a $699K sale?')">Columbia sale calc</button>
-        <button class="quick-btn" onclick="quickSend('What are the Alexa commands for the pool?')">Pool commands</button>
-        <button class="quick-btn" onclick="quickSend('What is the Synergy Summit Airbnb P&L at 70% occupancy?')">Airbnb P&L</button>
-        <button class="quick-btn" onclick="quickSend('What restaurants should I take Trinity to for a special dinner?')">Date night</button>
+      <div class="chat-quick" style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <button class="quick-btn" onclick="quickSend('What are my current financial obligations this month?')">💰 Monthly obligations</button>
+        <button class="quick-btn" onclick="quickSend('What is the status of Synergy Summit and what do I need to do next?')">🏗 Synergy Summit</button>
+        <button class="quick-btn" onclick="quickSend('What should I order at Barbacoa tonight?')">🥩 Barbacoa order</button>
+        <button class="quick-btn" onclick="quickSend('How do I make Phil\'s Smok\'n Old Fashioned?')">🥃 Old Fashioned</button>
+        <button class="quick-btn" onclick="quickSend('What is the Columbia Project waterfall for a $699K sale at 3% commission?')">📊 Columbia calc</button>
+        <button class="quick-btn" onclick="quickSend('What circuit is my pool on and what panel?')">⚡ Pool circuit</button>
+        <button class="quick-btn" onclick="quickSend('What is the Synergy Summit Airbnb P&L at 70% occupancy?')">🏡 Airbnb P&L</button>
+        <button class="quick-btn" onclick="quickSend('What restaurants should I take Trinity to for a romantic dinner?')">💜 Date night</button>
+        <button class="quick-btn" onclick="quickSend('What are the Alexa voice commands for my pool lights?')">🎙 Alexa commands</button>
+        <button class="quick-btn" onclick="quickSend('What sinks did I buy and where are they installed?')">🚰 My sinks</button>
       </div>
 
       <div class="chat-messages" id="chat-messages">
         <div class="msg ai">
           <div class="msg-avatar">✦</div>
           <div class="msg-bubble">
-            Welcome back, Phil. I have full context on <strong>Philinity</strong>, <strong>Sigler Ventures</strong>, your <strong>dining preferences</strong>, <strong>home systems</strong>, and all active projects. Ask me anything — financials, cocktail recipes, restaurant orders, Alexa commands, build costs, or investment analysis. What's on your mind?
+            Welcome back, Phil. I know <strong>every room, circuit, and fixture</strong> in Philinity, your full <strong>Sigler Ventures portfolio</strong>, every restaurant order and cocktail recipe, and all active project details. Use the quick buttons above or just ask me anything.
           </div>
         </div>
       </div>
@@ -1045,7 +1138,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
       </div>
 
       <div class="chat-input-area">
-        <textarea id="chat-input" rows="1" placeholder="Ask about your home, investments, dining, or anything else…"></textarea>
+        <textarea id="chat-input" rows="1" placeholder="Ask anything — home systems, investments, dining, cocktails, Alexa commands…"></textarea>
         <button id="send-btn" onclick="sendMessage()">➤</button>
       </div>
     </div>
@@ -1698,6 +1791,101 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   </div>
 
 
+  <!-- ══════════ CONTACTS ══════════ -->
+  <div class="page" id="page-contacts">
+    <div class="page-title" style="flex-shrink:0">
+      <h1>Contacts</h1>
+      <span class="sub">Philinity · Firebase synced</span>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;margin-bottom:4px">
+      <div style="position:relative;flex:1">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem">🔍</span>
+        <input class="contacts-search" id="contacts-search" placeholder="Search by name, phone, role, company…" oninput="contactsSearch(this.value)">
+      </div>
+      <button onclick="window.open('https://contacts.google.com','_blank')" style="padding:9px 16px;border-radius:10px;border:1px solid var(--border-bright);background:transparent;color:var(--text-dim);font-family:'Outfit',sans-serif;font-size:0.78rem;cursor:pointer;white-space:nowrap;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border-bright)';this.style.color='var(--text-dim)'">📱 Google Contacts ↗</button>
+      <label style="padding:9px 16px;border-radius:10px;border:1px solid var(--border-bright);background:transparent;color:var(--text-dim);font-family:'Outfit',sans-serif;font-size:0.78rem;cursor:pointer;white-space:nowrap;transition:all 0.2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border-bright)';this.style.color='var(--text-dim)'">
+        📥 Import CSV
+        <input type="file" accept=".csv" style="display:none" onchange="importContactsCSV(event)">
+      </label>
+      <button onclick="openContactModal()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--gold);color:var(--bg);font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;white-space:nowrap">+ Add Contact</button>
+    </div>
+
+    <!-- Category filter chips -->
+    <div id="contact-cat-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;flex-shrink:0"></div>
+
+    <!-- Grid -->
+    <div class="contact-grid" id="contacts-grid"></div>
+  </div>
+
+  <!-- Contact Modal -->
+  <div class="modal-overlay" id="contact-modal">
+    <div class="modal-box" style="max-width:520px">
+      <div class="modal-title" id="contact-modal-title">New Contact</div>
+
+      <!-- Photo -->
+      <div class="form-group" style="display:flex;gap:14px;align-items:flex-start">
+        <div>
+          <div class="drop-zone" id="contact-drop" style="width:80px;height:80px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden"
+            onclick="document.getElementById('contact-file').click()"
+            ondrop="contactHandleDrop(event)" ondragover="event.preventDefault()">
+            <div id="contact-drop-label">👤</div>
+            <div id="contact-drop-preview" style="display:none;width:100%;height:100%">
+              <img id="contact-preview-img" src="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+            </div>
+          </div>
+          <input type="file" id="contact-file" accept="image/*" capture="environment" style="display:none" onchange="contactHandleFile(event)">
+          <div style="font-size:0.62rem;color:var(--text-muted);text-align:center;margin-top:4px">Photo</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Name *</label>
+            <input class="form-input" id="c-name" placeholder="Full name">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Role / Title</label>
+            <input class="form-input" id="c-role" placeholder="e.g. HVAC Contractor">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Phone</label>
+          <input class="form-input" id="c-phone" placeholder="208-555-1234" type="tel">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="c-email" placeholder="email@example.com" type="email">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Company</label>
+          <input class="form-input" id="c-company" placeholder="Company name">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Category</label>
+          <input class="form-input" id="c-category" placeholder="e.g. HVAC, Family, Vendor">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:10px">
+        <label class="form-label">Address</label>
+        <input class="form-input" id="c-address" placeholder="Street, City, State ZIP">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="c-notes" placeholder="Anything useful — best hours, tips, what they do for you…" rows="2"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-save" onclick="saveContact()">Save Contact</button>
+        <button class="btn-cancel" onclick="closeContactModal()">Cancel</button>
+        <button class="btn-delete" id="contact-del-btn" onclick="deleteContact()" style="display:none">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════ KNOWLEDGE BASE ══════════ -->
   <div class="page" id="page-knowledge">
     <div class="page-title">
@@ -1732,6 +1920,20 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+
+  <!-- AI Projects Edit Modal -->
+  <div class="modal-overlay" id="ai-proj-modal">
+    <div class="modal-box" style="max-width:480px">
+      <div class="modal-title">✦ AI Project Links</div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px">These bubbles appear on your home screen. Click ✏️ on each to edit, drag to reorder, or add new ones.</div>
+      <div id="ai-proj-edit-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+      <button onclick="addAIProjItem()" style="width:100%;padding:9px;border-radius:8px;border:1px dashed rgba(201,169,110,0.3);background:var(--gold-dim);color:var(--gold);font-size:0.8rem;cursor:pointer;font-family:'Outfit',sans-serif">+ Add Project</button>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-save" onclick="saveAIProjects()">Save</button>
+        <button class="btn-cancel" onclick="closeAIProjectsModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Category Modal -->
   <div class="modal-overlay" id="kb-cat-modal">
@@ -1887,10 +2089,14 @@ async function initFirebase() {
 // ── Clock & Greeting ──
 function updateClock() {
   const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {
+  const timeStr = now.toLocaleTimeString('en-US', {
     hour: '2-digit', minute: '2-digit', second: '2-digit',
     timeZone: 'America/Denver'
   }) + ' MDT';
+  const el = document.getElementById('clock');
+  if (el) el.textContent = timeStr;
+  const pill = document.getElementById('clock-pill');
+  if (pill) pill.textContent = '🕐 ' + timeStr;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -2667,11 +2873,470 @@ document.getElementById('kb-entry-modal').addEventListener('click', e => { if(e.
 
 // ── Collapsible Nav handled in inline script above ──// ── Collapsible Nav handled in inline script above ──
 
+// ══════════ AI PROJECT BUBBLES ══════════
+const AI_PROJ_PATH = 'philinity/ai_projects';
+var aiProjects = [];
+
+var DEFAULT_AI_PROJECTS = [
+  { id: 'philinity-ai',  emoji: '🌍', name: 'Philinity AI',          sub: 'Home · Life · Command Center', url: 'https://claude.ai/project/019ce77e-2ed2-774b-9a36-72fb6036a043', order: 0 },
+  { id: 'sv-ai',         emoji: '💼', name: 'Sigler Ventures AI Bot', sub: 'Investments · Real Estate · Deals', url: 'https://claude.ai/project/019d31b6-f622-76c1-993c-0617adb8530d', order: 1 },
+  { id: 'autoflag-ai',   emoji: '🚩', name: 'AutoFlag™️ FSI',          sub: 'AutoFlag Business AI', url: 'https://claude.ai/project/019ce413-3ddc-701b-9694-1aac4715af54', order: 2 },
+];
+
+async function loadAIProjects() {
+  try {
+    const snap = await db.ref(AI_PROJ_PATH).get();
+    if (snap.exists()) {
+      const val = snap.val();
+      aiProjects = Array.isArray(val) ? val : Object.values(val);
+      aiProjects.sort((a, b) => (a.order||0) - (b.order||0));
+    } else {
+      aiProjects = DEFAULT_AI_PROJECTS.map(p => ({...p}));
+      await saveAIProjectsToDB();
+    }
+  } catch(e) {
+    aiProjects = DEFAULT_AI_PROJECTS.map(p => ({...p}));
+  }
+  renderAIProjectBubbles();
+}
+
+async function saveAIProjectsToDB() {
+  const obj = {};
+  aiProjects.forEach((p, i) => { p.order = i; obj[p.id] = p; });
+  await db.ref(AI_PROJ_PATH).set(obj);
+}
+
+function renderAIProjectBubbles() {
+  const container = document.getElementById('ai-project-bubbles');
+  if (!container) return;
+  container.innerHTML = aiProjects.map(p => `
+    <a class="ai-proj-bubble" href="${p.url}" target="_blank" rel="noopener">
+      <span class="ai-proj-emoji">${p.emoji}</span>
+      <div class="ai-proj-body">
+        <div class="ai-proj-name">${p.name}</div>
+        <div class="ai-proj-sub">${p.sub}</div>
+      </div>
+      <span class="ai-proj-arrow">↗</span>
+    </a>
+  `).join('');
+}
+
+var editingAIProjects = [];
+var aiProjDragSrc = null;
+
+function openAIProjectsModal() {
+  editingAIProjects = aiProjects.map(p => ({...p}));
+  renderAIProjEditList();
+  document.getElementById('ai-proj-modal').classList.add('open');
+}
+function closeAIProjectsModal() {
+  document.getElementById('ai-proj-modal').classList.remove('open');
+}
+
+function renderAIProjEditList() {
+  const list = document.getElementById('ai-proj-edit-list');
+  if (!list) return;
+  list.innerHTML = editingAIProjects.map((p, i) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;gap:8px;align-items:center;cursor:grab"
+      draggable="true"
+      ondragstart="aiProjDragSrc=${i}"
+      ondragover="event.preventDefault()"
+      ondrop="aiProjDrop(event,${i})">
+      <span style="color:var(--text-muted);font-size:0.7rem;cursor:grab">⠿</span>
+      <input value="${p.emoji}" maxlength="4" style="width:36px;text-align:center;font-size:1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px;font-family:'Outfit',sans-serif" oninput="editingAIProjects[${i}].emoji=this.value">
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <input value="${p.name}" placeholder="Project name" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:0.8rem;font-family:'Outfit',sans-serif" oninput="editingAIProjects[${i}].name=this.value">
+        <input value="${p.sub}" placeholder="Subtitle" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:5px 8px;font-size:0.72rem;font-family:'DM Mono',sans-serif" oninput="editingAIProjects[${i}].sub=this.value">
+        <input value="${p.url}" placeholder="https://..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--accent);padding:5px 8px;font-size:0.7rem;font-family:'DM Mono',monospace" oninput="editingAIProjects[${i}].url=this.value">
+      </div>
+      <button onclick="editingAIProjects.splice(${i},1);renderAIProjEditList()" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:4px">✕</button>
+    </div>
+  `).join('');
+}
+
+function aiProjDrop(e, i) {
+  e.preventDefault();
+  if (aiProjDragSrc === null || aiProjDragSrc === i) return;
+  const moved = editingAIProjects.splice(aiProjDragSrc, 1)[0];
+  editingAIProjects.splice(i, 0, moved);
+  aiProjDragSrc = null;
+  renderAIProjEditList();
+}
+
+function addAIProjItem() {
+  editingAIProjects.push({ id: 'proj-' + Date.now(), emoji: '✦', name: 'New Project', sub: 'Description', url: 'https://', order: editingAIProjects.length });
+  renderAIProjEditList();
+}
+
+async function saveAIProjects() {
+  aiProjects = editingAIProjects.map((p, i) => {
+    if (!p.id) p.id = 'proj-' + Date.now() + i;
+    p.order = i;
+    return p;
+  });
+  await saveAIProjectsToDB();
+  renderAIProjectBubbles();
+  closeAIProjectsModal();
+  kbToast('✓ AI Projects saved');
+}
+
+document.getElementById('ai-proj-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeAIProjectsModal();
+});
+
+// ══════════ CONTACTS ══════════
+var CONTACTS_PATH = 'philinity/contacts';
+var allContacts = [];
+var editingContactId = null;
+var contactImgData = '';
+var activeContactCat = 'All';
+
+var SEED_CONTACTS = [
+  { id:'peppy-hvac', name:'Peppy Heater & Air', role:'HVAC Contractor', phone:'208-906-6928', email:'', company:'Peppy Heating & Cooling', category:'HVAC', address:'', notes:'Mitsubishi mini-splits, ERVs. Formerly Shanco Heating.', img:'' },
+  { id:'jay-pool', name:"Jay's Pool & Spa", role:'Pool Contractor', phone:'208-713-1574', email:'', company:"Jay's Pool & Spa", category:'Pool', address:'', notes:'Installed Latham Olympia pool. Contract Sep 12, 2021.', img:'' },
+  { id:'boise-pool-pros', name:'Boise Pool Pros', role:'Pool Repair', phone:'', email:'', company:'Boise Pool Pros', category:'Pool', address:'', notes:'Fixed HLS error Feb 2025. Annual filter cleaning scheduled.', img:'' },
+  { id:'paint-kings', name:'Michael Deegan', role:'Paint Kings', phone:'208-451-3721', email:'paintkingsidaho@gmail.com', company:'Paint Kings', category:'Contractor', address:'', notes:'Did interior & exterior paint.', img:'' },
+  { id:'brenton', name:'Brenton VanTassell', role:'Son', phone:'801-580-7579', email:'btvantassell@gmail.com', company:'', category:'Family', address:'291 E Pennsylvania St, Boise ID 83706', notes:'DOB Aug 23, 1995', img:'' },
+  { id:'austen', name:'Austen VanTassell', role:'Son', phone:'208-891-9414', email:'vantassellot@gmail.com', company:'', category:'Family', address:'17568 Barefoot Ridge Way, Nampa ID 83687', notes:'DOB Sep 11, 2000', img:'' },
+  { id:'kaylin', name:'Kaylin Sigler', role:'Daughter', phone:'208-914-3109', email:'kaylin.sigler@gmail.com', company:'', category:'Family', address:'1412 W A St Apt 304, Moscow ID 83843', notes:'DOB Dec 14, 2002', img:'' },
+  { id:'jaiden', name:'Jaiden', role:'Son', phone:'208-519-0934', email:'jvtborderlands@gmail.com', company:'', category:'Family', address:'17568 Barefoot Ridge Way, Nampa ID 83687', notes:'DOB May 17, 2002', img:'' },
+  { id:'larissa', name:'Larissa Sigler', role:'Daughter', phone:'208-559-1678', email:'larissa.sigler@gmail.com', company:'', category:'Family', address:'12805 W Berghan St, Boise ID 83709', notes:'DOB Jun 26, 2004', img:'' },
+  { id:'sierra', name:'Sierra VanTassell', role:'Daughter', phone:'208-713-8714', email:'SierraKVanTassell@gmail.com', company:'', category:'Family', address:'', notes:'DOB Mar 28, 2005', img:'' },
+  { id:'byron-diehl', name:'Byron Diehl', role:'Insurance Agent', phone:'208-466-2465', email:'', company:'Deal Insurance', category:'Services', address:'', notes:'Home & property insurance.', img:'' },
+  { id:'thorpe-fire', name:'Alicia Minichiello', role:'Fire Sprinklers', phone:'208-936-3337', email:'alicia@thorpe.biz', company:'Thorpe Fire Sprinklers', category:'Contractor', address:'', notes:'Anthony: anthony@thorpe.biz · 208-391-0989', img:'' },
+];
+
+async function loadContacts() {
+  try {
+    const snap = await db.ref(CONTACTS_PATH).get();
+    if (snap.exists()) {
+      const val = snap.val();
+      allContacts = Array.isArray(val) ? val : Object.values(val);
+    } else {
+      allContacts = SEED_CONTACTS.map(c => ({...c}));
+      await saveContactsToDB();
+    }
+  } catch(e) { allContacts = SEED_CONTACTS.map(c => ({...c})); }
+  renderContactCatChips();
+  renderContacts(allContacts);
+}
+
+async function saveContactsToDB() {
+  const obj = {};
+  allContacts.forEach(c => { obj[c.id] = c; });
+  await db.ref(CONTACTS_PATH).set(obj);
+}
+
+function getContactCats() {
+  var cats = ['All'];
+  allContacts.forEach(c => { if (c.category && !cats.includes(c.category)) cats.push(c.category); });
+  return cats;
+}
+
+function renderContactCatChips() {
+  var el = document.getElementById('contact-cat-chips');
+  if (!el) return;
+  el.innerHTML = getContactCats().map(cat => {
+    var active = cat === activeContactCat ? 'background:var(--gold);border-color:var(--gold);color:var(--bg)' : '';
+    return '<button onclick="filterContactCat('' + cat + '')" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border-bright);background:transparent;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s;' + active + '">' + cat + '</button>';
+  }).join('');
+}
+
+function filterContactCat(cat) {
+  activeContactCat = cat;
+  renderContactCatChips();
+  var filtered = cat === 'All' ? allContacts : allContacts.filter(c => c.category === cat);
+  renderContacts(filtered);
+}
+
+function contactsSearch(q) {
+  q = q.toLowerCase();
+  var filtered = allContacts.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.phone||'').toLowerCase().includes(q) ||
+    (c.role||'').toLowerCase().includes(q) ||
+    (c.company||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q) ||
+    (c.notes||'').toLowerCase().includes(q) ||
+    (c.category||'').toLowerCase().includes(q)
+  );
+  renderContacts(filtered);
+}
+
+function renderContacts(list) {
+  var grid = document.getElementById('contacts-grid');
+  if (!grid) return;
+  if (!list || list.length === 0) {
+    grid.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;font-size:0.82rem;grid-column:1/-1">No contacts found</div>';
+    return;
+  }
+  var sorted = [...list].sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  grid.innerHTML = sorted.map(c => {
+    var avatarHtml = c.img
+      ? '<img src="' + c.img + '" alt="' + c.name + '">'
+      : (c.name ? c.name.charAt(0).toUpperCase() : '?');
+    var avatarStyle = c.img ? '' : 'font-size:1.2rem;font-weight:500;color:var(--gold)';
+    return '<div class="contact-card" onclick="openContactModal('' + c.id + '')">' +
+      '<div class="contact-avatar" style="' + avatarStyle + '">' + avatarHtml + '</div>' +
+      '<div class="contact-info">' +
+        (c.category ? '<div class="contact-cat-badge">' + c.category + '</div>' : '') +
+        '<div class="contact-name">' + (c.name||'Unknown') + '</div>' +
+        (c.role ? '<div class="contact-role">' + c.role + '</div>' : '') +
+        '<div class="contact-detail">' +
+          (c.phone ? '📞 ' + c.phone + '<br>' : '') +
+          (c.email ? '✉ ' + c.email + '<br>' : '') +
+          (c.company ? '🏢 ' + c.company : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openContactModal(contactId) {
+  editingContactId = contactId || null;
+  contactImgData = '';
+  var c = contactId ? allContacts.find(x => x.id === contactId) : null;
+  document.getElementById('contact-modal-title').textContent = c ? 'Edit Contact' : 'New Contact';
+  document.getElementById('c-name').value = c ? c.name||'' : '';
+  document.getElementById('c-role').value = c ? c.role||'' : '';
+  document.getElementById('c-phone').value = c ? c.phone||'' : '';
+  document.getElementById('c-email').value = c ? c.email||'' : '';
+  document.getElementById('c-company').value = c ? c.company||'' : '';
+  document.getElementById('c-category').value = c ? c.category||'' : '';
+  document.getElementById('c-address').value = c ? c.address||'' : '';
+  document.getElementById('c-notes').value = c ? c.notes||'' : '';
+  document.getElementById('contact-del-btn').style.display = c ? 'block' : 'none';
+  // Reset photo
+  document.getElementById('contact-drop-label').style.display = 'flex';
+  document.getElementById('contact-drop-preview').style.display = 'none';
+  document.getElementById('contact-preview-img').src = '';
+  if (c && c.img) {
+    contactImgData = c.img;
+    document.getElementById('contact-preview-img').src = c.img;
+    document.getElementById('contact-drop-label').style.display = 'none';
+    document.getElementById('contact-drop-preview').style.display = 'block';
+  }
+  document.getElementById('contact-modal').classList.add('open');
+}
+
+function closeContactModal() { document.getElementById('contact-modal').classList.remove('open'); }
+
+async function saveContact() {
+  var name = document.getElementById('c-name').value.trim();
+  if (!name) { kbToast('Name required'); return; }
+  var id = editingContactId || name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '-' + Date.now();
+  var contact = {
+    id, name,
+    role: document.getElementById('c-role').value.trim(),
+    phone: document.getElementById('c-phone').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
+    company: document.getElementById('c-company').value.trim(),
+    category: document.getElementById('c-category').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    notes: document.getElementById('c-notes').value.trim(),
+    img: contactImgData,
+    updated: Date.now()
+  };
+  if (editingContactId) {
+    var idx = allContacts.findIndex(c => c.id === editingContactId);
+    if (idx > -1) allContacts[idx] = contact; else allContacts.push(contact);
+  } else {
+    allContacts.push(contact);
+  }
+  await saveContactsToDB();
+  closeContactModal();
+  activeContactCat = 'All';
+  renderContactCatChips();
+  renderContacts(allContacts);
+  kbToast('✓ Contact saved');
+}
+
+async function deleteContact() {
+  if (!editingContactId || !confirm('Delete this contact?')) return;
+  allContacts = allContacts.filter(c => c.id !== editingContactId);
+  await saveContactsToDB();
+  closeContactModal();
+  renderContactCatChips();
+  renderContacts(allContacts);
+  kbToast('🗑 Deleted');
+}
+
+function contactHandleFile(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) { contactLoadImg(e.target.result); };
+  reader.readAsDataURL(file);
+}
+function contactHandleDrop(event) {
+  event.preventDefault();
+  var file = event.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  var reader = new FileReader();
+  reader.onload = function(e) { contactLoadImg(e.target.result); };
+  reader.readAsDataURL(file);
+}
+function contactLoadImg(dataUrl) {
+  kbCompressImage(dataUrl, function(compressed) {
+    contactImgData = compressed;
+    document.getElementById('contact-preview-img').src = compressed;
+    document.getElementById('contact-drop-label').style.display = 'none';
+    document.getElementById('contact-drop-preview').style.display = 'block';
+  });
+}
+
+document.getElementById('contact-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeContactModal();
+});
+
+// ── CSV Import ──
+function importContactsCSV(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  kbToast('📥 Reading CSV...');
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var parsed = parseGoogleCSV(e.target.result);
+      if (!parsed.length) { kbToast('No contacts found in CSV'); return; }
+      if (!confirm('Import ' + parsed.length + ' contacts? This will MERGE with existing contacts.')) return;
+      // Merge — existing contacts by ID take priority, new ones added
+      var existingIds = new Set(allContacts.map(c => c.id));
+      var added = 0;
+      parsed.forEach(function(c) {
+        if (!existingIds.has(c.id)) {
+          allContacts.push(c);
+          added++;
+        }
+      });
+      saveContactsToDB().then(function() {
+        renderContactCatChips();
+        renderContacts(allContacts);
+        kbToast('✓ Imported ' + added + ' new contacts (' + parsed.length + ' total in CSV)');
+      });
+    } catch(err) {
+      kbToast('Error parsing CSV: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseGoogleCSV(csvText) {
+  var lines = csvText.split('
+');
+  if (lines.length < 2) return [];
+  
+  // Parse header
+  var headers = parseCSVLine(lines[0]);
+  var contacts = [];
+  var seenIds = {};
+  
+  for (var i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    var row = {};
+    var vals = parseCSVLine(lines[i]);
+    headers.forEach(function(h, idx) { row[h] = (vals[idx] || '').trim(); });
+    
+    var first = row['First Name'] || '';
+    var last = row['Last Name'] || '';
+    var org = row['Organization Name'] || '';
+    var title = row['Organization Title'] || '';
+    
+    var name = (first + ' ' + last).trim() || org;
+    if (!name) continue;
+    
+    // Phone
+    var phone = '';
+    for (var p = 1; p <= 6; p++) {
+      var pv = (row['Phone ' + p + ' - Value'] || '').split(':::')[0].trim();
+      pv = pv.replace(/[^0-9+() .\-]/g, '');
+      if (pv.length > 5) { phone = pv; break; }
+    }
+    
+    // Email
+    var email = '';
+    for (var em = 1; em <= 5; em++) {
+      var ev = (row['E-mail ' + em + ' - Value'] || '').split(':::')[0].trim();
+      if (ev && ev.indexOf('@') > -1) { email = ev; break; }
+    }
+    
+    // Address
+    var addr = (row['Address 1 - Formatted'] || '').split(':::')[0].trim().replace(/
+/g, ', ');
+    if (!addr) {
+      var city = row['Address 1 - City'] || '';
+      var state = row['Address 1 - Region'] || '';
+      if (city || state) addr = (city + ', ' + state).trim().replace(/^,\s*|,\s*$/g, '');
+    }
+    
+    // Photo - prefer /contacts/AB URLs
+    var photoField = row['Photo'] || '';
+    var photo = '';
+    if (photoField) {
+      var photoUrls = photoField.split(':::').map(function(u) { return u.trim(); });
+      photoUrls.forEach(function(u) { if (!photo && u.indexOf('contacts/AB') > -1) photo = u; });
+      if (!photo && photoUrls[0]) photo = photoUrls[0];
+    }
+    
+    // Category
+    var labels = row['Labels'] || '';
+    var category = 'General';
+    if (labels.indexOf('Family') > -1) category = 'Family';
+    else if (title.toLowerCase().indexOf('ceo') > -1 || title.toLowerCase().indexOf('owner') > -1) category = 'Business';
+    else if (org) category = 'Business';
+    
+    // Unique ID
+    var baseId = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').substring(0, 40).replace(/^-+|-+$/g, '');
+    var uid = baseId;
+    var counter = 1;
+    while (seenIds[uid]) { uid = baseId + '-' + counter; counter++; }
+    seenIds[uid] = true;
+    
+    var notes = (row['Notes'] || '').substring(0, 200);
+    
+    contacts.push({
+      id: uid, name: name,
+      role: title.substring(0, 80),
+      phone: phone.substring(0, 30),
+      email: email.substring(0, 80),
+      company: (org !== name ? org : '').substring(0, 80),
+      category: category,
+      address: addr.substring(0, 120),
+      notes: notes,
+      img: photo.substring(0, 300),
+      updated: Date.now()
+    });
+  }
+  return contacts;
+}
+
+function parseCSVLine(line) {
+  var result = [];
+  var current = '';
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
 // Init Firebase then load KB
 async function appInit() {
   await initFirebase();
   await kbInit();
-  kbRenderCatList();
+  await loadAIProjects();
+  await loadContacts();
 }
 
 // Wait for DOM before initializing
@@ -2683,18 +3348,5 @@ if (document.readyState === 'loading') {
 
 
 </script>
-<footer style="
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 14px;
-  border-top: 1px solid rgba(255,255,255,0.07);
-  font-family: 'DM Mono', monospace;
-  font-size: 0.62rem;
-  color: rgba(232,228,220,0.25);
-  letter-spacing: 0.12em;
-  background: rgba(10,10,12,0.85);
-  position: relative;
-  z-index: 1;
-">Philinity Command Center ©️ Rev 2.6</footer>
 </body>
 </html>
