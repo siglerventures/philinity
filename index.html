@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 
 <style>
@@ -980,6 +981,38 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 </style>
 </head>
 <body>
+<div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
+  <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
+  <input type="password" id="pw-input" placeholder="Enter password" 
+    style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
+    onkeydown="if(event.key==='Enter') checkPW()">
+  <button onclick="checkPW()" style="background:#d4860a;color:#0f0c08;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
+  <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Incorrect password</div>
+</div>
+<script>
+(function() {
+  var PW = 'Synergy1002!';
+  var ok = sessionStorage.getItem('philinity_auth') === 'ok';
+  if (!ok) {
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.getElementById('auth-gate').style.display = 'none';
+  }
+})();
+function checkPW() {
+  var v = document.getElementById('pw-input').value;
+  if (v === 'Synergy1002!') {
+    sessionStorage.setItem('philinity_auth', 'ok');
+    document.getElementById('auth-gate').style.display = 'none';
+    document.body.style.overflow = '';
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+  }
+}
+</script>
 
 <div class="nav-overlay" id="nav-overlay" onclick="closeMobileNav()"></div>
 <div class="shell">
@@ -2148,6 +2181,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
 let ANTHROPIC_KEY = '';
 
@@ -2749,7 +2783,7 @@ function kbOpenCatModal(catId) {
   }
   document.getElementById('kb-cat-modal').classList.add('open');
 }
-function kbCloseCatModal() { document.getElementById('kb-cat-modal').classList.remove('open'); }
+async function kbCloseCatModal() { document.getElementById('kb-cat-modal').classList.remove('open'); }
 
 async function kbSaveCat() {
   const name = document.getElementById('kb-cat-name').value.trim();
@@ -2809,7 +2843,7 @@ function kbOpenEntryModal(entryId) {
   kbRenderDDList();
   document.getElementById('kb-entry-modal').classList.add('open');
 }
-function kbCloseEntryModal() { document.getElementById('kb-entry-modal').classList.remove('open'); }
+async function kbCloseEntryModal() { document.getElementById('kb-entry-modal').classList.remove('open'); }
 
 async function kbSaveEntry() {
   const title = document.getElementById('kb-entry-title-input').value.trim();
@@ -3091,7 +3125,7 @@ var SEED_CONTACTS = [
 
 var contactsLoaded = false;
 
-async function loadContacts() {
+async async function loadContacts() {
   if (contactsLoaded) { renderContactCatChips(); renderContacts(allContacts); return; }
   try {
     var snap = await db.ref(CONTACTS_PATH).get();
@@ -3111,7 +3145,7 @@ async function loadContacts() {
   renderContacts(allContacts);
 }
 
-async function saveContactsToDB(contactsToWrite) {
+async async function saveContactsToDB(contactsToWrite) {
   var list = contactsToWrite || allContacts;
   var updates = {};
   list.forEach(function(c) { updates[CONTACTS_PATH + '/' + c.id] = c; });
@@ -3215,7 +3249,7 @@ function openContactModal(contactId) {
   document.getElementById('contact-modal').classList.add('open');
 }
 
-function closeContactModal() { document.getElementById('contact-modal').classList.remove('open'); }
+async function closeContactModal() { document.getElementById('contact-modal').classList.remove('open'); }
 
 async function saveContact() {
   var name = document.getElementById('c-name').value.trim();
@@ -3288,7 +3322,7 @@ document.getElementById('contact-modal').addEventListener('click', function(e) {
 });
 
 // ── CSV Import ──
-function importContactsCSV(event) {
+async function importContactsCSV(event) {
   var file = event.target.files[0];
   if (!file) return;
   kbToast('📥 Reading CSV...');
@@ -3351,6 +3385,9 @@ function parseGoogleCSV(csvText) {
     headers.forEach(function(h, idx) { row[h] = (vals[idx] || '').trim(); });
     
     var first = row['First Name'] || '';
+    // Strip photo URLs to prevent massive bandwidth usage
+    delete row['Photo'];
+    delete row['photo'];
     var last = row['Last Name'] || '';
     var org = row['Organization Name'] || '';
     var title = row['Organization Title'] || '';
