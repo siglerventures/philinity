@@ -992,7 +992,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   </div>
 
   <div style="padding: 8px 12px 4px; text-align:center; font-family:'DM Mono',monospace; font-size:0.55rem; color:rgba(232,228,220,0.2); letter-spacing:0.1em;">
-    Philinity Command Center ©️ Rev 3.0
+    Philinity Command Center ©️ Rev 3.1
   </div>
 
   <div style="padding: 0 12px 12px; margin-top: 0;">
@@ -1102,7 +1102,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
         <div style="background:rgba(196,106,90,0.1);border:1px solid rgba(196,106,90,0.25);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--red)">⚠ Kildew Payment · Apr 1</div>
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🌊 Pool · Circuit 30 & 32 Panel C</div>
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)" id="clock-pill">—</div>
-        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.18);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.0</div>
+        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.18);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.1</div>
       </div>
     </div>
 
@@ -2041,10 +2041,15 @@ function navigateTo(page) {
       if (caret) caret.classList.add('open');
     }
   }
-  // Re-render KB when knowledge page opened (guard in case not loaded yet)
+  // Lazy load page data on first visit
   if (page === 'knowledge') {
     setTimeout(function() {
       if (typeof kbRenderCatList === 'function') kbRenderCatList();
+    }, 100);
+  }
+  if (page === 'contacts') {
+    setTimeout(function() {
+      if (typeof loadContacts === 'function') loadContacts();
     }, 100);
   }
 }
@@ -2565,9 +2570,12 @@ async function kbInit() {
 }
 
 async function kbSave() {
-  const obj = {};
-  kbCategories.forEach((c, i) => { c.order = i; obj[c.id] = c; });
-  await db.ref(KB_PATH + '/categories').set(obj);
+  var updates = {};
+  kbCategories.forEach(function(c, i) { 
+    c.order = i; 
+    updates[KB_PATH + '/categories/' + c.id] = c; 
+  });
+  await db.ref('/').update(updates);
 }
 
 // ── Category List (left panel) ──
@@ -2902,9 +2910,12 @@ async function loadAIProjects() {
 }
 
 async function saveAIProjectsToDB() {
-  const obj = {};
-  aiProjects.forEach((p, i) => { p.order = i; obj[p.id] = p; });
-  await db.ref(AI_PROJ_PATH).set(obj);
+  var updates = {};
+  aiProjects.forEach(function(p, i) { 
+    p.order = i; 
+    updates[AI_PROJ_PATH + '/' + p.id] = p;
+  });
+  await db.ref('/').update(updates);
 }
 
 function renderAIProjectBubbles() {
@@ -3007,25 +3018,33 @@ var SEED_CONTACTS = [
   { id:'thorpe-fire', name:'Alicia Minichiello', role:'Fire Sprinklers', phone:'208-936-3337', email:'alicia@thorpe.biz', company:'Thorpe Fire Sprinklers', category:'Contractor', address:'', notes:'Anthony: anthony@thorpe.biz · 208-391-0989', img:'' },
 ];
 
+var contactsLoaded = false;
+
 async function loadContacts() {
+  if (contactsLoaded) { renderContactCatChips(); renderContacts(allContacts); return; }
   try {
-    const snap = await db.ref(CONTACTS_PATH).get();
+    var snap = await db.ref(CONTACTS_PATH).get();
     if (snap.exists()) {
-      const val = snap.val();
+      var val = snap.val();
       allContacts = Array.isArray(val) ? val : Object.values(val);
     } else {
-      allContacts = SEED_CONTACTS.map(c => ({...c}));
+      allContacts = SEED_CONTACTS.map(function(c) { return Object.assign({}, c); });
       await saveContactsToDB();
     }
-  } catch(e) { allContacts = SEED_CONTACTS.map(c => ({...c})); }
+    contactsLoaded = true;
+  } catch(e) { 
+    console.warn('Contacts load error:', e);
+    allContacts = SEED_CONTACTS.map(function(c) { return Object.assign({}, c); }); 
+  }
   renderContactCatChips();
   renderContacts(allContacts);
 }
 
-async function saveContactsToDB() {
-  const obj = {};
-  allContacts.forEach(c => { obj[c.id] = c; });
-  await db.ref(CONTACTS_PATH).set(obj);
+async function saveContactsToDB(contactsToWrite) {
+  var list = contactsToWrite || allContacts;
+  var updates = {};
+  list.forEach(function(c) { updates[CONTACTS_PATH + '/' + c.id] = c; });
+  await db.ref('/').update(updates);
 }
 
 function getContactCats() {
@@ -3144,12 +3163,13 @@ async function saveContact() {
     updated: Date.now()
   };
   if (editingContactId) {
-    var idx = allContacts.findIndex(c => c.id === editingContactId);
+    var idx = allContacts.findIndex(function(c) { return c.id === editingContactId; });
     if (idx > -1) allContacts[idx] = contact; else allContacts.push(contact);
   } else {
     allContacts.push(contact);
   }
-  await saveContactsToDB();
+  // Write only this single contact
+  await db.ref(CONTACTS_PATH + '/' + contact.id).set(contact);
   closeContactModal();
   activeContactCat = 'All';
   renderContactCatChips();
@@ -3159,8 +3179,9 @@ async function saveContact() {
 
 async function deleteContact() {
   if (!editingContactId || !confirm('Delete this contact?')) return;
-  allContacts = allContacts.filter(c => c.id !== editingContactId);
-  await saveContactsToDB();
+  var delId = editingContactId;
+  allContacts = allContacts.filter(function(c) { return c.id !== delId; });
+  await db.ref(CONTACTS_PATH + '/' + delId).remove();
   closeContactModal();
   renderContactCatChips();
   renderContacts(allContacts);
@@ -3208,18 +3229,33 @@ function importContactsCSV(event) {
       if (!confirm('Import ' + parsed.length + ' contacts? This will MERGE with existing contacts.')) return;
       // Merge — existing contacts by ID take priority, new ones added
       var existingIds = new Set(allContacts.map(c => c.id));
-      var added = 0;
+      var newContacts = [];
       parsed.forEach(function(c) {
         if (!existingIds.has(c.id)) {
           allContacts.push(c);
-          added++;
+          newContacts.push(c);
         }
       });
-      saveContactsToDB().then(function() {
-        renderContactCatChips();
-        renderContacts(allContacts);
-        kbToast('✓ Imported ' + added + ' new contacts (' + parsed.length + ' total in CSV)');
-      });
+      // Write in batches of 100 to avoid timeouts
+      var batchSize = 100;
+      var total = newContacts.length;
+      var done = 0;
+      kbToast('📥 Saving ' + total + ' contacts...');
+      async function writeBatch(i) {
+        if (i >= total) {
+          contactsLoaded = true;
+          renderContactCatChips();
+          renderContacts(allContacts);
+          kbToast('✓ Imported ' + total + ' new contacts!');
+          return;
+        }
+        var batch = newContacts.slice(i, i + batchSize);
+        await saveContactsToDB(batch);
+        done += batch.length;
+        kbToast('📥 Saving... ' + done + ' / ' + total);
+        setTimeout(function() { writeBatch(i + batchSize); }, 200);
+      }
+      writeBatch(0);
     } catch(err) {
       kbToast('Error parsing CSV: ' + err.message);
       console.error(err);
@@ -3338,9 +3374,9 @@ function parseCSVLine(line) {
 // Init Firebase then load KB
 async function appInit() {
   await initFirebase();
-  await kbInit();
-  await loadAIProjects();
-  await loadContacts();
+  await kbInit();       // loads KB categories
+  await loadAIProjects(); // loads AI project bubbles
+  // Contacts load lazily when Contacts page is first opened
 }
 
 // Wait for DOM before initializing
