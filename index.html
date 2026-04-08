@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
+
 <style>
 :root {
   --bg: #0a0a0c;
@@ -918,21 +919,76 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 .toast.show { opacity: 1; }
 
 /* Mobile */
+/* ── Mobile hamburger nav ── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  margin-right: 4px;
+}
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.nav-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 199;
+  backdrop-filter: blur(2px);
+}
+.nav-overlay.open { display: block; }
+
 @media (max-width: 768px) {
   .shell { grid-template-columns: 1fr; }
-  nav { display: none; }
+  
+  nav {
+    display: flex !important;
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    width: 240px;
+    z-index: 200;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+    overflow-y: auto;
+    padding-top: 60px;
+  }
+  nav.open { left: 0; }
+
+  .hamburger { display: flex; }
+
   main { padding: 16px; }
   .cards.wide, .cards.tri { grid-template-columns: 1fr; }
   .chat-wrapper { height: calc(100vh - 120px); }
+  
+  /* Hero banner stack on mobile */
+  #page-ai > div:first-child > div:first-child { flex-direction: column; }
 }
 </style>
 </head>
 <body>
 
+<div class="nav-overlay" id="nav-overlay" onclick="closeMobileNav()"></div>
 <div class="shell">
 
 <!-- HEADER -->
 <header>
+  <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <div class="logo" onclick="window.location.href='https://siglerventures.github.io/philinity/'" style="cursor:pointer">Philinity<span> ◆ Command Center</span></div>
   <div class="header-meta">
     <div class="header-time" id="clock">—</div>
@@ -992,7 +1048,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   </div>
 
   <div style="padding: 8px 12px 4px; text-align:center; font-family:'DM Mono',monospace; font-size:0.55rem; color:rgba(232,228,220,0.2); letter-spacing:0.1em;">
-    Philinity Command Center ©️ Rev 3.1
+    Philinity Command Center ©️ Rev 3.3
   </div>
 
   <div style="padding: 0 12px 12px; margin-top: 0;">
@@ -1102,7 +1158,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
         <div style="background:rgba(196,106,90,0.1);border:1px solid rgba(196,106,90,0.25);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--red)">⚠ Kildew Payment · Apr 1</div>
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🌊 Pool · Circuit 30 & 32 Panel C</div>
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)" id="clock-pill">—</div>
-        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.18);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.1</div>
+        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.18);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.3</div>
       </div>
     </div>
 
@@ -2059,9 +2115,24 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.nav-item[data-page]').forEach(function(item) {
     item.addEventListener('click', function() {
       navigateTo(item.dataset.page);
+      closeMobileNav(); // close nav on mobile after selecting
     });
   });
 });
+
+function toggleMobileNav() {
+  var nav = document.querySelector('nav');
+  var overlay = document.getElementById('nav-overlay');
+  nav.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+
+function closeMobileNav() {
+  var nav = document.querySelector('nav');
+  var overlay = document.getElementById('nav-overlay');
+  nav.classList.remove('open');
+  overlay.classList.remove('open');
+}
 
 
 
