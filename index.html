@@ -1086,6 +1086,7 @@ function checkPW() {
     <div class="nav-item" data-page="house"><span class="nav-icon">🏠</span> Philinity</div>
     <div class="nav-item" data-page="systems"><span class="nav-icon">⚡</span> Smart Home</div>
     <div class="nav-item" data-page="pool"><span class="nav-icon">🏊</span> Pool & Spa</div>
+    <div class="nav-item" data-page="housedata"><span class="nav-icon">📋</span> House Data</div>
   </div>
 
   <!-- 💼 Sigler Ventures -->
@@ -1213,7 +1214,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 3.7</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 3.8</span>
       </div>
     </div>
 
@@ -1997,6 +1998,51 @@ function checkPW() {
     </div>
   </div>
 
+  <!-- ══════════ HOUSE DATA ══════════ -->
+  <div class="page" id="page-housedata">
+    <div class="page-title">
+      <h1>House Data</h1>
+      <span class="sub">Philinity House of Dreams · 82 Sheets · Firebase Synced</span>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-shrink:0;flex-wrap:wrap;align-items:center">
+      <!-- Search -->
+      <div style="position:relative;flex:1;min-width:200px">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem">🔍</span>
+        <input id="hd-search" placeholder="Search all sheets…" oninput="hdSearch(this.value)"
+          style="width:100%;background:var(--surface);border:1px solid var(--border-bright);border-radius:10px;padding:10px 16px 10px 40px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.85rem;outline:none">
+      </div>
+      <div id="hd-status" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-muted)">Loading…</div>
+    </div>
+
+    <!-- Layout: sidebar list + content panel -->
+    <div style="display:grid;grid-template-columns:220px 1fr;gap:16px;flex:1;min-height:0;overflow:hidden">
+
+      <!-- LEFT: Sheet list -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold)">Sheets</div>
+        <div id="hd-sheet-list" style="flex:1;overflow-y:auto;padding:6px"></div>
+      </div>
+
+      <!-- RIGHT: Data panel -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0">
+          <span id="hd-panel-title" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)">Select a sheet →</span>
+          <span id="hd-row-count" style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-muted)"></span>
+        </div>
+        <!-- Row search -->
+        <div id="hd-row-search-wrap" style="display:none;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <input id="hd-row-search" placeholder="Filter rows…" oninput="hdFilterRows(this.value)"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.8rem;outline:none">
+        </div>
+        <div id="hd-table-wrap" style="flex:1;overflow:auto;padding:0">
+          <div style="text-align:center;color:var(--text-muted);padding:60px;font-size:0.82rem">Select a sheet on the left to view its data</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ══════════ NAV EDITOR ══════════ -->
   <div class="page" id="page-knowledge">
     <div class="page-title">
@@ -2120,6 +2166,11 @@ function navigateTo(page) {
   if (page === 'contacts') {
     setTimeout(function() {
       if (typeof loadContacts === 'function') loadContacts();
+    }, 100);
+  }
+  if (page === 'housedata') {
+    setTimeout(function() {
+      if (typeof hdInit === 'function') hdInit();
     }, 100);
   }
 }
@@ -2604,6 +2655,152 @@ document.getElementById('chat-input').addEventListener('keydown', function(e) {
 });
 
 
+// ══════════ HOUSE DATA ══════════
+var HD_PATH = 'philinity/house_data';
+var hdAllSheets = {};
+var hdCurrentSheet = null;
+var hdCurrentRows = [];
+var hdLoaded = false;
+
+async function hdInit() {
+  if (hdLoaded) return;
+  try {
+    document.getElementById('hd-status').textContent = 'Loading…';
+    var snap = await db.ref(HD_PATH).get();
+    if (!snap.exists()) {
+      document.getElementById('hd-status').textContent = 'No data — run the Apps Script export first';
+      return;
+    }
+    hdAllSheets = snap.val();
+    hdLoaded = true;
+    hdRenderSheetList(Object.keys(hdAllSheets).sort());
+    document.getElementById('hd-status').textContent = Object.keys(hdAllSheets).length + ' sheets loaded';
+  } catch(e) {
+    document.getElementById('hd-status').textContent = 'Error: ' + e.message;
+  }
+}
+
+function hdRenderSheetList(keys) {
+  var list = document.getElementById('hd-sheet-list');
+  if (!list) return;
+  list.innerHTML = keys.map(function(key) {
+    var sheet = hdAllSheets[key];
+    var name = sheet.sheet_name || key;
+    var count = sheet.row_count || 0;
+    var active = hdCurrentSheet === key ? 'background:var(--gold-dim);border-color:rgba(201,169,110,0.3);color:var(--gold)' : 'color:var(--text-dim)';
+    return '<div onclick="hdSelectSheet(\'' + key + '\')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px;border:1px solid transparent;margin-bottom:3px;cursor:pointer;font-size:0.78rem;transition:all 0.15s;' + active + '">' +
+      '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + name + '</span>' +
+      '<span style="font-family:DM Mono,monospace;font-size:0.6rem;color:var(--text-muted);flex-shrink:0;margin-left:6px">' + count + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function hdSelectSheet(key) {
+  hdCurrentSheet = key;
+  var sheet = hdAllSheets[key];
+  if (!sheet) return;
+  hdCurrentRows = sheet.rows || [];
+  document.getElementById('hd-panel-title').textContent = sheet.sheet_name || key;
+  document.getElementById('hd-row-count').textContent = hdCurrentRows.length + ' rows';
+  document.getElementById('hd-row-search-wrap').style.display = 'block';
+  document.getElementById('hd-row-search').value = '';
+  hdRenderTable(hdCurrentRows);
+  hdRenderSheetList(Object.keys(hdAllSheets).sort());
+}
+
+function hdRenderTable(rows) {
+  var wrap = document.getElementById('hd-table-wrap');
+  if (!rows || rows.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;font-size:0.82rem">No rows in this sheet</div>';
+    return;
+  }
+
+  // Get all unique keys across rows for headers
+  var allKeys = [];
+  rows.forEach(function(row) {
+    Object.keys(row).forEach(function(k) {
+      if (!allKeys.includes(k)) allKeys.push(k);
+    });
+  });
+
+  // Prioritize common columns first
+  var priority = ['plumbing_fixtures','item','description','qty','price','extended','notes_details','urls','consolidated_supply_notes'];
+  allKeys.sort(function(a,b) {
+    var ai = priority.indexOf(a), bi = priority.indexOf(b);
+    if (ai > -1 && bi > -1) return ai - bi;
+    if (ai > -1) return -1;
+    if (bi > -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:0.76rem">';
+
+  // Header
+  html += '<thead><tr style="position:sticky;top:0;background:var(--surface2);z-index:10">';
+  allKeys.forEach(function(k) {
+    var label = k.replace(/_/g,' ').replace(/\b\w/g, function(l){return l.toUpperCase();});
+    html += '<th style="padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap">' + label + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  // Rows
+  rows.forEach(function(row, i) {
+    var bg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+    html += '<tr style="background:' + bg + '">';
+    allKeys.forEach(function(k) {
+      var val = row[k] || '';
+      // Render URLs as links
+      var cell = val;
+      if (val && (val.startsWith('http://') || val.startsWith('https://'))) {
+        // Truncate long URLs for display
+        var display = val.length > 30 ? val.substring(0,30) + '…' : val;
+        cell = '<a href="' + val + '" target="_blank" style="color:var(--accent);text-decoration:none" title="' + val + '">' + display + '</a>';
+      }
+      // Highlight prices in green
+      if (k === 'extended' || k === 'price') {
+        cell = '<span style="color:var(--green)">' + val + '</span>';
+      }
+      html += '<td style="padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text-dim);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + val.replace(/"/g,"'") + '">' + cell + '</td>';
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function hdFilterRows(q) {
+  if (!q) { hdRenderTable(hdCurrentRows); return; }
+  q = q.toLowerCase();
+  var filtered = hdCurrentRows.filter(function(row) {
+    return Object.values(row).some(function(v) {
+      return String(v).toLowerCase().includes(q);
+    });
+  });
+  document.getElementById('hd-row-count').textContent = filtered.length + ' / ' + hdCurrentRows.length + ' rows';
+  hdRenderTable(filtered);
+}
+
+function hdSearch(q) {
+  if (!q || !hdLoaded) {
+    hdRenderSheetList(Object.keys(hdAllSheets).sort());
+    return;
+  }
+  q = q.toLowerCase();
+  var matched = Object.keys(hdAllSheets).filter(function(key) {
+    var sheet = hdAllSheets[key];
+    if ((sheet.sheet_name || key).toLowerCase().includes(q)) return true;
+    // Search row data too
+    return (sheet.rows || []).some(function(row) {
+      return Object.values(row).some(function(v) {
+        return String(v).toLowerCase().includes(q);
+      });
+    });
+  });
+  hdRenderSheetList(matched.sort());
+  document.getElementById('hd-status').textContent = matched.length + ' sheets match';
+}
+
 // ══════════ NAV EDITOR ══════════
 const NAV_EDITOR_PATH = 'philinity/nav_structure';
 
@@ -2619,7 +2816,8 @@ var DEFAULT_NAV = [
     id: 'home-group', label: '🏠 House Info', items: [
       { emoji: '🏠', label: 'Philinity', type: 'internal', page: 'house' },
       { emoji: '⚡', label: 'Smart Home', type: 'internal', page: 'systems' },
-      { emoji: '🏊', label: 'Pool & Spa', type: 'internal', page: 'pool' }
+      { emoji: '🏊', label: 'Pool & Spa', type: 'internal', page: 'pool' },
+      { emoji: '📋', label: 'House Data', type: 'internal', page: 'housedata' }
     ]
   },
   {
@@ -3453,7 +3651,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 3.7
+// Philinity Command Center © Rev 3.8
 // 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
