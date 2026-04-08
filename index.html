@@ -200,11 +200,53 @@ main {
 /* Page title */
 .page-title {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 16px;
 }
+.page-title-left {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.mini-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  transition: border-color 0.2s;
+  min-width: 220px;
+  max-width: 340px;
+}
+.mini-search:focus-within { border-color: var(--gold); }
+.mini-search input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+}
+.mini-search input::placeholder { color: var(--text-muted); }
+.mini-search button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+.mini-search button:hover { color: var(--gold); }
 .page-title h1 {
   font-family: 'Cormorant Garamond', serif;
   font-size: 2.2rem;
@@ -1171,7 +1213,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 3.6</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 3.7</span>
       </div>
     </div>
 
@@ -3349,11 +3391,57 @@ function parseCSVLine(line) {
   return result;
 }
 
+// ══════════ MINI PAGE SEARCH ══════════
+function initMiniSearch() {
+  document.querySelectorAll('.page-title').forEach(function(titleDiv) {
+    var page = titleDiv.closest('.page');
+    if (!page || page.id === 'page-ai' || page.id === 'page-contacts') return;
+
+    // Wrap existing children in left group
+    var left = document.createElement('div');
+    left.className = 'page-title-left';
+    while (titleDiv.firstChild) left.appendChild(titleDiv.firstChild);
+    titleDiv.appendChild(left);
+
+    // Build mini search
+    var searchDiv = document.createElement('div');
+    searchDiv.className = 'mini-search';
+    var input = document.createElement('input');
+    input.type = 'text';
+    var pageTitle = left.querySelector('h1') ? left.querySelector('h1').textContent.trim() : 'this page';
+    input.placeholder = 'Ask about ' + pageTitle.toLowerCase() + '…';
+    var btn = document.createElement('button');
+    btn.innerHTML = '➤';
+    btn.title = 'Ask AI';
+
+    function doSearch() {
+      var q = input.value.trim();
+      if (!q) return;
+      navigateTo('ai');
+      setTimeout(function() {
+        var chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+          chatInput.value = q;
+          sendMessage();
+          input.value = '';
+        }
+      }, 150);
+    }
+    btn.onclick = doSearch;
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
+
+    searchDiv.appendChild(input);
+    searchDiv.appendChild(btn);
+    titleDiv.appendChild(searchDiv);
+  });
+}
+
 // Init Firebase then load KB
 async function appInit() {
   await initFirebase();
   await navEditorInit(); // loads nav structure
   await loadAIProjects(); // loads AI project bubbles
+  initMiniSearch();       // adds mini search to all page titles
   // Contacts load lazily when Contacts page is first opened
 }
 
@@ -3365,7 +3453,8 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 3.6
+// Philinity Command Center © Rev 3.7
+// 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
 // New:   Nav Editor — drag/drop groups & items, internal + external links
