@@ -2014,6 +2014,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <!-- Collapsible Nav — must be plain script, not module, for onclick to work -->
 <script>
 
+
 function toggleNavGroup(group) {
   const el = document.getElementById('group-' + group);
   const caret = document.getElementById('caret-' + group);
@@ -2993,7 +2994,7 @@ var activeContactCat = 'All';
 
 var SEED_CONTACTS = [
   { id:'peppy-hvac', name:'Peppy Heater & Air', role:'HVAC Contractor', phone:'208-906-6928', email:'', company:'Peppy Heating & Cooling', category:'HVAC', address:'', notes:'Mitsubishi mini-splits, ERVs. Formerly Shanco Heating.', img:'' },
-  { id:'jay-pool', name:"Jay's Pool & Spa", role:'Pool Contractor', phone:'208-713-1574', email:'', company:"Jay's Pool & Spa", category:'Pool', address:'', notes:'Installed Latham Olympia pool. Contract Sep 12, 2021.', img:'' },
+  { id:'jay-pool', name:"Jay's Pool & Spa", role:'Pool Contractor', phone:'208-713-1574', email:'', company:"Jay's Pool & Spa", category:'Pool', address:'', notes:'Installed Latham Olympia pool. Contract Sep 12 2021.', img:'' },
   { id:'boise-pool-pros', name:'Boise Pool Pros', role:'Pool Repair', phone:'', email:'', company:'Boise Pool Pros', category:'Pool', address:'', notes:'Fixed HLS error Feb 2025. Annual filter cleaning scheduled.', img:'' },
   { id:'paint-kings', name:'Michael Deegan', role:'Paint Kings', phone:'208-451-3721', email:'paintkingsidaho@gmail.com', company:'Paint Kings', category:'Contractor', address:'', notes:'Did interior & exterior paint.', img:'' },
   { id:'brenton', name:'Brenton VanTassell', role:'Son', phone:'801-580-7579', email:'btvantassell@gmail.com', company:'', category:'Family', address:'291 E Pennsylvania St, Boise ID 83706', notes:'DOB Aug 23, 1995', img:'' },
@@ -3036,10 +3037,15 @@ function getContactCats() {
 function renderContactCatChips() {
   var el = document.getElementById('contact-cat-chips');
   if (!el) return;
-  el.innerHTML = getContactCats().map(cat => {
-    var active = cat === activeContactCat ? 'background:var(--gold);border-color:var(--gold);color:var(--bg)' : '';
-    return '<button onclick="filterContactCat('' + cat + '')" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border-bright);background:transparent;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s;' + active + '">' + cat + '</button>';
-  }).join('');
+  el.innerHTML = '';
+  getContactCats().forEach(function(cat) {
+    var btn = document.createElement('button');
+    btn.textContent = cat;
+    var isActive = cat === activeContactCat;
+    btn.style.cssText = 'padding:4px 12px;border-radius:20px;border:1px solid ' + (isActive ? 'var(--gold)' : 'var(--border-bright)') + ';background:' + (isActive ? 'var(--gold)' : 'transparent') + ';color:' + (isActive ? 'var(--bg)' : 'var(--text-dim)') + ';font-size:0.72rem;cursor:pointer;font-family:Outfit,sans-serif;transition:all 0.15s';
+    btn.onclick = function() { filterContactCat(cat); };
+    el.appendChild(btn);
+  });
 }
 
 function filterContactCat(cat) {
@@ -3076,7 +3082,7 @@ function renderContacts(list) {
       ? '<img src="' + c.img + '" alt="' + c.name + '">'
       : (c.name ? c.name.charAt(0).toUpperCase() : '?');
     var avatarStyle = c.img ? '' : 'font-size:1.2rem;font-weight:500;color:var(--gold)';
-    return '<div class="contact-card" onclick="openContactModal('' + c.id + '')">' +
+    var card = '<div class="contact-card" onclick="openContactModal(\'' + c.id + '\')">'; return card +
       '<div class="contact-avatar" style="' + avatarStyle + '">' + avatarHtml + '</div>' +
       '<div class="contact-info">' +
         (c.category ? '<div class="contact-cat-badge">' + c.category + '</div>' : '') +
@@ -3223,8 +3229,7 @@ function importContactsCSV(event) {
 }
 
 function parseGoogleCSV(csvText) {
-  var lines = csvText.split('
-');
+  var lines = csvText.split('\n');
   if (lines.length < 2) return [];
   
   // Parse header
@@ -3262,8 +3267,7 @@ function parseGoogleCSV(csvText) {
     }
     
     // Address
-    var addr = (row['Address 1 - Formatted'] || '').split(':::')[0].trim().replace(/
-/g, ', ');
+    var addr = (row['Address 1 - Formatted'] || '').split(':::')[0].trim().replace(/\n/g, ', ');
     if (!addr) {
       var city = row['Address 1 - City'] || '';
       var state = row['Address 1 - Region'] || '';
@@ -3345,6 +3349,7 @@ if (document.readyState === 'loading') {
 } else {
   appInit();
 }
+
 
 
 </script>
