@@ -36,8 +36,8 @@ body {
   color: var(--text);
   font-family: 'Outfit', sans-serif;
   font-weight: 300;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* Ambient background */
@@ -69,7 +69,8 @@ body::after {
   display: grid;
   grid-template-columns: 220px 1fr;
   grid-template-rows: auto 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   position: relative;
   z-index: 1;
 }
@@ -127,9 +128,7 @@ nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  position: sticky;
-  top: 61px;
-  height: calc(100vh - 61px);
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -188,7 +187,7 @@ main {
   flex-direction: column;
   gap: 24px;
   overflow-y: auto;
-  max-height: calc(100vh - 61px);
+  height: 100%;
 }
 
 /* Section pages */
@@ -846,7 +845,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 @media (max-width: 768px) {
   .shell { grid-template-columns: 1fr; }
   nav { display: none; }
-  main { padding: 16px; max-height: none; }
+  main { padding: 16px; }
   .cards.wide, .cards.tri { grid-template-columns: 1fr; }
   .chat-wrapper { height: calc(100vh - 120px); }
 }
@@ -916,6 +915,26 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/taskboard/','_blank')">
       <span class="nav-icon">📋</span> Task Board ↗
     </div>
+  </div>
+
+  <div style="padding: 16px 12px 8px; margin-top: auto;">
+    <button onclick="navigateTo('knowledge')" style="
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(201,169,110,0.35);
+      background: rgba(201,169,110,0.08);
+      color: var(--gold);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    " onmouseover="this.style.background='rgba(201,169,110,0.18)'" onmouseout="this.style.background='rgba(201,169,110,0.08)'">
+      ✏️ Edit Categories
+    </button>
   </div>
 </nav>
 
@@ -1681,20 +1700,32 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   <!-- ══════════ KNOWLEDGE BASE ══════════ -->
   <div class="page" id="page-knowledge">
     <div class="page-title">
-      <h1 id="kb-page-title">Knowledge Base</h1>
-      <span class="sub" id="kb-page-sub">Philinity · Living reference · Firebase synced</span>
+      <h1>Edit Categories</h1>
+      <span class="sub">Drag to reorder · Click to expand · Firebase synced</span>
     </div>
 
-    <!-- Category view -->
-    <div id="kb-cat-view">
-      <div class="kb-grid" id="kb-cat-grid"></div>
-    </div>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:16px;flex:1;min-height:0;overflow:hidden">
 
-    <!-- Entry view (inside a category) -->
-    <div id="kb-entry-view" style="display:none">
-      <div class="kb-back-btn" onclick="kbShowCats()">← Back to categories</div>
-      <div id="kb-entry-list"></div>
-      <button class="kb-add-btn" style="min-height:50px;margin-top:8px" onclick="kbOpenEntryModal()">+ Add Entry</button>
+      <!-- LEFT: Category List -->
+      <div style="display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold)">Categories</span>
+          <button onclick="kbOpenCatModal()" style="border:none;background:var(--gold-dim);color:var(--gold);border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer">+ New</button>
+        </div>
+        <div id="kb-cat-list" style="flex:1;overflow-y:auto;padding:8px"></div>
+      </div>
+
+      <!-- RIGHT: Entries Panel -->
+      <div style="display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span id="kb-entry-panel-title" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)">Select a category →</span>
+          <button id="kb-add-entry-btn" onclick="kbOpenEntryModal()" style="display:none;border:none;background:var(--gold-dim);color:var(--gold);border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer">+ Add Entry</button>
+        </div>
+        <div id="kb-entry-list" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;color:var(--text-muted);padding:40px;font-size:0.82rem">Select a category on the left to view and edit its entries</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1777,11 +1808,55 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 </main>
 </div>
 
-<!-- Firebase SDK -->
-<!-- firebase-app-check-bypass: The apiKey below is the Firebase client config key, intentionally public and secured by Firebase Security Rules, not secret scanning. -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+<!-- Collapsible Nav — must be plain script, not module, for onclick to work -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+
+function toggleNavGroup(group) {
+  const el = document.getElementById('group-' + group);
+  const caret = document.getElementById('caret-' + group);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  caret.classList.toggle('open', !isOpen);
+}
+
+function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const item = document.querySelector('.nav-item[data-page="' + page + '"]');
+  if (item) item.classList.add('active');
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  // Auto-expand parent group
+  if (item) {
+    const group = item.closest('.nav-group');
+    if (group) {
+      group.style.display = 'block';
+      const id = group.id.replace('group-', '');
+      const caret = document.getElementById('caret-' + id);
+      if (caret) caret.classList.add('open');
+    }
+  }
+  // Re-render KB categories whenever KB page is opened
+  if (page === 'knowledge') {
+    setTimeout(function() {
+      kbRenderCatList();
+    }, 50);
+  }
+}
+
+// Wire up all nav items on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(item) {
+    item.addEventListener('click', function() {
+      navigateTo(item.dataset.page);
+    });
+  });
+});
+
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
@@ -1793,13 +1868,14 @@ const firebaseConfig = {
   appId: "1:443020781676:web:614ec91c9ba33076eb9049"
 };
 
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 let ANTHROPIC_KEY = '';
 
 async function initFirebase() {
   try {
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const snap = await get(ref(db, 'config/anthropic_key'));
+    const snap = await db.ref('config/anthropic_key').get();
     if (snap.exists()) {
       ANTHROPIC_KEY = snap.val();
       console.log('✓ API key loaded');
@@ -1829,26 +1905,7 @@ function updateGreeting() {
 }
 updateGreeting();
 
-// ── Navigation ──
-document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    item.classList.add('active');
-    const pageId = 'page-' + item.dataset.page;
-    const page = document.getElementById(pageId);
-    if (page) page.classList.add('active');
-
-    // Auto-expand the parent group if collapsed
-    const group = item.closest('.nav-group');
-    if (group) {
-      group.style.display = 'block';
-      const id = group.id.replace('group-', '');
-      const caret = document.getElementById('caret-' + id);
-      if (caret) caret.classList.add('open');
-    }
-  });
-});
+// ── Navigation handled in inline script above ──
 
 // ── AI Chat System Prompt ──
 const SYSTEM_PROMPT = `You are the Philinity AI — a personal assistant for Phil & Trinity Sigler. You have comprehensive knowledge of their home, investments, dining preferences, and lifestyle. Be concise, warm, and direct. Phil prefers targeted answers over long explanations.
@@ -2264,91 +2321,116 @@ document.getElementById('chat-input').addEventListener('keydown', function(e) {
 // ══════════ KNOWLEDGE BASE ══════════
 const KB_PATH = 'philinity/knowledge';
 let kbCategories = [];
-let kbCurrentCat = null;
+let kbCurrentCatId = null;
 let kbEditingCatId = null;
 let kbEditingEntryId = null;
 let kbCatImgData = '';
 let kbEntryImgData = '';
 let kbDDItems = [];
+let kbDragSrcIdx = null;
+let kbCatDragSrc = null;
 
+// ── Init ──
 async function kbInit() {
-  const snap = await get(ref(db, KB_PATH + '/categories'));
-  if (snap.exists()) {
-    kbCategories = Object.values(snap.val());
-  } else {
-    // Seed default categories
-    kbCategories = [
-      { id: 'pool-spa', name: 'Pool & Spa', emoji: '🏊', img: '', entries: {} },
-      { id: 'appliances', name: 'Appliances', emoji: '🔌', img: '', entries: {} },
-      { id: 'furniture', name: 'Furniture', emoji: '🛋', img: '', entries: {} },
-      { id: 'systems', name: 'Systems & Circuits', emoji: '⚡', img: '', entries: {} },
-      { id: 'maintenance', name: 'Maintenance & Repairs', emoji: '🔧', img: '', entries: {} },
-      { id: 'contacts', name: 'Contacts', emoji: '📞', img: '', entries: {} },
-      { id: 'purchases', name: 'New Purchases', emoji: '🛒', img: '', entries: {} },
-      { id: 'notes', name: 'General Notes', emoji: '📝', img: '', entries: {} },
-    ];
-    await kbSaveCatsToFB();
-  }
-  kbRenderCats();
+  if (!db) return;
+  try {
+    const snap = await db.ref(KB_PATH + '/categories').get();
+    if (snap.exists()) {
+      const val = snap.val();
+      kbCategories = Array.isArray(val) ? val : Object.values(val);
+      // Ensure order field
+      kbCategories.forEach((c, i) => { if (c.order === undefined) c.order = i; });
+      kbCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
+    } else {
+      kbCategories = [
+        { id: 'pool-spa',     name: 'Pool & Spa',           emoji: '🏊', img: '', entries: {}, order: 0 },
+        { id: 'appliances',   name: 'Appliances',            emoji: '🔌', img: '', entries: {}, order: 1 },
+        { id: 'furniture',    name: 'Furniture',             emoji: '🛋', img: '', entries: {}, order: 2 },
+        { id: 'systems',      name: 'Systems & Circuits',    emoji: '⚡', img: '', entries: {}, order: 3 },
+        { id: 'maintenance',  name: 'Maintenance & Repairs', emoji: '🔧', img: '', entries: {}, order: 4 },
+        { id: 'contacts',     name: 'Contacts',              emoji: '📞', img: '', entries: {}, order: 5 },
+        { id: 'purchases',    name: 'New Purchases',         emoji: '🛒', img: '', entries: {}, order: 6 },
+        { id: 'notes',        name: 'General Notes',         emoji: '📝', img: '', entries: {}, order: 7 },
+      ];
+      await kbSave();
+    }
+    kbRenderCatList();
+  } catch(e) { console.warn('KB init error:', e); }
 }
 
-async function kbSaveCatsToFB() {
+async function kbSave() {
   const obj = {};
-  kbCategories.forEach(c => { obj[c.id] = c; });
-  const { set: fbSet, ref: fbRef } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-  await fbSet(fbRef(db, KB_PATH + '/categories'), obj);
+  kbCategories.forEach((c, i) => { c.order = i; obj[c.id] = c; });
+  await db.ref(KB_PATH + '/categories').set(obj);
 }
 
-function kbRenderCats() {
-  const grid = document.getElementById('kb-cat-grid');
-  if (!grid) return;
-  grid.innerHTML = kbCategories.map(cat => {
+// ── Category List (left panel) ──
+function kbRenderCatList() {
+  const list = document.getElementById('kb-cat-list');
+  if (!list) return;
+  list.innerHTML = kbCategories.map((cat, i) => {
     const count = cat.entries ? Object.keys(cat.entries).length : 0;
-    const imgHtml = cat.img
-      ? `<div class="kb-cat-img"><img src="${cat.img}" alt="${cat.name}" loading="lazy"></div>`
-      : `<div class="kb-cat-img">${cat.emoji || '📁'}</div>`;
-    return `<div class="kb-cat-card" onclick="kbOpenCat('${cat.id}')">
-      ${imgHtml}
-      <div class="kb-cat-body">
-        <div class="kb-cat-title">${cat.emoji} ${cat.name}</div>
-        <div class="kb-cat-count">${count} ${count === 1 ? 'entry' : 'entries'}</div>
-      </div>
+    const active = kbCurrentCatId === cat.id ? 'background:var(--gold-dim);border-color:rgba(201,169,110,0.3)' : '';
+    return `<div class="kb-cat-row" data-id="${cat.id}" data-i="${i}"
+      draggable="true"
+      ondragstart="kbCatDragStart(event,${i})"
+      ondragover="event.preventDefault();this.style.borderTop='2px solid var(--gold)'"
+      ondragleave="this.style.borderTop=''"
+      ondrop="kbCatDrop(event,${i})"
+      onclick="kbSelectCat('${cat.id}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid transparent;margin-bottom:4px;cursor:pointer;transition:all 0.15s;${active}">
+      <span style="cursor:grab;color:var(--text-muted);font-size:0.7rem">⠿</span>
+      <span style="font-size:1.1rem">${cat.emoji}</span>
+      <span style="flex:1;font-size:0.82rem;color:var(--text)">${cat.name}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--text-muted)">${count}</span>
+      <button onclick="event.stopPropagation();kbOpenCatModal('${cat.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:2px 4px">✏️</button>
     </div>`;
-  }).join('') + `<div class="kb-add-btn" onclick="kbOpenCatModal()">＋ New Category</div>`;
+  }).join('');
 }
 
-function kbOpenCat(catId) {
-  kbCurrentCat = kbCategories.find(c => c.id === catId);
-  if (!kbCurrentCat) return;
-  document.getElementById('kb-page-title').textContent = kbCurrentCat.emoji + ' ' + kbCurrentCat.name;
-  document.getElementById('kb-page-sub').textContent = 'Edit category';
-  document.getElementById('kb-cat-view').style.display = 'none';
-  document.getElementById('kb-entry-view').style.display = 'block';
+function kbSelectCat(catId) {
+  kbCurrentCatId = catId;
+  kbRenderCatList();
   kbRenderEntries();
+  const cat = kbCategories.find(c => c.id === catId);
+  if (cat) {
+    document.getElementById('kb-entry-panel-title').textContent = cat.emoji + ' ' + cat.name;
+    document.getElementById('kb-add-entry-btn').style.display = 'block';
+  }
 }
 
-function kbShowCats() {
-  kbCurrentCat = null;
-  document.getElementById('kb-page-title').textContent = 'Knowledge Base';
-  document.getElementById('kb-page-sub').textContent = 'Philinity · Living reference · Firebase synced';
-  document.getElementById('kb-cat-view').style.display = 'block';
-  document.getElementById('kb-entry-view').style.display = 'none';
-  kbRenderCats();
+// ── Category Drag/Drop ──
+function kbCatDragStart(e, i) {
+  kbCatDragSrc = i;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function kbCatDrop(e, i) {
+  e.preventDefault();
+  document.querySelectorAll('.kb-cat-row').forEach(r => r.style.borderTop = '');
+  if (kbCatDragSrc === null || kbCatDragSrc === i) return;
+  const moved = kbCategories.splice(kbCatDragSrc, 1)[0];
+  kbCategories.splice(i, 0, moved);
+  kbCatDragSrc = null;
+  kbSave();
+  kbRenderCatList();
 }
 
+// ── Entry List (right panel) ──
 function kbRenderEntries() {
   const list = document.getElementById('kb-entry-list');
-  if (!kbCurrentCat || !list) return;
-  const entries = kbCurrentCat.entries ? Object.values(kbCurrentCat.entries) : [];
+  if (!list) return;
+  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
+  if (!cat) return;
+  const entries = cat.entries ? Object.values(cat.entries) : [];
   if (entries.length === 0) {
-    list.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:30px;font-size:0.82rem">No entries yet — add the first one below</div>`;
+    list.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:30px;font-size:0.82rem">No entries yet — click + Add Entry above</div>`;
     return;
   }
   list.innerHTML = entries.map(e => {
     const imgHtml = e.img
       ? `<div class="kb-entry-img"><img src="${e.img}" alt="${e.title}" loading="lazy"></div>`
-      : `<div class="kb-entry-img">${kbCurrentCat.emoji || '📁'}</div>`;
-    const details = (e.details || []).map(d => `<span class="tag" style="display:inline-block;margin:1px">${d}</span>`).join('');
+      : `<div class="kb-entry-img">${cat.emoji}</div>`;
+    const details = (e.details||[]).map(d => `<span class="tag" style="display:inline-block;margin:1px 2px">${d}</span>`).join('');
     return `<div class="kb-entry">
       ${imgHtml}
       <div class="kb-entry-body">
@@ -2357,7 +2439,7 @@ function kbRenderEntries() {
         ${details ? `<div style="margin-top:6px">${details}</div>` : ''}
       </div>
       <div class="kb-entry-actions">
-        <button class="kb-icon-btn" onclick="kbOpenEntryModal('${e.id}')" title="Edit">✏️</button>
+        <button class="kb-icon-btn" onclick="kbOpenEntryModal('${e.id}')">✏️</button>
       </div>
     </div>`;
   }).join('');
@@ -2394,29 +2476,38 @@ async function kbSaveCat() {
     if (cat) { cat.name = name; cat.emoji = emoji; cat.img = img; }
   } else {
     const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') + '-' + Date.now();
-    kbCategories.push({ id, name, emoji, img, entries: {} });
+    kbCategories.push({ id, name, emoji, img, entries: {}, order: kbCategories.length });
   }
-  await kbSaveCatsToFB();
+  await kbSave();
   kbCloseCatModal();
-  kbRenderCats();
-  kbToast('✓ Category saved');
+  kbRenderCatList();
+  if (kbCurrentCatId) kbRenderEntries();
+  kbToast('✓ Saved');
 }
 
 async function kbDeleteCat() {
   if (!kbEditingCatId || !confirm('Delete this category and all its entries?')) return;
   kbCategories = kbCategories.filter(c => c.id !== kbEditingCatId);
-  await kbSaveCatsToFB();
+  if (kbCurrentCatId === kbEditingCatId) {
+    kbCurrentCatId = null;
+    document.getElementById('kb-entry-panel-title').textContent = 'Select a category →';
+    document.getElementById('kb-add-entry-btn').style.display = 'none';
+    document.getElementById('kb-entry-list').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;font-size:0.82rem">Select a category on the left</div>';
+  }
+  await kbSave();
   kbCloseCatModal();
-  kbRenderCats();
+  kbRenderCatList();
   kbToast('🗑 Deleted');
 }
 
 // ── Entry Modal ──
 function kbOpenEntryModal(entryId) {
+  if (!kbCurrentCatId) { kbToast('Select a category first'); return; }
   kbEditingEntryId = entryId || null;
   kbEntryImgData = '';
   kbDDItems = [];
-  const entry = entryId && kbCurrentCat && kbCurrentCat.entries ? kbCurrentCat.entries[entryId] : null;
+  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
+  const entry = entryId && cat && cat.entries ? cat.entries[entryId] : null;
   document.getElementById('kb-entry-modal-title').textContent = entry ? 'Edit Entry' : 'New Entry';
   document.getElementById('kb-entry-title-input').value = entry ? entry.title : '';
   document.getElementById('kb-entry-notes').value = entry ? entry.notes || '' : '';
@@ -2438,50 +2529,54 @@ function kbCloseEntryModal() { document.getElementById('kb-entry-modal').classLi
 async function kbSaveEntry() {
   const title = document.getElementById('kb-entry-title-input').value.trim();
   if (!title) { kbToast('Title required'); return; }
-  if (!kbCurrentCat) return;
+  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
+  if (!cat) return;
   const img = kbEntryImgData || document.getElementById('kb-entry-img-url').value.trim();
   const id = kbEditingEntryId || title.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
-  if (!kbCurrentCat.entries) kbCurrentCat.entries = {};
-  kbCurrentCat.entries[id] = {
+  if (!cat.entries) cat.entries = {};
+  cat.entries[id] = {
     id, title,
     notes: document.getElementById('kb-entry-notes').value.trim(),
     details: kbDDItems,
     img,
     updated: Date.now()
   };
-  await kbSaveCatsToFB();
+  await kbSave();
   kbCloseEntryModal();
   kbRenderEntries();
-  kbRenderCats();
+  kbRenderCatList();
   kbToast('✓ Entry saved');
 }
 
 async function kbDeleteEntry() {
-  if (!kbEditingEntryId || !kbCurrentCat || !confirm('Delete this entry?')) return;
-  delete kbCurrentCat.entries[kbEditingEntryId];
-  await kbSaveCatsToFB();
+  if (!kbEditingEntryId) return;
+  if (!confirm('Delete this entry?')) return;
+  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
+  if (cat && cat.entries) delete cat.entries[kbEditingEntryId];
+  await kbSave();
   kbCloseEntryModal();
   kbRenderEntries();
-  kbRenderCats();
+  kbRenderCatList();
   kbToast('🗑 Deleted');
 }
 
-// ── DD Items ──
+// ── DD Items (drag/drop detail list) ──
 function kbRenderDDList() {
   const list = document.getElementById('kb-dd-list');
   if (!list) return;
   list.innerHTML = kbDDItems.map((item, i) =>
     `<div class="dd-item" draggable="true" data-i="${i}"
-      ondragstart="kbDragStart(event,${i})" ondragover="event.preventDefault()" ondrop="kbDragDrop(event,${i})">
+      ondragstart="kbDDDragStart(event,${i})"
+      ondragover="event.preventDefault()"
+      ondrop="kbDDDrop(event,${i})">
       <span class="dd-item-handle">⠿</span>
       <span class="dd-item-text">${item}</span>
       <button class="dd-item-del" onclick="kbRemoveDDItem(${i})">✕</button>
     </div>`
   ).join('');
 }
-let kbDragSrcIdx = null;
-function kbDragStart(e, i) { kbDragSrcIdx = i; e.currentTarget.classList.add('dragging'); }
-function kbDragDrop(e, i) {
+function kbDDDragStart(e, i) { kbDragSrcIdx = i; }
+function kbDDDrop(e, i) {
   e.preventDefault();
   if (kbDragSrcIdx === null || kbDragSrcIdx === i) return;
   const moved = kbDDItems.splice(kbDragSrcIdx, 1)[0];
@@ -2499,15 +2594,15 @@ function kbAddDDItem() {
 }
 function kbRemoveDDItem(i) { kbDDItems.splice(i, 1); kbRenderDDList(); }
 
-// ── Image handling ──
+// ── Image Handling ──
 function kbCompressImage(dataUrl, callback) {
   const img = new Image();
   img.onload = () => {
     const canvas = document.createElement('canvas');
     const MAX = 600;
     let w = img.width, h = img.height;
-    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
-    else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+    if (w > h) { if (w > MAX) { h = h*MAX/w; w = MAX; } }
+    else { if (h > MAX) { w = w*MAX/h; h = MAX; } }
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
     callback(canvas.toDataURL('image/jpeg', 0.7));
@@ -2523,7 +2618,8 @@ function kbHandleFile(event, type) {
 }
 function kbHandleDrop(event, type) {
   event.preventDefault();
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop').classList.remove('drag-over');
+  const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
+  document.getElementById(pfx + '-drop').classList.remove('drag-over');
   const file = event.dataTransfer.files[0];
   if (!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
@@ -2532,33 +2628,37 @@ function kbHandleDrop(event, type) {
 }
 function kbLoadImgPreview(dataUrl, type) {
   kbCompressImage(dataUrl, compressed => {
-    if (type === 'cat') { kbCatImgData = compressed; }
-    else { kbEntryImgData = compressed; }
-    document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-preview-img').src = compressed;
-    document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-label').style.display = 'none';
-    document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-preview').style.display = 'block';
+    const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
+    if (type === 'cat') kbCatImgData = compressed;
+    else kbEntryImgData = compressed;
+    document.getElementById(pfx + '-preview-img').src = compressed;
+    document.getElementById(pfx + '-drop-label').style.display = 'none';
+    document.getElementById(pfx + '-drop-preview').style.display = 'block';
   });
 }
 function kbHandleUrl(url, type) {
   if (!url) return;
-  if (type === 'cat') { kbCatImgData = url; }
-  else { kbEntryImgData = url; }
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-preview-img').src = url;
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-label').style.display = 'none';
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-preview').style.display = 'block';
+  const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
+  if (type === 'cat') kbCatImgData = url;
+  else kbEntryImgData = url;
+  document.getElementById(pfx + '-preview-img').src = url;
+  document.getElementById(pfx + '-drop-label').style.display = 'none';
+  document.getElementById(pfx + '-drop-preview').style.display = 'block';
 }
 function kbClearImg(type) {
-  if (type === 'cat') { kbCatImgData = ''; }
-  else { kbEntryImgData = ''; }
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-preview-img').src = '';
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-label').style.display = 'block';
-  document.getElementById('kb-' + (type==='cat'?'cat':'entry') + '-drop-preview').style.display = 'none';
+  const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
+  if (type === 'cat') kbCatImgData = '';
+  else kbEntryImgData = '';
+  document.getElementById(pfx + '-preview-img').src = '';
+  document.getElementById(pfx + '-drop-label').style.display = 'block';
+  document.getElementById(pfx + '-drop-preview').style.display = 'none';
 }
 
 // ── Toast ──
 function kbToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  t.textContent = msg;
+  t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
@@ -2566,23 +2666,22 @@ function kbToast(msg) {
 document.getElementById('kb-cat-modal').addEventListener('click', e => { if(e.target===e.currentTarget) kbCloseCatModal(); });
 document.getElementById('kb-entry-modal').addEventListener('click', e => { if(e.target===e.currentTarget) kbCloseEntryModal(); });
 
-// Init KB when page is clicked
-document.querySelector('[data-page="knowledge"]').addEventListener('click', () => {
-  if (kbCategories.length === 0) kbInit();
-});
+// ── Collapsible Nav handled in inline script above ──// ── Collapsible Nav handled in inline script above ──
 
-// ── Collapsible Nav ──
-function toggleNavGroup(group) {
-  const el = document.getElementById('group-' + group);
-  const caret = document.getElementById('caret-' + group);
-  if (!el) return;
-  const isOpen = el.style.display !== 'none';
-  el.style.display = isOpen ? 'none' : 'block';
-  caret.classList.toggle('open', !isOpen);
+// Init Firebase then load KB
+async function appInit() {
+  await initFirebase();
+  await kbInit();
+  kbRenderCatList();
 }
 
-// Init
-initFirebase();
+// Wait for DOM before initializing
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', appInit);
+} else {
+  appInit();
+}
+
 
 </script>
 <footer style="
@@ -2597,6 +2696,6 @@ initFirebase();
   background: rgba(10,10,12,0.85);
   position: relative;
   z-index: 1;
-">Philinity Command Center ©️ Rev 1.6</footer>
+">Philinity Command Center ©️ Rev 2.4</footer>
 </body>
 </html>
