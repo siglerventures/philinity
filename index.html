@@ -3125,7 +3125,7 @@ var SEED_CONTACTS = [
 
 var contactsLoaded = false;
 
-async async function loadContacts() {
+async function loadContacts() {
   if (contactsLoaded) { renderContactCatChips(); renderContacts(allContacts); return; }
   try {
     var snap = await db.ref(CONTACTS_PATH).get();
@@ -3145,7 +3145,7 @@ async async function loadContacts() {
   renderContacts(allContacts);
 }
 
-async async function saveContactsToDB(contactsToWrite) {
+async function saveContactsToDB(contactsToWrite) {
   var list = contactsToWrite || allContacts;
   var updates = {};
   list.forEach(function(c) { updates[CONTACTS_PATH + '/' + c.id] = c; });
@@ -3418,14 +3418,8 @@ function parseGoogleCSV(csvText) {
       if (city || state) addr = (city + ', ' + state).trim().replace(/^,\s*|,\s*$/g, '');
     }
     
-    // Photo - prefer /contacts/AB URLs
-    var photoField = row['Photo'] || '';
+    // Photo URLs stripped — prevents bandwidth explosion
     var photo = '';
-    if (photoField) {
-      var photoUrls = photoField.split(':::').map(function(u) { return u.trim(); });
-      photoUrls.forEach(function(u) { if (!photo && u.indexOf('contacts/AB') > -1) photo = u; });
-      if (!photo && photoUrls[0]) photo = photoUrls[0];
-    }
     
     // Category
     var labels = row['Labels'] || '';
