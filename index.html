@@ -155,9 +155,9 @@ nav {
 
 .nav-label {
   font-family: 'DM Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.2em;
-  color: var(--text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: rgba(232,228,220,0.55);
   text-transform: uppercase;
   padding: 12px 20px 6px;
 }
@@ -981,7 +981,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 </style>
 </head>
 <body>
-<div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+<div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
   <input type="password" id="pw-input" placeholder="Enter password" 
@@ -1080,11 +1080,7 @@ function checkPW() {
     </div>
   </div>
 
-  <div style="padding: 8px 12px 4px; text-align:center; font-family:'DM Mono',monospace; font-size:0.55rem; color:rgba(232,228,220,0.2); letter-spacing:0.1em;">
-    Philinity Command Center ©️ Rev 3.3
-  </div>
-
-  <div style="padding: 0 12px 12px; margin-top: 0;">
+  <div style="padding: 0 12px 12px; margin-top: 8px;">
     <button onclick="navigateTo('knowledge')" style="
       width: 100%;
       padding: 10px 14px;
@@ -1111,7 +1107,7 @@ function checkPW() {
   <!-- ══════════ OVERVIEW ══════════ -->
   <div class="page" id="page-home">
     <div class="page-title">
-      <h1 id="greeting">Good day, Phil</h1>
+      <h1>Overview</h1>
       <span class="sub">Philinity Command Center</span>
     </div>
 
@@ -1177,7 +1173,6 @@ function checkPW() {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div>
           <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.25em;color:var(--gold);text-transform:uppercase;margin-bottom:8px">✦ Philinity Command Center</div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--text);line-height:1.1;margin-bottom:6px" id="greeting">Good evening, Phil</div>
           <div style="font-size:0.78rem;color:var(--text-muted);max-width:420px;line-height:1.6">Your personal AI knows Philinity, Sigler Ventures, every circuit, fixture, appliance, cocktail recipe, and restaurant order.</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:180px" id="ai-project-bubbles">
@@ -1190,8 +1185,7 @@ function checkPW() {
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🏡 Columbia Listed · $699K</div>
         <div style="background:rgba(196,106,90,0.1);border:1px solid rgba(196,106,90,0.25);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--red)">⚠ Kildew Payment · Apr 1</div>
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)">🌊 Pool · Circuit 30 & 32 Panel C</div>
-        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim)" id="clock-pill">—</div>
-        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.18);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.3</div>
+        <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em;padding:5px 0">Philinity Command Center ©️ Rev 3.5</div>
       </div>
     </div>
 
@@ -1975,35 +1969,67 @@ function checkPW() {
     </div>
   </div>
 
-  <!-- ══════════ KNOWLEDGE BASE ══════════ -->
+  <!-- ══════════ NAV EDITOR ══════════ -->
   <div class="page" id="page-knowledge">
     <div class="page-title">
-      <h1>Edit Categories</h1>
-      <span class="sub">Drag to reorder · Click to expand · Firebase synced</span>
+      <h1>Edit Navigation</h1>
+      <span class="sub">Drag to reorder · Click ✏️ to edit · Firebase synced</span>
     </div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-shrink:0;flex-wrap:wrap">
+      <button onclick="navEditorAddGroup()" style="padding:9px 18px;border-radius:10px;border:none;background:var(--gold);color:var(--bg);font-family:'Outfit',sans-serif;font-size:0.82rem;font-weight:500;cursor:pointer">+ Add Group</button>
+      <button onclick="navEditorSave()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--green);background:transparent;color:var(--green);font-family:'Outfit',sans-serif;font-size:0.82rem;cursor:pointer">💾 Save & Apply</button>
+      <button onclick="navEditorReset()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--border-bright);background:transparent;color:var(--text-dim);font-family:'Outfit',sans-serif;font-size:0.82rem;cursor:pointer">↺ Reset to Default</button>
+      <div style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);align-self:center" id="nav-editor-status">Loading…</div>
+    </div>
+    <div id="nav-editor-list" style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding-bottom:40px"></div>
+  </div>
 
-    <div style="display:grid;grid-template-columns:260px 1fr;gap:16px;flex:1;min-height:0;overflow:hidden">
-
-      <!-- LEFT: Category List -->
-      <div style="display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <span style="font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold)">Categories</span>
-          <button onclick="kbOpenCatModal()" style="border:none;background:var(--gold-dim);color:var(--gold);border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer">+ New</button>
+  <!-- Nav Item Modal -->
+  <div class="modal-overlay" id="nav-item-modal">
+    <div class="modal-box" style="max-width:440px">
+      <div class="modal-title" id="nav-item-modal-title">Edit Item</div>
+      <div style="display:flex;gap:12px">
+        <div class="form-group" style="width:80px;flex-shrink:0">
+          <label class="form-label">Icon</label>
+          <input class="form-input" id="ni-emoji" placeholder="🏠" maxlength="4" style="font-size:1.4rem;text-align:center">
         </div>
-        <div id="kb-cat-list" style="flex:1;overflow-y:auto;padding:8px"></div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Label</label>
+          <input class="form-input" id="ni-label" placeholder="e.g. Pool & Spa">
+        </div>
       </div>
-
-      <!-- RIGHT: Entries Panel -->
-      <div style="display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span id="kb-entry-panel-title" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)">Select a category →</span>
-          <button id="kb-add-entry-btn" onclick="kbOpenEntryModal()" style="display:none;border:none;background:var(--gold-dim);color:var(--gold);border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer">+ Add Entry</button>
-        </div>
-        <div id="kb-entry-list" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
-          <div style="text-align:center;color:var(--text-muted);padding:40px;font-size:0.82rem">Select a category on the left to view and edit its entries</div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <div style="display:flex;gap:8px">
+          <button id="ni-type-internal" onclick="navItemSetType('internal')" style="flex:1;padding:8px;border-radius:8px;border:2px solid var(--gold);background:var(--gold-dim);color:var(--gold);font-size:0.8rem;cursor:pointer;font-family:'Outfit',sans-serif">📄 Internal Page</button>
+          <button id="ni-type-external" onclick="navItemSetType('external')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border-bright);background:transparent;color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:'Outfit',sans-serif">🔗 External URL</button>
         </div>
       </div>
-
+      <div class="form-group" id="ni-page-group">
+        <label class="form-label">Page ID</label>
+        <select class="form-input" id="ni-page">
+          <option value="home">home — Overview</option>
+          <option value="house">house — Philinity Home</option>
+          <option value="systems">systems — Smart Home</option>
+          <option value="pool">pool — Pool & Spa</option>
+          <option value="ventures">ventures — Portfolio</option>
+          <option value="philinity-prop">philinity-prop — Philinity Asset</option>
+          <option value="synergy">synergy — Synergy Summit</option>
+          <option value="drinks">drinks — Cocktails</option>
+          <option value="contacts">contacts — Contacts</option>
+          <option value="knowledge">knowledge — Nav Editor</option>
+          <option value="ai">ai — Philinity AI</option>
+        </select>
+      </div>
+      <div class="form-group" id="ni-url-group" style="display:none">
+        <label class="form-label">URL</label>
+        <input class="form-input" id="ni-url" placeholder="https://...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="navItemSave()">Save</button>
+        <button class="btn-cancel" onclick="navItemClose()">Cancel</button>
+        <button class="btn-delete" id="nav-item-del-btn" onclick="navItemDelete()">Delete</button>
+      </div>
     </div>
   </div>
 
@@ -2014,7 +2040,7 @@ function checkPW() {
   <div class="modal-overlay" id="ai-proj-modal">
     <div class="modal-box" style="max-width:480px">
       <div class="modal-title">✦ AI Project Links</div>
-      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px">These bubbles appear on your home screen. Click ✏️ on each to edit, drag to reorder, or add new ones.</div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px">These bubbles appear on your home screen. Drag to reorder or add new ones.</div>
       <div id="ai-proj-edit-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
       <button onclick="addAIProjItem()" style="width:100%;padding:9px;border-radius:8px;border:1px dashed rgba(201,169,110,0.3);background:var(--gold-dim);color:var(--gold);font-size:0.8rem;cursor:pointer;font-family:'Outfit',sans-serif">+ Add Project</button>
       <div class="modal-actions" style="margin-top:16px">
@@ -2023,79 +2049,6 @@ function checkPW() {
       </div>
     </div>
   </div>
-
-  <!-- Category Modal -->
-  <div class="modal-overlay" id="kb-cat-modal">
-    <div class="modal-box">
-      <div class="modal-title" id="kb-cat-modal-title">New Category</div>
-      <div class="form-group">
-        <label class="form-label">Category Name</label>
-        <input class="form-input" id="kb-cat-name" placeholder="e.g. Pool Chemicals">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Emoji Icon</label>
-        <input class="form-input" id="kb-cat-emoji" placeholder="e.g. 🏊" maxlength="4">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Category Photo (optional)</label>
-        <div class="drop-zone" id="kb-cat-drop" ondrop="kbHandleDrop(event,'cat')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" onclick="document.getElementById('kb-cat-file').click()">
-          <div class="drop-zone-label" id="kb-cat-drop-label">📷 Tap or drag image here</div>
-          <div class="drop-preview" id="kb-cat-drop-preview">
-            <img id="kb-cat-preview-img" src="">
-            <button class="drop-clear" onclick="event.stopPropagation();kbClearImg('cat')">✕</button>
-          </div>
-        </div>
-        <input type="file" id="kb-cat-file" accept="image/*" capture="environment" style="display:none" onchange="kbHandleFile(event,'cat')">
-        <input class="form-input" id="kb-cat-img-url" placeholder="Or paste image URL" style="margin-top:6px" oninput="kbHandleUrl(this.value,'cat')">
-      </div>
-      <div class="modal-actions">
-        <button class="btn-save" onclick="kbSaveCat()">Save Category</button>
-        <button class="btn-cancel" onclick="kbCloseCatModal()">Cancel</button>
-        <button class="btn-delete" id="kb-cat-del-btn" onclick="kbDeleteCat()" style="display:none">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Entry Modal -->
-  <div class="modal-overlay" id="kb-entry-modal">
-    <div class="modal-box">
-      <div class="modal-title" id="kb-entry-modal-title">New Entry</div>
-      <div class="form-group">
-        <label class="form-label">Title</label>
-        <input class="form-input" id="kb-entry-title-input" placeholder="e.g. Pentair MasterTemp 250HD">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notes / Details</label>
-        <textarea class="form-input" id="kb-entry-notes" placeholder="Model number, where purchased, settings, tips..."></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Details (drag to reorder)</label>
-        <div class="dd-list" id="kb-dd-list"></div>
-        <div class="dd-add-row">
-          <input class="dd-add-input" id="kb-dd-input" placeholder="Add detail..." onkeydown="if(event.key==='Enter')kbAddDDItem()">
-          <button class="dd-add-btn" onclick="kbAddDDItem()">+ Add</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Photo</label>
-        <div class="drop-zone" id="kb-entry-drop" ondrop="kbHandleDrop(event,'entry')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" onclick="document.getElementById('kb-entry-file').click()">
-          <div class="drop-zone-label" id="kb-entry-drop-label">📷 Tap or drag image here</div>
-          <div class="drop-preview" id="kb-entry-drop-preview">
-            <img id="kb-entry-preview-img" src="">
-            <button class="drop-clear" onclick="event.stopPropagation();kbClearImg('entry')">✕</button>
-          </div>
-        </div>
-        <input type="file" id="kb-entry-file" accept="image/*" capture="environment" style="display:none" onchange="kbHandleFile(event,'entry')">
-        <input class="form-input" id="kb-entry-img-url" placeholder="Or paste image URL" style="margin-top:6px" oninput="kbHandleUrl(this.value,'entry')">
-      </div>
-      <div class="modal-actions">
-        <button class="btn-save" onclick="kbSaveEntry()">Save Entry</button>
-        <button class="btn-cancel" onclick="kbCloseEntryModal()">Cancel</button>
-        <button class="btn-delete" id="kb-entry-del-btn" onclick="kbDeleteEntry()" style="display:none">Delete</button>
-      </div>
-    </div>
-  </div>
-
 
 </main>
 </div>
@@ -2133,7 +2086,7 @@ function navigateTo(page) {
   // Lazy load page data on first visit
   if (page === 'knowledge') {
     setTimeout(function() {
-      if (typeof kbRenderCatList === 'function') kbRenderCatList();
+      navEditorRender();
     }, 100);
   }
   if (page === 'contacts') {
@@ -2206,20 +2159,9 @@ function updateClock() {
   }) + ' MDT';
   const el = document.getElementById('clock');
   if (el) el.textContent = timeStr;
-  const pill = document.getElementById('clock-pill');
-  if (pill) pill.textContent = '🕐 ' + timeStr;
 }
 setInterval(updateClock, 1000);
 updateClock();
-
-function updateGreeting() {
-  const hour = new Date().toLocaleString('en-US', {hour: 'numeric', hour12: false, timeZone: 'America/Denver'});
-  const h = parseInt(hour);
-  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-  const el = document.getElementById('greeting');
-  if (el) el.textContent = g + ', Phil';
-}
-updateGreeting();
 
 // ── Navigation handled in inline script above ──
 
@@ -2634,356 +2576,304 @@ document.getElementById('chat-input').addEventListener('keydown', function(e) {
 });
 
 
-// ══════════ KNOWLEDGE BASE ══════════
-const KB_PATH = 'philinity/knowledge';
-let kbCategories = [];
-let kbCurrentCatId = null;
-let kbEditingCatId = null;
-let kbEditingEntryId = null;
-let kbCatImgData = '';
-let kbEntryImgData = '';
-let kbDDItems = [];
-let kbDragSrcIdx = null;
-let kbCatDragSrc = null;
+// ══════════ NAV EDITOR ══════════
+const NAV_EDITOR_PATH = 'philinity/nav_structure';
 
-// ── Init ──
-async function kbInit() {
-  if (!db) return;
+var navStructure = [];
+var navItemDragSrc = null;
+var navSubDragSrc = null;
+var navEditingGroupIdx = null;
+var navEditingItemIdx = null;
+var navItemType = 'internal';
+
+var DEFAULT_NAV = [
+  {
+    id: 'home-group', label: '🏠 Home', items: [
+      { emoji: '🏠', label: 'Philinity', type: 'internal', page: 'house' },
+      { emoji: '⚡', label: 'Smart Home', type: 'internal', page: 'systems' },
+      { emoji: '🏊', label: 'Pool & Spa', type: 'internal', page: 'pool' }
+    ]
+  },
+  {
+    id: 'ventures-group', label: '💼 Sigler Ventures', items: [
+      { emoji: '📈', label: 'Portfolio', type: 'internal', page: 'ventures' },
+      { emoji: '🏡', label: 'Philinity Asset', type: 'internal', page: 'philinity-prop' },
+      { emoji: '🏗', label: 'Synergy Summit', type: 'internal', page: 'synergy' }
+    ]
+  },
+  {
+    id: 'life-group', label: '🌿 Life', items: [
+      { emoji: '📊', label: 'Overview', type: 'internal', page: 'home' },
+      { emoji: '👥', label: 'Contacts', type: 'internal', page: 'contacts' },
+      { emoji: '🥃', label: 'Cocktails', type: 'internal', page: 'drinks' },
+      { emoji: '📚', label: 'Knowledge Base', type: 'internal', page: 'knowledge' }
+    ]
+  },
+  {
+    id: 'apps-group', label: '🚀 Apps', items: [
+      { emoji: '🍽', label: 'Dining Guide ↗', type: 'external', url: 'https://siglerventures.github.io/eats/' },
+      { emoji: '📋', label: 'Task Board ↗', type: 'external', url: 'https://siglerventures.github.io/taskboard/' }
+    ]
+  }
+];
+
+async function navEditorInit() {
   try {
-    const snap = await db.ref(KB_PATH + '/categories').get();
+    var snap = await db.ref(NAV_EDITOR_PATH).get();
     if (snap.exists()) {
-      const val = snap.val();
-      kbCategories = Array.isArray(val) ? val : Object.values(val);
-      // Ensure order field
-      kbCategories.forEach((c, i) => { if (c.order === undefined) c.order = i; });
-      kbCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
+      navStructure = snap.val();
     } else {
-      kbCategories = [
-        { id: 'pool-spa',     name: 'Pool & Spa',           emoji: '🏊', img: '', entries: {}, order: 0 },
-        { id: 'appliances',   name: 'Appliances',            emoji: '🔌', img: '', entries: {}, order: 1 },
-        { id: 'furniture',    name: 'Furniture',             emoji: '🛋', img: '', entries: {}, order: 2 },
-        { id: 'systems',      name: 'Systems & Circuits',    emoji: '⚡', img: '', entries: {}, order: 3 },
-        { id: 'maintenance',  name: 'Maintenance & Repairs', emoji: '🔧', img: '', entries: {}, order: 4 },
-        { id: 'contacts',     name: 'Contacts',              emoji: '📞', img: '', entries: {}, order: 5 },
-        { id: 'purchases',    name: 'New Purchases',         emoji: '🛒', img: '', entries: {}, order: 6 },
-        { id: 'notes',        name: 'General Notes',         emoji: '📝', img: '', entries: {}, order: 7 },
-      ];
-      await kbSave();
+      navStructure = DEFAULT_NAV.map(function(g) { return JSON.parse(JSON.stringify(g)); });
     }
-    kbRenderCatList();
-  } catch(e) { console.warn('KB init error:', e); }
+  } catch(e) {
+    navStructure = DEFAULT_NAV.map(function(g) { return JSON.parse(JSON.stringify(g)); });
+  }
+  navEditorRender();
+  applyNavStructure();
+  document.getElementById('nav-editor-status').textContent = 'Loaded ✓';
 }
 
-async function kbSave() {
-  var updates = {};
-  kbCategories.forEach(function(c, i) { 
-    c.order = i; 
-    updates[KB_PATH + '/categories/' + c.id] = c; 
-  });
-  await db.ref('/').update(updates);
-}
-
-// ── Category List (left panel) ──
-function kbRenderCatList() {
-  const list = document.getElementById('kb-cat-list');
+function navEditorRender() {
+  var list = document.getElementById('nav-editor-list');
   if (!list) return;
-  list.innerHTML = kbCategories.map((cat, i) => {
-    const count = cat.entries ? Object.keys(cat.entries).length : 0;
-    const active = kbCurrentCatId === cat.id ? 'background:var(--gold-dim);border-color:rgba(201,169,110,0.3)' : '';
-    return `<div class="kb-cat-row" data-id="${cat.id}" data-i="${i}"
-      draggable="true"
-      ondragstart="kbCatDragStart(event,${i})"
-      ondragover="event.preventDefault();this.style.borderTop='2px solid var(--gold)'"
-      ondragleave="this.style.borderTop=''"
-      ondrop="kbCatDrop(event,${i})"
-      onclick="kbSelectCat('${cat.id}')"
-      style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid transparent;margin-bottom:4px;cursor:pointer;transition:all 0.15s;${active}">
-      <span style="cursor:grab;color:var(--text-muted);font-size:0.7rem">⠿</span>
-      <span style="font-size:1.1rem">${cat.emoji}</span>
-      <span style="flex:1;font-size:0.82rem;color:var(--text)">${cat.name}</span>
-      <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--text-muted)">${count}</span>
-      <button onclick="event.stopPropagation();kbOpenCatModal('${cat.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:2px 4px">✏️</button>
-    </div>`;
+  list.innerHTML = navStructure.map(function(group, gi) {
+    var itemsHtml = (group.items || []).map(function(item, ii) {
+      var target = item.type === 'external' ? '🔗 ' + (item.url || '') : '📄 ' + (item.page || '');
+      return '<div class="ne-item" draggable="true"' +
+        ' ondragstart="navSubDragSrc=[' + gi + ',' + ii + '];event.dataTransfer.effectAllowed=\'move\'"' +
+        ' ondragover="event.preventDefault()"' +
+        ' ondrop="navSubDrop(event,' + gi + ',' + ii + ')"' +
+        ' style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +
+        '<span style="color:var(--text-muted);cursor:grab;font-size:0.7rem">⠿</span>' +
+        '<span style="font-size:1rem;width:24px;text-align:center">' + (item.emoji || '') + '</span>' +
+        '<span style="flex:1;font-size:0.82rem;color:var(--text)">' + (item.label || '') + '</span>' +
+        '<span style="font-size:0.65rem;color:var(--text-muted);font-family:DM Mono,monospace;margin-right:4px">' + target + '</span>' +
+        '<button onclick="navItemOpen(' + gi + ',' + ii + ')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:2px 6px" title="Edit">✏️</button>' +
+        '</div>';
+    }).join('');
+
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"' +
+      ' draggable="true"' +
+      ' ondragstart="navItemDragSrc=' + gi + ';event.dataTransfer.effectAllowed=\'move\'"' +
+      ' ondragover="event.preventDefault()"' +
+      ' ondrop="navGroupDrop(event,' + gi + ')">' +
+      '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">' +
+        '<span style="color:var(--text-muted);cursor:grab;font-size:0.8rem">⠿</span>' +
+        '<input value="' + (group.label || '') + '" onchange="navStructure[' + gi + '].label=this.value" style="flex:1;background:transparent;border:none;color:var(--gold);font-family:DM Mono,monospace;font-size:0.75rem;letter-spacing:0.1em;outline:none;font-weight:500">' +
+        '<button onclick="navEditorAddItem(' + gi + ')" style="border:none;background:var(--gold-dim);color:var(--gold);border-radius:6px;padding:3px 10px;font-size:0.72rem;cursor:pointer">+ Item</button>' +
+        '<button onclick="navGroupDelete(' + gi + ')" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:0.8rem;padding:2px 6px" title="Delete group">🗑</button>' +
+      '</div>' +
+      '<div style="padding:10px 12px">' + itemsHtml + '</div>' +
+    '</div>';
   }).join('');
 }
 
-function kbSelectCat(catId) {
-  kbCurrentCatId = catId;
-  kbRenderCatList();
-  kbRenderEntries();
-  const cat = kbCategories.find(c => c.id === catId);
-  if (cat) {
-    document.getElementById('kb-entry-panel-title').textContent = cat.emoji + ' ' + cat.name;
-    document.getElementById('kb-add-entry-btn').style.display = 'block';
-  }
-}
-
-// ── Category Drag/Drop ──
-function kbCatDragStart(e, i) {
-  kbCatDragSrc = i;
-  e.dataTransfer.effectAllowed = 'move';
-}
-function kbCatDrop(e, i) {
+function navGroupDrop(e, toIdx) {
   e.preventDefault();
-  document.querySelectorAll('.kb-cat-row').forEach(r => r.style.borderTop = '');
-  if (kbCatDragSrc === null || kbCatDragSrc === i) return;
-  const moved = kbCategories.splice(kbCatDragSrc, 1)[0];
-  kbCategories.splice(i, 0, moved);
-  kbCatDragSrc = null;
-  kbSave();
-  kbRenderCatList();
+  if (navItemDragSrc === null || navItemDragSrc === toIdx) { navItemDragSrc = null; return; }
+  var moved = navStructure.splice(navItemDragSrc, 1)[0];
+  navStructure.splice(toIdx, 0, moved);
+  navItemDragSrc = null;
+  navEditorRender();
 }
 
-// ── Entry List (right panel) ──
-function kbRenderEntries() {
-  const list = document.getElementById('kb-entry-list');
-  if (!list) return;
-  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
-  if (!cat) return;
-  const entries = cat.entries ? Object.values(cat.entries) : [];
-  if (entries.length === 0) {
-    list.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:30px;font-size:0.82rem">No entries yet — click + Add Entry above</div>`;
-    return;
-  }
-  list.innerHTML = entries.map(e => {
-    const imgHtml = e.img
-      ? `<div class="kb-entry-img"><img src="${e.img}" alt="${e.title}" loading="lazy"></div>`
-      : `<div class="kb-entry-img">${cat.emoji}</div>`;
-    const details = (e.details||[]).map(d => `<span class="tag" style="display:inline-block;margin:1px 2px">${d}</span>`).join('');
-    return `<div class="kb-entry">
-      ${imgHtml}
-      <div class="kb-entry-body">
-        <div class="kb-entry-title">${e.title}</div>
-        ${e.notes ? `<div class="kb-entry-note">${e.notes}</div>` : ''}
-        ${details ? `<div style="margin-top:6px">${details}</div>` : ''}
-      </div>
-      <div class="kb-entry-actions">
-        <button class="kb-icon-btn" onclick="kbOpenEntryModal('${e.id}')">✏️</button>
-      </div>
-    </div>`;
-  }).join('');
+function navSubDrop(e, gi, toIdx) {
+  e.preventDefault();
+  if (!navSubDragSrc) return;
+  var fromGi = navSubDragSrc[0], fromIi = navSubDragSrc[1];
+  navSubDragSrc = null;
+  if (fromGi === gi && fromIi === toIdx) return;
+  var item = navStructure[fromGi].items.splice(fromIi, 1)[0];
+  if (!navStructure[gi].items) navStructure[gi].items = [];
+  navStructure[gi].items.splice(toIdx, 0, item);
+  navEditorRender();
 }
 
-// ── Category Modal ──
-function kbOpenCatModal(catId) {
-  kbEditingCatId = catId || null;
-  kbCatImgData = '';
-  const cat = catId ? kbCategories.find(c => c.id === catId) : null;
-  document.getElementById('kb-cat-modal-title').textContent = cat ? 'Edit Category' : 'New Category';
-  document.getElementById('kb-cat-name').value = cat ? cat.name : '';
-  document.getElementById('kb-cat-emoji').value = cat ? cat.emoji : '';
-  document.getElementById('kb-cat-img-url').value = '';
-  document.getElementById('kb-cat-del-btn').style.display = cat ? 'block' : 'none';
-  kbClearImg('cat');
-  if (cat && cat.img) {
-    document.getElementById('kb-cat-preview-img').src = cat.img;
-    document.getElementById('kb-cat-drop-label').style.display = 'none';
-    document.getElementById('kb-cat-drop-preview').style.display = 'block';
-    kbCatImgData = cat.img;
-  }
-  document.getElementById('kb-cat-modal').classList.add('open');
+function navGroupDelete(gi) {
+  if (!confirm('Delete this group and all its items?')) return;
+  navStructure.splice(gi, 1);
+  navEditorRender();
 }
-async function kbCloseCatModal() { document.getElementById('kb-cat-modal').classList.remove('open'); }
 
-async function kbSaveCat() {
-  const name = document.getElementById('kb-cat-name').value.trim();
-  if (!name) { kbToast('Category name required'); return; }
-  const emoji = document.getElementById('kb-cat-emoji').value.trim() || '📁';
-  const img = kbCatImgData || document.getElementById('kb-cat-img-url').value.trim();
-  if (kbEditingCatId) {
-    const cat = kbCategories.find(c => c.id === kbEditingCatId);
-    if (cat) { cat.name = name; cat.emoji = emoji; cat.img = img; }
+function navEditorAddGroup() {
+  navStructure.push({ id: 'group-' + Date.now(), label: '📁 New Group', items: [] });
+  navEditorRender();
+  showToast('Group added — edit label inline');
+}
+
+function navEditorAddItem(gi) {
+  navItemOpen(gi, null);
+}
+
+// ── Nav Item Modal ──
+function navItemOpen(gi, ii) {
+  navEditingGroupIdx = gi;
+  navEditingItemIdx = ii;
+  var item = (ii !== null && navStructure[gi].items[ii]) ? navStructure[gi].items[ii] : null;
+  document.getElementById('nav-item-modal-title').textContent = item ? 'Edit Item' : 'New Item';
+  document.getElementById('ni-emoji').value = item ? (item.emoji || '') : '';
+  document.getElementById('ni-label').value = item ? (item.label || '') : '';
+  document.getElementById('ni-url').value = item ? (item.url || '') : '';
+  document.getElementById('nav-item-del-btn').style.display = item ? 'block' : 'none';
+  navItemSetType(item ? (item.type || 'internal') : 'internal');
+  if (item && item.page) document.getElementById('ni-page').value = item.page;
+  document.getElementById('nav-item-modal').classList.add('open');
+}
+
+function navItemSetType(type) {
+  navItemType = type;
+  var internalBtn = document.getElementById('ni-type-internal');
+  var externalBtn = document.getElementById('ni-type-external');
+  var pageGroup = document.getElementById('ni-page-group');
+  var urlGroup = document.getElementById('ni-url-group');
+  if (type === 'internal') {
+    internalBtn.style.border = '2px solid var(--gold)';
+    internalBtn.style.background = 'var(--gold-dim)';
+    internalBtn.style.color = 'var(--gold)';
+    externalBtn.style.border = '1px solid var(--border-bright)';
+    externalBtn.style.background = 'transparent';
+    externalBtn.style.color = 'var(--text-dim)';
+    pageGroup.style.display = 'block';
+    urlGroup.style.display = 'none';
   } else {
-    const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') + '-' + Date.now();
-    kbCategories.push({ id, name, emoji, img, entries: {}, order: kbCategories.length });
+    externalBtn.style.border = '2px solid var(--gold)';
+    externalBtn.style.background = 'var(--gold-dim)';
+    externalBtn.style.color = 'var(--gold)';
+    internalBtn.style.border = '1px solid var(--border-bright)';
+    internalBtn.style.background = 'transparent';
+    internalBtn.style.color = 'var(--text-dim)';
+    urlGroup.style.display = 'block';
+    pageGroup.style.display = 'none';
   }
-  await kbSave();
-  kbCloseCatModal();
-  kbRenderCatList();
-  if (kbCurrentCatId) kbRenderEntries();
-  kbToast('✓ Saved');
 }
 
-async function kbDeleteCat() {
-  if (!kbEditingCatId || !confirm('Delete this category and all its entries?')) return;
-  kbCategories = kbCategories.filter(c => c.id !== kbEditingCatId);
-  if (kbCurrentCatId === kbEditingCatId) {
-    kbCurrentCatId = null;
-    document.getElementById('kb-entry-panel-title').textContent = 'Select a category →';
-    document.getElementById('kb-add-entry-btn').style.display = 'none';
-    document.getElementById('kb-entry-list').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;font-size:0.82rem">Select a category on the left</div>';
-  }
-  await kbSave();
-  kbCloseCatModal();
-  kbRenderCatList();
-  kbToast('🗑 Deleted');
-}
-
-// ── Entry Modal ──
-function kbOpenEntryModal(entryId) {
-  if (!kbCurrentCatId) { kbToast('Select a category first'); return; }
-  kbEditingEntryId = entryId || null;
-  kbEntryImgData = '';
-  kbDDItems = [];
-  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
-  const entry = entryId && cat && cat.entries ? cat.entries[entryId] : null;
-  document.getElementById('kb-entry-modal-title').textContent = entry ? 'Edit Entry' : 'New Entry';
-  document.getElementById('kb-entry-title-input').value = entry ? entry.title : '';
-  document.getElementById('kb-entry-notes').value = entry ? entry.notes || '' : '';
-  document.getElementById('kb-entry-img-url').value = '';
-  document.getElementById('kb-entry-del-btn').style.display = entry ? 'block' : 'none';
-  kbClearImg('entry');
-  if (entry && entry.img) {
-    document.getElementById('kb-entry-preview-img').src = entry.img;
-    document.getElementById('kb-entry-drop-label').style.display = 'none';
-    document.getElementById('kb-entry-drop-preview').style.display = 'block';
-    kbEntryImgData = entry.img;
-  }
-  kbDDItems = entry && entry.details ? [...entry.details] : [];
-  kbRenderDDList();
-  document.getElementById('kb-entry-modal').classList.add('open');
-}
-async function kbCloseEntryModal() { document.getElementById('kb-entry-modal').classList.remove('open'); }
-
-async function kbSaveEntry() {
-  const title = document.getElementById('kb-entry-title-input').value.trim();
-  if (!title) { kbToast('Title required'); return; }
-  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
-  if (!cat) return;
-  const img = kbEntryImgData || document.getElementById('kb-entry-img-url').value.trim();
-  const id = kbEditingEntryId || title.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
-  if (!cat.entries) cat.entries = {};
-  cat.entries[id] = {
-    id, title,
-    notes: document.getElementById('kb-entry-notes').value.trim(),
-    details: kbDDItems,
-    img,
-    updated: Date.now()
+function navItemSave() {
+  var label = document.getElementById('ni-label').value.trim();
+  if (!label) { showToast('Label required'); return; }
+  var item = {
+    emoji: document.getElementById('ni-emoji').value.trim(),
+    label: label,
+    type: navItemType,
+    page: navItemType === 'internal' ? document.getElementById('ni-page').value : '',
+    url: navItemType === 'external' ? document.getElementById('ni-url').value.trim() : ''
   };
-  await kbSave();
-  kbCloseEntryModal();
-  kbRenderEntries();
-  kbRenderCatList();
-  kbToast('✓ Entry saved');
+  if (!navStructure[navEditingGroupIdx].items) navStructure[navEditingGroupIdx].items = [];
+  if (navEditingItemIdx !== null) {
+    navStructure[navEditingGroupIdx].items[navEditingItemIdx] = item;
+  } else {
+    navStructure[navEditingGroupIdx].items.push(item);
+  }
+  navItemClose();
+  navEditorRender();
 }
 
-async function kbDeleteEntry() {
-  if (!kbEditingEntryId) return;
-  if (!confirm('Delete this entry?')) return;
-  const cat = kbCategories.find(c => c.id === kbCurrentCatId);
-  if (cat && cat.entries) delete cat.entries[kbEditingEntryId];
-  await kbSave();
-  kbCloseEntryModal();
-  kbRenderEntries();
-  kbRenderCatList();
-  kbToast('🗑 Deleted');
+function navItemDelete() {
+  if (navEditingItemIdx === null) return;
+  navStructure[navEditingGroupIdx].items.splice(navEditingItemIdx, 1);
+  navItemClose();
+  navEditorRender();
 }
 
-// ── DD Items (drag/drop detail list) ──
-function kbRenderDDList() {
-  const list = document.getElementById('kb-dd-list');
-  if (!list) return;
-  list.innerHTML = kbDDItems.map((item, i) =>
-    `<div class="dd-item" draggable="true" data-i="${i}"
-      ondragstart="kbDDDragStart(event,${i})"
-      ondragover="event.preventDefault()"
-      ondrop="kbDDDrop(event,${i})">
-      <span class="dd-item-handle">⠿</span>
-      <span class="dd-item-text">${item}</span>
-      <button class="dd-item-del" onclick="kbRemoveDDItem(${i})">✕</button>
-    </div>`
-  ).join('');
+function navItemClose() {
+  document.getElementById('nav-item-modal').classList.remove('open');
 }
-function kbDDDragStart(e, i) { kbDragSrcIdx = i; }
-function kbDDDrop(e, i) {
-  e.preventDefault();
-  if (kbDragSrcIdx === null || kbDragSrcIdx === i) return;
-  const moved = kbDDItems.splice(kbDragSrcIdx, 1)[0];
-  kbDDItems.splice(i, 0, moved);
-  kbDragSrcIdx = null;
-  kbRenderDDList();
-}
-function kbAddDDItem() {
-  const inp = document.getElementById('kb-dd-input');
-  const val = inp.value.trim();
-  if (!val) return;
-  kbDDItems.push(val);
-  inp.value = '';
-  kbRenderDDList();
-}
-function kbRemoveDDItem(i) { kbDDItems.splice(i, 1); kbRenderDDList(); }
 
-// ── Image Handling ──
-function kbCompressImage(dataUrl, callback) {
-  const img = new Image();
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    const MAX = 600;
-    let w = img.width, h = img.height;
-    if (w > h) { if (w > MAX) { h = h*MAX/w; w = MAX; } }
-    else { if (h > MAX) { w = w*MAX/h; h = MAX; } }
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    callback(canvas.toDataURL('image/jpeg', 0.7));
-  };
-  img.src = dataUrl;
+document.getElementById('nav-item-modal').addEventListener('click', function(e) {
+  if (e.target === this) navItemClose();
+});
+
+async function navEditorSave() {
+  try {
+    document.getElementById('nav-editor-status').textContent = 'Saving…';
+    await db.ref(NAV_EDITOR_PATH).set(navStructure);
+    applyNavStructure();
+    document.getElementById('nav-editor-status').textContent = 'Saved & applied ✓';
+    showToast('✓ Nav saved & applied');
+  } catch(e) {
+    document.getElementById('nav-editor-status').textContent = 'Error: ' + e.message;
+  }
 }
-function kbHandleFile(event, type) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => kbLoadImgPreview(e.target.result, type);
-  reader.readAsDataURL(file);
+
+async function navEditorReset() {
+  if (!confirm('Reset navigation to default?')) return;
+  navStructure = DEFAULT_NAV.map(function(g) { return JSON.parse(JSON.stringify(g)); });
+  await db.ref(NAV_EDITOR_PATH).set(navStructure);
+  applyNavStructure();
+  navEditorRender();
+  showToast('↺ Reset to default');
 }
-function kbHandleDrop(event, type) {
-  event.preventDefault();
-  const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
-  document.getElementById(pfx + '-drop').classList.remove('drag-over');
-  const file = event.dataTransfer.files[0];
-  if (!file || !file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = e => kbLoadImgPreview(e.target.result, type);
-  reader.readAsDataURL(file);
-}
-function kbLoadImgPreview(dataUrl, type) {
-  kbCompressImage(dataUrl, compressed => {
-    const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
-    if (type === 'cat') kbCatImgData = compressed;
-    else kbEntryImgData = compressed;
-    document.getElementById(pfx + '-preview-img').src = compressed;
-    document.getElementById(pfx + '-drop-label').style.display = 'none';
-    document.getElementById(pfx + '-drop-preview').style.display = 'block';
+
+function applyNavStructure() {
+  // Rebuild the collapsible nav groups in the sidebar
+  var nav = document.querySelector('nav');
+  if (!nav) return;
+
+  // Remove existing nav groups (keep the Philinity AI item and Edit Categories button at top/bottom)
+  var toRemove = nav.querySelectorAll('.nav-label, .nav-group, .nav-item:not([data-page="ai"])');
+  toRemove.forEach(function(el) { el.remove(); });
+  // Also remove the Edit Categories button wrapper if present
+  var editBtn = nav.querySelector('div[style*="padding: 0 12px"]');
+  if (editBtn) editBtn.remove();
+
+  // Re-insert nav groups before the Edit Categories button area
+  var fragment = document.createDocumentFragment();
+
+  navStructure.forEach(function(group) {
+    var gid = group.id || ('g-' + Math.random().toString(36).substr(2,6));
+    group.id = gid;
+
+    // Label (collapsible header)
+    var labelDiv = document.createElement('div');
+    labelDiv.className = 'nav-label nav-collapsible';
+    labelDiv.setAttribute('data-group', gid);
+    labelDiv.onclick = function() { toggleNavGroup(gid); };
+    labelDiv.innerHTML = '<span>' + (group.label || 'Group') + '</span><span class="nav-caret" id="caret-' + gid + '">›</span>';
+    fragment.appendChild(labelDiv);
+
+    // Group container
+    var groupDiv = document.createElement('div');
+    groupDiv.className = 'nav-group';
+    groupDiv.id = 'group-' + gid;
+    groupDiv.style.display = 'none';
+
+    (group.items || []).forEach(function(item) {
+      var itemDiv = document.createElement('div');
+      itemDiv.className = 'nav-item';
+      if (item.type === 'external') {
+        itemDiv.onclick = function() { window.open(item.url, '_blank'); closeMobileNav(); };
+      } else {
+        itemDiv.setAttribute('data-page', item.page || '');
+        itemDiv.onclick = function() { navigateTo(item.page); closeMobileNav(); };
+      }
+      itemDiv.innerHTML = '<span class="nav-icon">' + (item.emoji || '📄') + '</span> ' + (item.label || '');
+      groupDiv.appendChild(itemDiv);
+    });
+
+    fragment.appendChild(groupDiv);
   });
-}
-function kbHandleUrl(url, type) {
-  if (!url) return;
-  const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
-  if (type === 'cat') kbCatImgData = url;
-  else kbEntryImgData = url;
-  document.getElementById(pfx + '-preview-img').src = url;
-  document.getElementById(pfx + '-drop-label').style.display = 'none';
-  document.getElementById(pfx + '-drop-preview').style.display = 'block';
-}
-function kbClearImg(type) {
-  const pfx = type === 'cat' ? 'kb-cat' : 'kb-entry';
-  if (type === 'cat') kbCatImgData = '';
-  else kbEntryImgData = '';
-  document.getElementById(pfx + '-preview-img').src = '';
-  document.getElementById(pfx + '-drop-label').style.display = 'block';
-  document.getElementById(pfx + '-drop-preview').style.display = 'none';
+
+  // Add Edit Categories button back
+  var editWrapper = document.createElement('div');
+  editWrapper.style.cssText = 'padding: 0 12px 12px; margin-top: 8px;';
+  var editBtn2 = document.createElement('button');
+  editBtn2.textContent = '✏️ Edit Navigation';
+  editBtn2.onclick = function() { navigateTo('knowledge'); };
+  editBtn2.style.cssText = 'width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(201,169,110,0.35);background:rgba(201,169,110,0.08);color:var(--gold);font-family:Outfit,sans-serif;font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s';
+  editBtn2.onmouseover = function() { this.style.background='rgba(201,169,110,0.18)'; };
+  editBtn2.onmouseout = function() { this.style.background='rgba(201,169,110,0.08)'; };
+  editWrapper.appendChild(editBtn2);
+
+  nav.appendChild(fragment);
+  nav.appendChild(editWrapper);
 }
 
-// ── Toast ──
-function kbToast(msg) {
-  const t = document.getElementById('toast');
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
-
-// Close modals on overlay click
-document.getElementById('kb-cat-modal').addEventListener('click', e => { if(e.target===e.currentTarget) kbCloseCatModal(); });
-document.getElementById('kb-entry-modal').addEventListener('click', e => { if(e.target===e.currentTarget) kbCloseEntryModal(); });
 
 // ── Collapsible Nav handled in inline script above ──// ── Collapsible Nav handled in inline script above ──
 
@@ -3094,7 +2984,7 @@ async function saveAIProjects() {
   await saveAIProjectsToDB();
   renderAIProjectBubbles();
   closeAIProjectsModal();
-  kbToast('✓ AI Projects saved');
+  showToast('✓ AI Projects saved');
 }
 
 document.getElementById('ai-proj-modal').addEventListener('click', function(e) {
@@ -3253,7 +3143,7 @@ async function closeContactModal() { document.getElementById('contact-modal').cl
 
 async function saveContact() {
   var name = document.getElementById('c-name').value.trim();
-  if (!name) { kbToast('Name required'); return; }
+  if (!name) { showToast('Name required'); return; }
   var id = editingContactId || name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '-' + Date.now();
   var contact = {
     id, name,
@@ -3279,7 +3169,7 @@ async function saveContact() {
   activeContactCat = 'All';
   renderContactCatChips();
   renderContacts(allContacts);
-  kbToast('✓ Contact saved');
+  showToast('✓ Contact saved');
 }
 
 async function deleteContact() {
@@ -3290,7 +3180,7 @@ async function deleteContact() {
   closeContactModal();
   renderContactCatChips();
   renderContacts(allContacts);
-  kbToast('🗑 Deleted');
+  showToast('🗑 Deleted');
 }
 
 function contactHandleFile(event) {
@@ -3325,12 +3215,12 @@ document.getElementById('contact-modal').addEventListener('click', function(e) {
 async function importContactsCSV(event) {
   var file = event.target.files[0];
   if (!file) return;
-  kbToast('📥 Reading CSV...');
+  showToast('📥 Reading CSV...');
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
       var parsed = parseGoogleCSV(e.target.result);
-      if (!parsed.length) { kbToast('No contacts found in CSV'); return; }
+      if (!parsed.length) { showToast('No contacts found in CSV'); return; }
       if (!confirm('Import ' + parsed.length + ' contacts? This will MERGE with existing contacts.')) return;
       // Merge — existing contacts by ID take priority, new ones added
       var existingIds = new Set(allContacts.map(c => c.id));
@@ -3345,24 +3235,24 @@ async function importContactsCSV(event) {
       var batchSize = 100;
       var total = newContacts.length;
       var done = 0;
-      kbToast('📥 Saving ' + total + ' contacts...');
+      showToast('📥 Saving ' + total + ' contacts...');
       async function writeBatch(i) {
         if (i >= total) {
           contactsLoaded = true;
           renderContactCatChips();
           renderContacts(allContacts);
-          kbToast('✓ Imported ' + total + ' new contacts!');
+          showToast('✓ Imported ' + total + ' new contacts!');
           return;
         }
         var batch = newContacts.slice(i, i + batchSize);
         await saveContactsToDB(batch);
         done += batch.length;
-        kbToast('📥 Saving... ' + done + ' / ' + total);
+        showToast('📥 Saving... ' + done + ' / ' + total);
         setTimeout(function() { writeBatch(i + batchSize); }, 200);
       }
       writeBatch(0);
     } catch(err) {
-      kbToast('Error parsing CSV: ' + err.message);
+      showToast('Error parsing CSV: ' + err.message);
       console.error(err);
     }
   };
@@ -3476,7 +3366,7 @@ function parseCSVLine(line) {
 // Init Firebase then load KB
 async function appInit() {
   await initFirebase();
-  await kbInit();       // loads KB categories
+  await navEditorInit(); // loads nav structure
   await loadAIProjects(); // loads AI project bubbles
   // Contacts load lazily when Contacts page is first opened
 }
@@ -3488,7 +3378,13 @@ if (document.readyState === 'loading') {
   appInit();
 }
 
-
+// ============================================================
+// Philinity Command Center © Rev 3.5
+// Fixes: password gate, Firebase Storage SDK, async bugs fixed,
+//        photo URL stripping on CSV import
+// New:   Nav Editor replaces Knowledge Base — drag/drop groups
+//        & items, internal + external links, Firebase synced
+// ============================================================
 
 </script>
 </body>
