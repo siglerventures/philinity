@@ -133,6 +133,24 @@ nav {
   overflow-y: auto;
 }
 
+.nav-collapsible {
+  cursor: pointer !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  transition: color 0.2s;
+}
+.nav-collapsible:hover { color: var(--gold) !important; }
+.nav-caret {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: transform 0.25s;
+  display: inline-block;
+}
+.nav-caret.open { transform: rotate(90deg); color: var(--gold); }
+.nav-group { overflow: hidden; transition: all 0.25s; }
+
 .nav-label {
   font-family: 'DM Mono', monospace;
   font-size: 0.6rem;
@@ -849,51 +867,55 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 
 <!-- SIDEBAR -->
 <nav>
-  <div class="nav-label">Dashboard</div>
+  <!-- Dashboard — always visible, no collapse -->
+  <div class="nav-label" style="cursor:default">🏛 Dashboard</div>
   <div class="nav-item active" data-page="home">
-    <span class="nav-icon">🏛</span> Overview
+    <span class="nav-icon">⚡</span> Overview
   </div>
   <div class="nav-item" data-page="ai">
     <span class="nav-icon">✦</span> AI Assistant
   </div>
 
-  <div class="nav-label">Home</div>
-  <div class="nav-item" data-page="house">
-    <span class="nav-icon">🏠</span> Philinity
+  <!-- 🏠 Home -->
+  <div class="nav-label nav-collapsible" data-group="home" onclick="toggleNavGroup('home')">
+    <span>🏠 Home</span><span class="nav-caret" id="caret-home">›</span>
   </div>
-  <div class="nav-item" data-page="systems">
-    <span class="nav-icon">⚡</span> Smart Home
-  </div>
-  <div class="nav-item" data-page="pool">
-    <span class="nav-icon">🏊</span> Pool & Spa
-  </div>
-
-  <div class="nav-label">Ventures</div>
-  <div class="nav-item" data-page="ventures">
-    <span class="nav-icon">📈</span> Portfolio
-  </div>
-  <div class="nav-item" data-page="philinity-prop">
-    <span class="nav-icon">🏡</span> Philinity Asset
-  </div>
-  <div class="nav-item" data-page="synergy">
-    <span class="nav-icon">🏗</span> Synergy Summit
+  <div class="nav-group" id="group-home" style="display:none">
+    <div class="nav-item" data-page="house"><span class="nav-icon">🏠</span> Philinity</div>
+    <div class="nav-item" data-page="systems"><span class="nav-icon">⚡</span> Smart Home</div>
+    <div class="nav-item" data-page="pool"><span class="nav-icon">🏊</span> Pool & Spa</div>
   </div>
 
-  <div class="nav-label">Life</div>
-  <div class="nav-item" data-page="drinks">
-    <span class="nav-icon">🥃</span> Cocktails
+  <!-- 💼 Sigler Ventures -->
+  <div class="nav-label nav-collapsible" data-group="ventures" onclick="toggleNavGroup('ventures')">
+    <span>💼 Sigler Ventures</span><span class="nav-caret" id="caret-ventures">›</span>
+  </div>
+  <div class="nav-group" id="group-ventures" style="display:none">
+    <div class="nav-item" data-page="ventures"><span class="nav-icon">📈</span> Portfolio</div>
+    <div class="nav-item" data-page="philinity-prop"><span class="nav-icon">🏡</span> Philinity Asset</div>
+    <div class="nav-item" data-page="synergy"><span class="nav-icon">🏗</span> Synergy Summit</div>
   </div>
 
-  <div class="nav-item" data-page="knowledge">
-    <span class="nav-icon">📚</span> Knowledge Base
+  <!-- 🌿 Life -->
+  <div class="nav-label nav-collapsible" data-group="life" onclick="toggleNavGroup('life')">
+    <span>🌿 Life</span><span class="nav-caret" id="caret-life">›</span>
+  </div>
+  <div class="nav-group" id="group-life" style="display:none">
+    <div class="nav-item" data-page="drinks"><span class="nav-icon">🥃</span> Cocktails</div>
+    <div class="nav-item" data-page="knowledge"><span class="nav-icon">📚</span> Knowledge Base</div>
   </div>
 
-  <div class="nav-label">Apps</div>
-  <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/eats/','_blank')">
-    <span class="nav-icon">🍽</span> Dining Guide ↗
+  <!-- 🚀 Apps -->
+  <div class="nav-label nav-collapsible" data-group="apps" onclick="toggleNavGroup('apps')">
+    <span>🚀 Apps</span><span class="nav-caret" id="caret-apps">›</span>
   </div>
-  <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/taskboard/','_blank')">
-    <span class="nav-icon">✅</span> Task Board ↗
+  <div class="nav-group" id="group-apps" style="display:none">
+    <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/eats/','_blank')">
+      <span class="nav-icon">🍽</span> Dining Guide ↗
+    </div>
+    <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/taskboard/','_blank')">
+      <span class="nav-icon">📋</span> Task Board ↗
+    </div>
   </div>
 </nav>
 
@@ -2539,6 +2561,30 @@ document.querySelector('[data-page="knowledge"]').addEventListener('click', () =
   if (kbCategories.length === 0) kbInit();
 });
 
+// ── Collapsible Nav ──
+function toggleNavGroup(group) {
+  const el = document.getElementById('group-' + group);
+  const caret = document.getElementById('caret-' + group);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  caret.classList.toggle('open', !isOpen);
+}
+
+// Auto-expand group when a nav item inside it is clicked
+document.querySelectorAll('.nav-group .nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const group = item.closest('.nav-group');
+    if (group) {
+      const id = group.id.replace('group-', '');
+      const el = document.getElementById('group-' + id);
+      const caret = document.getElementById('caret-' + id);
+      if (el) { el.style.display = 'block'; }
+      if (caret) { caret.classList.add('open'); }
+    }
+  });
+});
+
 // Init
 initFirebase();
 
@@ -2555,6 +2601,6 @@ initFirebase();
   background: rgba(10,10,12,0.85);
   position: relative;
   z-index: 1;
-">Philinity Command Center ©️ Rev 1.4</footer>
+">Philinity Command Center ©️ Rev 1.5</footer>
 </body>
 </html>
