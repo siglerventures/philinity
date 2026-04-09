@@ -4600,6 +4600,8 @@ function applyNavStructure() {
       itemDiv.className = 'nav-item';
       if (item.type === 'external') {
         itemDiv.onclick = function() { window.open(item.url, '_blank'); closeMobileNav(); };
+      } else if (item.page === 'backup') {
+        itemDiv.onclick = function() { hdBackupDatabase(); closeMobileNav(); };
       } else {
         itemDiv.setAttribute('data-page', item.page || '');
         (function(el, pg) { el.onclick = function() { navigateTo(pg, el); closeMobileNav(); }; })(itemDiv, item.page);
