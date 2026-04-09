@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.9</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.0</span>
       </div>
     </div>
 
@@ -2144,7 +2144,7 @@ function checkPW() {
     <div onclick="hdColCtxMoveRight()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#8594; Move Right</div>
     <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
-    <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
+    <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
     <div onclick="hdResetColWidths(hdCurrentSheet)" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#8596; Reset Column Widths</div>
     <div onclick="hdColCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">&#128465;&#65039; Delete Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
@@ -2471,18 +2471,15 @@ Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% h
 - **Sierra** VanTassell — SierraKVanTassell@gmail.com · 208-713-8714 · DOB Mar 28, 2005
 
 ## HOUSE DATA — SAVING ITEMS
-When the user asks you to add, save, or log an item to House Data (furniture, appliances, purchases, etc.), you MUST:
-1. Confirm what you're saving in natural language
-2. Output a save command at the END of your reply in this exact format (no spaces inside the tags):
-%%SAVE_TO_HOUSE_DATA:{"sheet_key":"furniture","sheet_name":"Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"","url":"https://amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall, ergonomic with footrest, white"}%%
+When the user asks you to add, save, or log any item to House Data, you MUST:
+1. Respond naturally describing what you saved
+2. At the END of your reply emit one %%SAVE_TO_HOUSE_DATA:...%% block per distinct item
 
-Rules for the JSON:
-- sheet_key: lowercase-hyphenated key matching the sheet (furniture, appliances, office-furniture, etc.)
-- sheet_name: display name of the sheet
-- item: full descriptive item name
-- brand, qty, price, url, notes: include whatever the user provided
-- If user mentions multiple distinct items, output multiple %%SAVE_TO_HOUSE_DATA:...%% blocks
-- Never fabricate prices or quantities not mentioned by the user
+Format (valid JSON, no line breaks inside the block):
+%%SAVE_TO_HOUSE_DATA:{"sheet_key":"furniture","sheet_name":"Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
+
+sheet_key rules: furniture, appliances, office-furniture, blinds, lighting, plumbing, electronics — use the closest match or create a logical new one (lowercase-hyphenated).
+Never fabricate prices or quantities not stated by the user. If multiple distinct items, emit multiple blocks.
 
 ## POOL CHEMICALS
 - EASYTEST 7-Way Pool Test Strips
@@ -2693,17 +2690,17 @@ async function aiSaveToHouseData(itemJson) {
     var item = typeof itemJson === 'string' ? JSON.parse(itemJson) : itemJson;
     var sheetKey = item.sheet_key || 'furniture';
     var sheetName = item.sheet_name || 'Furniture';
-
-    // Ensure sheet exists
     if (!hdAllSheets[sheetKey]) {
       hdAllSheets[sheetKey] = { sheet_name: sheetName, rows: [], row_count: 0, exported_at: new Date().toISOString() };
       if (hdSheetOrder.indexOf(sheetKey) === -1) hdSheetOrder.push(sheetKey);
       await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
     }
     if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
-
-    // Build clean row
+    // Build row — normalize image field to 'img' so it renders left as thumbnail
     var row = { added: new Date().toLocaleDateString('en-US') };
+    if (item.img || item.pic || item.pics || item.photo || item.image) {
+      row.img = item.img || item.pic || item.pics || item.photo || item.image;
+    }
     if (item.item)    row.item    = item.item;
     if (item.brand)   row.brand   = item.brand;
     if (item.qty)     row.qty     = String(item.qty);
@@ -2711,7 +2708,6 @@ async function aiSaveToHouseData(itemJson) {
     if (item.variant) row.variant = item.variant;
     if (item.url)     row.url     = item.url;
     if (item.notes)   row.notes   = item.notes;
-
     hdAllSheets[sheetKey].rows.push(row);
     hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
     await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
@@ -2769,28 +2765,26 @@ window.sendMessage = async function() {
       addMessage('ai', `Error: ${data.error.message}`);
     } else {
       const reply = data.content?.[0]?.text || 'No response received.';
-
-      // ── Detect Firebase save command in AI reply ──
-      const saveMatch = reply.match(/%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/);
-      if (saveMatch) {
-        try {
-          const result = await aiSaveToHouseData(saveMatch[1]);
-          const cleanReply = reply.replace(/%%SAVE_TO_HOUSE_DATA:[\s\S]*?%%/, '').trim();
-          addMessage('ai', cleanReply);
-          if (result.success) {
-            showToast('✅ Saved "' + result.item + '" to ' + result.sheet);
-            // Reload house data if it's loaded
-            if (hdLoaded) { hdLoaded = false; await hdInit(); }
-          } else {
-            showToast('⚠️ Save failed: ' + result.error);
-          }
-        } catch(e) {
-          addMessage('ai', reply);
+      // Check for save commands
+      const saveRegex = /%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/g;
+      const saveMatches = [...reply.matchAll(saveRegex)];
+      if (saveMatches.length > 0) {
+        const cleanReply = reply.replace(/%%SAVE_TO_HOUSE_DATA:[\s\S]*?%%/g, '').trim();
+        addMessage('ai', cleanReply);
+        for (const match of saveMatches) {
+          try {
+            const result = await aiSaveToHouseData(match[1]);
+            if (result.success) {
+              showToast('\u2705 Saved \u201c' + result.item + '\u201d to ' + result.sheet);
+              if (hdLoaded) { hdLoaded = false; await hdInit(); }
+            } else {
+              showToast('\u26a0\ufe0f Save failed: ' + result.error);
+            }
+          } catch(e) { showToast('Save error: ' + e.message); }
         }
       } else {
         addMessage('ai', reply);
       }
-
       messages.push({ role: 'assistant', content: reply });
       if (messages.length > 40) messages = messages.slice(-40);
     }
@@ -3200,10 +3194,7 @@ function hdRenderTable(rows) {
         resizeHandle.onmousedown = function(e) {
           e.preventDefault(); e.stopPropagation();
           var startX = e.clientX, startW = thEl.offsetWidth;
-          function onMove(ev) {
-            var newW = Math.max(50, startW + (ev.clientX - startX));
-            thEl.style.width = newW + 'px'; thEl.style.minWidth = newW + 'px';
-          }
+          function onMove(ev) { var newW = Math.max(50, startW + (ev.clientX - startX)); thEl.style.width = newW + 'px'; thEl.style.minWidth = newW + 'px'; }
           function onUp(ev) {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
@@ -4336,76 +4327,38 @@ function hdFormatCellValue(colKey, val, sheetKey) {
   var str = String(val).trim();
   var fmt = 'auto';
   var cfg = hdColConfig[sheetKey || hdCurrentSheet];
-  if (cfg && cfg.col_formats && cfg.col_formats[colKey]) {
-    fmt = cfg.col_formats[colKey];
-  } else if (hdLooksLikePrice(colKey, val)) {
-    fmt = 'currency';
-  }
-  if (fmt === 'currency') {
-    var num = parseFloat(str.replace(/[^0-9.-]/g, ''));
-    if (!isNaN(num)) return '$' + Math.round(num).toLocaleString('en-US');
-    return str;
-  }
-  if (fmt === 'date') {
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) return str;
-    var d = new Date(str);
-    if (!isNaN(d.getTime()) && str.length > 3) return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
-    return str;
-  }
-  if (fmt === 'number') {
-    var n = parseFloat(str.replace(/[^0-9.-]/g, ''));
-    if (!isNaN(n)) return n.toLocaleString('en-US');
-    return str;
-  }
-  var maybeNum = parseFloat(str);
-  if (!isNaN(maybeNum) && str.indexOf('.') > -1) {
-    var rounded = parseFloat(maybeNum.toFixed(2));
-    if (String(rounded) !== str) return String(rounded);
-  }
+  if (cfg && cfg.col_formats && cfg.col_formats[colKey]) { fmt = cfg.col_formats[colKey]; }
+  else if (hdLooksLikePrice(colKey, val)) { fmt = 'currency'; }
+  if (fmt === 'currency') { var num = parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(num) ? '$'+Math.round(num).toLocaleString('en-US') : str; }
+  if (fmt === 'date') { if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) return str; var d=new Date(str); return !isNaN(d.getTime())&&str.length>3?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():str; }
+  if (fmt === 'number') { var n=parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(n)?n.toLocaleString('en-US'):str; }
+  var m=parseFloat(str); if(!isNaN(m)&&str.indexOf('.')>-1){var r=parseFloat(m.toFixed(2));if(String(r)!==str)return String(r);}
   return str;
 }
 function hdGetColFormat(sheetKey, colKey) {
   var cfg = hdColConfig[sheetKey];
-  if (cfg && cfg.col_formats && cfg.col_formats[colKey]) return cfg.col_formats[colKey];
-  return 'auto';
+  return (cfg && cfg.col_formats && cfg.col_formats[colKey]) ? cfg.col_formats[colKey] : 'auto';
 }
 async function hdColCtxFormat(formatType) {
-  var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
-  hdHideColCtxMenu(true);
-  if (!savedKey || !savedSheet) return;
-  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
-  if (!hdColConfig[savedSheet].col_formats) hdColConfig[savedSheet].col_formats = {};
-  if (formatType === 'auto') { delete hdColConfig[savedSheet].col_formats[savedKey]; }
-  else { hdColConfig[savedSheet].col_formats[savedKey] = formatType; }
+  var savedKey=hdColCtxKey, savedSheet=hdColCtxSheetKey; hdHideColCtxMenu(true);
+  if (!savedKey||!savedSheet) return;
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet]={col_order:[],col_names:{},col_hidden:[],col_formats:{}};
+  if (!hdColConfig[savedSheet].col_formats) hdColConfig[savedSheet].col_formats={};
+  if (formatType==='auto') { delete hdColConfig[savedSheet].col_formats[savedKey]; }
+  else { hdColConfig[savedSheet].col_formats[savedKey]=formatType; }
   try {
-    await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(savedSheet)).set(hdColConfig[savedSheet]);
+    await db.ref(HD_COL_CONFIG_PATH+'/'+hdColConfigKey(savedSheet)).set(hdColConfig[savedSheet]);
     hdSelectSheet(hdCurrentSheet);
-    var names = { currency: 'Currency ($)', text: 'Text', date: 'Date', number: 'Number', auto: 'Auto' };
-    showToast('Column format: ' + (names[formatType] || formatType));
-  } catch(e) { showToast('Error: ' + e.message); }
+    var names={currency:'Currency ($)',text:'Text',date:'Date',number:'Number',auto:'Auto'};
+    showToast('Column format: '+(names[formatType]||formatType));
+  } catch(e) { showToast('Error: '+e.message); }
 }
 // ── Column Width ──
-var HD_COL_WIDTHS_KEY = 'hd_col_widths';
-function hdGetColWidths() {
-  try { return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY) || '{}'); } catch(e) { return {}; }
-}
-function hdGetColWidth(sheetKey, colKey) {
-  var widths = hdGetColWidths();
-  return (widths[sheetKey] && widths[sheetKey][colKey]) ? widths[sheetKey][colKey] : null;
-}
-function hdSaveColWidth(sheetKey, colKey, width) {
-  var widths = hdGetColWidths();
-  if (!widths[sheetKey]) widths[sheetKey] = {};
-  widths[sheetKey][colKey] = Math.round(width);
-  localStorage.setItem(HD_COL_WIDTHS_KEY, JSON.stringify(widths));
-}
-function hdResetColWidths(sheetKey) {
-  var widths = hdGetColWidths();
-  delete widths[sheetKey];
-  localStorage.setItem(HD_COL_WIDTHS_KEY, JSON.stringify(widths));
-  hdSelectSheet(hdCurrentSheet);
-  showToast('Column widths reset');
-}
+var HD_COL_WIDTHS_KEY='hd_col_widths';
+function hdGetColWidths() { try{return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY)||'{}')}catch(e){return{}} }
+function hdGetColWidth(sheetKey,colKey) { var w=hdGetColWidths(); return (w[sheetKey]&&w[sheetKey][colKey])?w[sheetKey][colKey]:null; }
+function hdSaveColWidth(sheetKey,colKey,width) { var w=hdGetColWidths(); if(!w[sheetKey])w[sheetKey]={}; w[sheetKey][colKey]=Math.round(width); localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w)); }
+function hdResetColWidths(sheetKey) { var w=hdGetColWidths(); delete w[sheetKey]; localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w)); hdSelectSheet(hdCurrentSheet); showToast('Column widths reset'); }
 
 // ══════════ NAV EDITOR ══════════
 const NAV_EDITOR_PATH = 'philinity/nav_structure';
@@ -5259,7 +5212,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.9
+// Philinity Command Center © Rev 6.0
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5292,8 +5245,8 @@ if (document.readyState === 'loading') {
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS column types, drag-resize columns, Also In auto-hidden
-// Rev 5.8  AI chat can now write items directly to Firebase House Data
-// Rev 5.9  Multi-item AI saves, system prompt save rules, sheet auto-create
+// Rev 5.8  AI chat writes items directly to Firebase House Data
+// Rev 6.0  Image field normalized to 'img' so photos render far-left as thumbnail
 // ============================================================
 
 </script>
