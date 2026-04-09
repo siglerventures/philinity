@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.1</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.2</span>
       </div>
     </div>
 
@@ -2705,9 +2705,7 @@ async function aiSaveToHouseData(itemJson) {
     hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
     await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
     return { success: true, sheet: sheetName, item: row.item };
-  } catch(e) {
-    return { success: false, error: e.message };
-  }
+  } catch(e) { return { success: false, error: e.message }; }
 }
 
 window.sendMessage = async function() {
@@ -3154,7 +3152,7 @@ function hdRenderTable(rows) {
   }
 
   var table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem;table-layout:fixed';
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem';
 
   // Header
   var thead = document.createElement('thead');
@@ -3171,30 +3169,10 @@ function hdRenderTable(rows) {
       var hdFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
       var hdFmtBadge = hdFmt === 'currency' ? ' $' : hdFmt === 'date' ? ' [D]' : hdFmt === 'number' ? ' #' : hdFmt === 'text' ? ' T' : '';
       th.textContent = displayName + hdFmtBadge + arrow;
-      var savedW = hdCurrentSheet ? hdGetColWidth(hdCurrentSheet, k) : null;
-      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:relative;overflow:hidden;' + (savedW ? 'width:'+savedW+'px;min-width:'+savedW+'px' : 'min-width:60px');
-      th.title = 'Click to sort  |  Right-click to format/rename/reorder  |  Drag right edge to resize';
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none';
+      th.title = 'Click to sort  |  Right-click to format/rename/reorder';
       th.onmouseover = function() { this.style.color = 'var(--text)'; };
       th.onmouseout = function() { this.style.color = 'var(--gold)'; };
-      var resizeHandle = document.createElement('div');
-      resizeHandle.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize;background:transparent;z-index:5';
-      resizeHandle.onmouseover = function(e) { e.stopPropagation(); this.style.background='rgba(201,169,110,0.4)'; };
-      resizeHandle.onmouseout = function() { this.style.background='transparent'; };
-      (function(thEl, colKey) {
-        resizeHandle.onmousedown = function(e) {
-          e.preventDefault(); e.stopPropagation();
-          var startX = e.clientX, startW = thEl.offsetWidth;
-          function onMove(ev) { var newW=Math.max(50,startW+(ev.clientX-startX)); thEl.style.width=newW+'px'; thEl.style.minWidth=newW+'px'; }
-          function onUp(ev) {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            hdSaveColWidth(hdCurrentSheet, colKey, Math.max(50, startW+(ev.clientX-startX)));
-          }
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-        };
-      })(th, k);
-      th.appendChild(resizeHandle);
       (function(colKey, sk) {
         th.onclick = function(e) { if (!e.ctrlKey) hdSortBy(colKey); };
         th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
@@ -4341,7 +4319,7 @@ async function hdColCtxFormat(formatType) {
     showToast('Column format: '+(names[formatType]||formatType));
   } catch(e){showToast('Error: '+e.message);}
 }
-// ── Column Width ──
+// ── Column Width (localStorage, no table-layout change) ──
 var HD_COL_WIDTHS_KEY='hd_col_widths';
 function hdGetColWidths(){try{return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY)||'{}')}catch(e){return{}}}
 function hdGetColWidth(sheetKey,colKey){var w=hdGetColWidths();return(w[sheetKey]&&w[sheetKey][colKey])?w[sheetKey][colKey]:null;}
@@ -5200,7 +5178,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.1
+// Philinity Command Center © Rev 6.2
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5232,9 +5210,8 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.7  FORMAT AS column types, drag-resize columns, Also In auto-hidden
-// Rev 5.8  AI chat writes items directly to Firebase House Data
-// Rev 6.1  Reverted broken img-pin; stable col ordering restored
+// Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
+// Rev 6.2  Removed table-layout:fixed that broke House Data layout
 // ============================================================
 
 </script>
