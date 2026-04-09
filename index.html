@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.0</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.1</span>
       </div>
     </div>
 
@@ -3759,6 +3759,7 @@ function hdHideCtxMenu(clearKey) {
 // ══════════ HD RENAME / DELETE MODALS ══════════
 var hdRenameMode = null;   // 'sheet' or 'column'
 var hdRenameKey = null;    // sheet key or column key
+var hdRenameSheetKey = null;  // for column rename
 var hdDeleteMode = null;   // 'sheet'
 var hdDeleteKey = null;
 
@@ -3792,6 +3793,7 @@ function hdColCtxRename() {
   if (!hdColCtxKey) return;
   hdRenameMode = 'column';
   hdRenameKey = hdColCtxKey;
+  hdRenameSheetKey = savedSheet;  // save sheet key for use in confirm
   var currentName = hdGetColDisplayName(hdColCtxSheetKey, hdColCtxKey);
   document.getElementById('hd-rename-title').textContent = 'Rename Column';
   document.getElementById('hd-rename-label').textContent = 'Column Name';
@@ -3824,11 +3826,16 @@ async function hdRenameConfirm() {
     } catch(e) { showToast('Error: ' + e.message); }
 
   } else if (hdRenameMode === 'column') {
-    var sheetKey = hdColCtxSheetKey;
+    var sheetKey = hdRenameSheetKey || hdColCtxSheetKey || hdCurrentSheet;
+    if (!sheetKey) { showToast('Error: could not identify sheet'); return; }
     if (!hdColConfig[sheetKey]) hdColConfig[sheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
     hdColConfig[sheetKey].col_names[hdRenameKey] = newName;
     try {
       await hdSaveColConfig(sheetKey);
+      // Force reload col config for this sheet
+      delete hdColConfig[sheetKey];
+      await hdLoadColConfig(sheetKey);
+      hdColConfig[sheetKey].col_names[hdRenameKey] = newName;
       hdSelectSheet(hdCurrentSheet);
       showToast('Column renamed to "' + newName + '"');
     } catch(e) { showToast('Error: ' + e.message); }
@@ -4911,7 +4918,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.0
+// Philinity Command Center © Rev 5.1
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -4943,7 +4950,7 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.0  Rename (sheet + column) via proper modal UI
+// Rev 5.1  Rename (sheet + column) via proper modal UI
 //          Delete (sheet) via proper confirm modal
 //          Works on mobile and desktop without browser dialogs
 // ============================================================
