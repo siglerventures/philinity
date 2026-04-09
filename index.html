@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.7</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.8</span>
       </div>
     </div>
 
@@ -2105,6 +2105,33 @@ function checkPW() {
         <button class="btn-save" onclick="hdSaveEditRow()">Save Changes</button>
         <button class="btn-cancel" onclick="document.getElementById('hd-edit-row-modal').classList.remove('open')">Cancel</button>
         <button class="btn-delete" onclick="hdDeleteRow()">Delete Row</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HD Rename Modal (sheet or column) -->
+  <div class="modal-overlay" id="hd-rename-modal">
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-title" id="hd-rename-title">Rename</div>
+      <div class="form-group">
+        <label class="form-label" id="hd-rename-label">New Name</label>
+        <input class="form-input" id="hd-rename-input" placeholder="Enter name..." onkeydown="if(event.key==='Enter')hdRenameConfirm();if(event.key==='Escape')hdRenameCancel();">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="hdRenameConfirm()">Save</button>
+        <button class="btn-cancel" onclick="hdRenameCancel()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HD Delete Confirm Modal -->
+  <div class="modal-overlay" id="hd-delete-modal">
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-title" style="color:var(--red)">Confirm Delete</div>
+      <p id="hd-delete-msg" style="color:var(--text-dim);font-size:0.88rem;margin:0 0 20px 0;line-height:1.5"></p>
+      <div class="modal-actions">
+        <button class="btn-delete" id="hd-delete-confirm-btn" onclick="hdDeleteConfirmed()">Delete</button>
+        <button class="btn-cancel" onclick="document.getElementById('hd-delete-modal').classList.remove('open')">Cancel</button>
       </div>
     </div>
   </div>
@@ -3728,71 +3755,115 @@ function hdHideCtxMenu() {
   hdCtxTargetKey = null;
 }
 
+
+// ══════════ HD RENAME / DELETE MODALS ══════════
+var hdRenameMode = null;   // 'sheet' or 'column'
+var hdRenameKey = null;    // sheet key or column key
+var hdDeleteMode = null;   // 'sheet'
+var hdDeleteKey = null;
+
+// ── Sheet Rename (via modal) ──
 function hdCtxRename() {
   hdHideCtxMenu();
   if (!hdCtxTargetKey) return;
-  // Re-find the sheet div by key since DOM may have refreshed
-  var list = document.getElementById('hd-sheet-list');
-  if (!list) return;
-  var divs = list.querySelectorAll('div[data-key]');
-  for (var i = 0; i < divs.length; i++) {
-    if (divs[i].getAttribute('data-key') === hdCtxTargetKey) {
-      var spans = divs[i].querySelectorAll('span');
-      var nameSpan = spans[1]; // second span is the name (first is drag handle)
-      hdRenameSheet(hdCtxTargetKey, nameSpan, divs[i]);
-      return;
-    }
-  }
-  // Fallback: use prompt
+  hdRenameMode = 'sheet';
+  hdRenameKey = hdCtxTargetKey;
   var sheet = hdAllSheets[hdCtxTargetKey];
-  var oldName = sheet ? (sheet.sheet_name || hdCtxTargetKey) : hdCtxTargetKey;
-  var newName = prompt('Rename sheet:', oldName);
-  if (newName && newName.trim() && newName.trim() !== oldName) {
-    hdAllSheets[hdCtxTargetKey].sheet_name = newName.trim();
-    db.ref(HD_PATH + '/' + hdCtxTargetKey + '/sheet_name').set(newName.trim());
-    hdRenderSheetList();
-    hdPopulateSheetSelect();
-    showToast('Renamed to ' + newName.trim());
-  }
+  var currentName = sheet ? (sheet.sheet_name || hdCtxTargetKey) : hdCtxTargetKey;
+  document.getElementById('hd-rename-title').textContent = 'Rename Sheet';
+  document.getElementById('hd-rename-label').textContent = 'Sheet Name';
+  document.getElementById('hd-rename-input').value = currentName;
+  document.getElementById('hd-rename-modal').classList.add('open');
+  setTimeout(function() {
+    var inp = document.getElementById('hd-rename-input');
+    inp.focus(); inp.select();
+  }, 100);
 }
 
+// ── Column Rename (via modal) ──
+function hdColCtxRename() {
+  hdHideColCtxMenu();
+  if (!hdColCtxKey) return;
+  hdRenameMode = 'column';
+  hdRenameKey = hdColCtxKey;
+  var currentName = hdGetColDisplayName(hdColCtxSheetKey, hdColCtxKey);
+  document.getElementById('hd-rename-title').textContent = 'Rename Column';
+  document.getElementById('hd-rename-label').textContent = 'Column Name';
+  document.getElementById('hd-rename-input').value = currentName;
+  document.getElementById('hd-rename-modal').classList.add('open');
+  setTimeout(function() {
+    var inp = document.getElementById('hd-rename-input');
+    inp.focus(); inp.select();
+  }, 100);
+}
+
+// ── Save Rename ──
+async function hdRenameConfirm() {
+  var newName = document.getElementById('hd-rename-input').value.trim();
+  if (!newName) { showToast('Name cannot be empty'); return; }
+  document.getElementById('hd-rename-modal').classList.remove('open');
+
+  if (hdRenameMode === 'sheet') {
+    var key = hdRenameKey;
+    if (!hdAllSheets[key]) return;
+    hdAllSheets[key].sheet_name = newName;
+    try {
+      await db.ref(HD_PATH + '/' + key + '/sheet_name').set(newName);
+      hdRenderSheetList();
+      hdPopulateSheetSelect();
+      if (hdCurrentSheet === key) {
+        document.getElementById('hd-panel-title').textContent = newName;
+      }
+      showToast('Sheet renamed to "' + newName + '"');
+    } catch(e) { showToast('Error: ' + e.message); }
+
+  } else if (hdRenameMode === 'column') {
+    var sheetKey = hdColCtxSheetKey;
+    if (!hdColConfig[sheetKey]) hdColConfig[sheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
+    hdColConfig[sheetKey].col_names[hdRenameKey] = newName;
+    try {
+      await hdSaveColConfig(sheetKey);
+      hdSelectSheet(hdCurrentSheet);
+      showToast('Column renamed to "' + newName + '"');
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  hdRenameMode = null;
+  hdRenameKey = null;
+}
+
+function hdRenameCancel() {
+  document.getElementById('hd-rename-modal').classList.remove('open');
+  hdRenameMode = null;
+  hdRenameKey = null;
+}
+
+// ── Sheet Delete (via modal) ──
 function hdCtxDelete() {
   hdHideCtxMenu();
   if (!hdCtxTargetKey) return;
-  var key = hdCtxTargetKey;
-  var sheet = hdAllSheets[key];
-  var name = sheet ? (sheet.sheet_name || key) : key;
+  hdDeleteMode = 'sheet';
+  hdDeleteKey = hdCtxTargetKey;
+  var sheet = hdAllSheets[hdCtxTargetKey];
+  var name = sheet ? (sheet.sheet_name || hdCtxTargetKey) : hdCtxTargetKey;
   var rowCount = (sheet && sheet.rows) ? sheet.rows.length : 0;
-
-  // Show inline confirm toast instead of browser confirm()
-  var msg = 'Delete "' + name + '"?' + (rowCount > 0 ? ' (' + rowCount + ' items will be lost)' : '');
-  hdShowDeleteConfirm(msg, key, name);
+  var msg = 'Delete sheet "' + name + '"?';
+  if (rowCount > 0) {
+    msg += ' This will permanently remove ' + rowCount + ' item' + (rowCount !== 1 ? 's' : '') + '. This cannot be undone.';
+  } else {
+    msg += ' This cannot be undone.';
+  }
+  document.getElementById('hd-delete-msg').textContent = msg;
+  document.getElementById('hd-delete-modal').classList.add('open');
 }
 
-function hdShowDeleteConfirm(msg, key, name) {
-  var existing = document.getElementById('hd-delete-confirm');
-  if (existing) existing.remove();
+async function hdDeleteConfirmed() {
+  document.getElementById('hd-delete-modal').classList.remove('open');
 
-  var bar = document.createElement('div');
-  bar.id = 'hd-delete-confirm';
-  bar.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--red);border-radius:10px;padding:14px 20px;z-index:9999;display:flex;align-items:center;gap:12px;font-size:0.82rem;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:90vw';
-
-  var text = document.createElement('span');
-  text.textContent = msg;
-  text.style.flex = '1';
-  bar.appendChild(text);
-
-  var cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'border:1px solid var(--border);background:none;color:var(--text-dim);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.78rem;white-space:nowrap';
-  cancelBtn.onclick = function() { bar.remove(); };
-  bar.appendChild(cancelBtn);
-
-  var deleteBtn = document.createElement('button');
-  deleteBtn.textContent = 'Delete';
-  deleteBtn.style.cssText = 'border:none;background:var(--red);color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap';
-  deleteBtn.onclick = async function() {
-    bar.remove();
+  if (hdDeleteMode === 'sheet') {
+    var key = hdDeleteKey;
+    var sheet = hdAllSheets[key];
+    var name = sheet ? (sheet.sheet_name || key) : key;
     try {
       await db.ref(HD_PATH + '/' + key).remove();
       delete hdAllSheets[key];
@@ -3812,163 +3883,23 @@ function hdShowDeleteConfirm(msg, key, name) {
       document.getElementById('hd-status').textContent = hdSheetOrder.length + ' sheets loaded';
       showToast('Deleted: ' + name);
     } catch(e) { showToast('Error: ' + e.message); }
-  };
-  bar.appendChild(deleteBtn);
-
-  document.body.appendChild(bar);
-  // Auto-dismiss after 8 seconds
-  setTimeout(function() { if (bar.parentNode) bar.remove(); }, 8000);
-}
-
-// Close context menu on any click elsewhere
-document.addEventListener('click', function(e) {
-  var menu = document.getElementById('hd-sheet-ctx-menu');
-  if (menu && !menu.contains(e.target)) hdHideCtxMenu();
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') hdHideCtxMenu();
-});
-
-
-
-// ══════════ COLUMN MANAGEMENT ══════════
-// Stored at philinity/house_col_config/{sheetKey} = { col_order: [], col_names: {}, col_hidden: [] }
-var HD_COL_CONFIG_PATH = 'philinity/house_col_config';
-var hdColConfig = {}; // { sheetKey: { col_order, col_names, col_hidden } }
-
-async function hdLoadColConfig(sheetKey) {
-  if (hdColConfig[sheetKey]) return hdColConfig[sheetKey];
-  try {
-    var snap = await db.ref(HD_COL_CONFIG_PATH + '/' + sheetKey.replace(/[^a-z0-9]/gi, '_')).get();
-    hdColConfig[sheetKey] = snap.exists() ? snap.val() : { col_order: [], col_names: {}, col_hidden: [] };
-  } catch(e) {
-    hdColConfig[sheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
   }
-  return hdColConfig[sheetKey];
+
+  hdDeleteMode = null;
+  hdDeleteKey = null;
 }
 
-async function hdSaveColConfig(sheetKey) {
-  var cfg = hdColConfig[sheetKey];
-  if (!cfg) return;
-  try {
-    await db.ref(HD_COL_CONFIG_PATH + '/' + sheetKey.replace(/[^a-z0-9]/gi, '_')).set(cfg);
-  } catch(e) { console.warn('Col config save failed:', e.message); }
-}
-
-function hdGetColDisplayName(sheetKey, colKey) {
-  var cfg = hdColConfig[sheetKey];
-  if (cfg && cfg.col_names && cfg.col_names[colKey]) return cfg.col_names[colKey];
-  return hdCapitalize(colKey);
-}
-
-function hdGetOrderedKeys(sheetKey, allKeys) {
-  var cfg = hdColConfig[sheetKey];
-  if (!cfg) return allKeys;
-  // If no order saved yet, init it from current allKeys and save
-  if (!cfg.col_order || cfg.col_order.length === 0) {
-    cfg.col_order = allKeys.slice();
-    hdSaveColConfig(sheetKey);
-    return allKeys;
+// Close rename/delete modals on overlay click
+document.getElementById('hd-rename-modal').addEventListener('click', function(e) {
+  if (e.target === this) hdRenameCancel();
+});
+document.getElementById('hd-delete-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    this.classList.remove('open');
+    hdDeleteMode = null; hdDeleteKey = null;
   }
-  // Put configured keys first in order, then any new keys at end
-  var ordered = cfg.col_order.filter(function(k) { return allKeys.indexOf(k) > -1; });
-  allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
-  return ordered;
-}
+});
 
-// ── Column Context Menu ──
-var hdColCtxKey = null;
-var hdColCtxSheetKey = null;
-
-function hdShowColCtxMenu(e, colKey, sheetKey) {
-  e.preventDefault();
-  e.stopPropagation();
-  hdColCtxKey = colKey;
-  hdColCtxSheetKey = sheetKey;
-
-  var menu = document.getElementById('hd-col-ctx-menu');
-  if (!menu) return;
-  menu.style.display = 'block';
-
-  var x = e.clientX, y = e.clientY;
-  if (x + 200 > window.innerWidth) x = window.innerWidth - 208;
-  if (y + 120 > window.innerHeight) y = window.innerHeight - 128;
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-
-  // Show current name in menu
-  var label = document.getElementById('hd-col-ctx-label');
-  if (label) label.textContent = hdGetColDisplayName(sheetKey, colKey);
-}
-
-function hdHideColCtxMenu() {
-  var menu = document.getElementById('hd-col-ctx-menu');
-  if (menu) menu.style.display = 'none';
-  hdColCtxKey = null;
-}
-
-function hdColCtxRename() {
-  hdHideColCtxMenu();
-  if (!hdColCtxKey) return;
-  var currentName = hdGetColDisplayName(hdColCtxSheetKey, hdColCtxKey);
-  var newName = prompt('Rename column "' + currentName + '" to:', currentName);
-  if (!newName || newName.trim() === currentName) return;
-  newName = newName.trim();
-
-  if (!hdColConfig[hdColCtxSheetKey]) hdColConfig[hdColCtxSheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
-  hdColConfig[hdColCtxSheetKey].col_names[hdColCtxKey] = newName;
-  hdSaveColConfig(hdColCtxSheetKey);
-  hdSelectSheet(hdCurrentSheet); // re-render
-  showToast('Column renamed to ' + newName);
-}
-
-function hdColCtxMoveLeft() {
-  hdHideColCtxMenu();
-  if (!hdColCtxKey || !hdColCtxSheetKey) return;
-  var cfg = hdColConfig[hdColCtxSheetKey];
-  if (!cfg) return;
-  var order = cfg.col_order;
-  var idx = order.indexOf(hdColCtxKey);
-  if (idx <= 0) return;
-  var tmp = order[idx - 1]; order[idx - 1] = order[idx]; order[idx] = tmp;
-  hdSaveColConfig(hdColCtxSheetKey);
-  hdSelectSheet(hdCurrentSheet);
-}
-
-function hdColCtxMoveRight() {
-  hdHideColCtxMenu();
-  if (!hdColCtxKey || !hdColCtxSheetKey) return;
-  var cfg = hdColConfig[hdColCtxSheetKey];
-  if (!cfg) return;
-  var order = cfg.col_order;
-  var idx = order.indexOf(hdColCtxKey);
-  if (idx === -1 || idx >= order.length - 1) return;
-  var tmp = order[idx + 1]; order[idx + 1] = order[idx]; order[idx] = tmp;
-  hdSaveColConfig(hdColCtxSheetKey);
-  hdSelectSheet(hdCurrentSheet);
-}
-
-function hdColCtxHide() {
-  hdHideColCtxMenu();
-  if (!hdColCtxKey || !hdColCtxSheetKey) return;
-  var cfg = hdColConfig[hdColCtxSheetKey];
-  if (!cfg) return;
-  if (cfg.col_hidden.indexOf(hdColCtxKey) === -1) cfg.col_hidden.push(hdColCtxKey);
-  hdSaveColConfig(hdColCtxSheetKey);
-  hdSelectSheet(hdCurrentSheet);
-  showToast('Column hidden. Right-click any header to show hidden columns.');
-}
-
-function hdColCtxShowAll() {
-  hdHideColCtxMenu();
-  if (!hdColCtxSheetKey) return;
-  var cfg = hdColConfig[hdColCtxSheetKey];
-  if (!cfg) return;
-  cfg.col_hidden = [];
-  hdSaveColConfig(hdColCtxSheetKey);
-  hdSelectSheet(hdCurrentSheet);
-  showToast('All columns visible');
-}
 
 // Close col context menu on outside click
 document.addEventListener('click', function(e) {
@@ -4846,12 +4777,41 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.7
-// 3.7:   Mini AI search bar added to all page title headers
-// Fixes: password gate, Firebase Storage SDK, async bugs fixed,
-//        photo URL stripping on CSV import
-// New:   Nav Editor — drag/drop groups & items, internal + external links
-// 3.6:   Edit Navigation button subtle, floating Edit button removed
+// Philinity Command Center © Rev 4.8
+// ------------------------------------------------------------
+// Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
+// Rev 3.6  Edit Navigation button subtle, floating button removed
+// Rev 3.7  Mini AI search bar on all page title headers
+// Rev 3.8  House Data page: browse 82 Firebase sheets
+// Rev 3.9  House Data: Add Item form (photo drag/drop/paste/URL)
+//          Firebase fully owns nav — removed hardcoded sidebar HTML
+// Rev 4.0  House Data: double-click row to edit, Delete row,
+//          price formatting $13,499, Edit Row modal with photo
+// Rev 4.1  Images upload to Firebase Storage (not base64 in DB)
+//          Clipboard paste (Ctrl+V) for images in modals
+//          Double-click row replaces edit button column
+// Rev 4.2  Clickable column headers to sort asc/desc
+//          Smart price auto-detection for col2/col3 etc.
+//          Apps Script v4 with smarter header detection
+// Rev 4.3  Multi-sheet tags: items appear in multiple sheets
+//          stored once, shown via tags array
+//          Drag & drop sheet reordering (saved to Firebase)
+//          Tag picker chip UI in Add Item and Edit Row modals
+// Rev 4.4  Tag picker changed to dropdown with checkboxes + search
+//          Column name overrides: wwwmldcom->URL, tyler->Contact
+//          Price fields strip $/, on focus for easy editing
+// Rev 4.5  Right-click sheet: context menu (Rename / Delete)
+//          Double-click sheet name to rename inline
+// Rev 4.6  Column management: right-click or double-tap headers
+//          Rename column, Move Left/Right, Hide, Show All
+//          Per-sheet col config saved to Firebase
+//          Float price fix: 46178.86000000001 -> $46,179
+// Rev 4.7  Sheet rename via modal (no more inline DOM edit)
+//          Sheet delete via inline confirm bar (no browser confirm)
+//          Column rename via prompt()
+// Rev 4.8  Rename (sheet + column) via proper modal UI
+//          Delete (sheet) via proper confirm modal
+//          Works on mobile and desktop without browser dialogs
 // ============================================================
 
 </script>
