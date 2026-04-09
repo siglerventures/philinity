@@ -1091,6 +1091,9 @@ function checkPW() {
     <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/taskboard/','_blank')">
       <span class="nav-icon">📋</span> Task Board ↗
     </div>
+    <div class="nav-item" onclick="hdBackupDatabase()">
+      <span class="nav-icon">💾</span> Backup Database
+    </div>
   </div>
 
   <div style="padding: 0 12px 16px; margin-top: 4px; text-align:center;">
@@ -1184,7 +1187,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.4</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.5</span>
       </div>
     </div>
 
@@ -4367,7 +4370,8 @@ var DEFAULT_NAV = [
   {
     id: 'apps-group', label: '🚀 Apps', items: [
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
-      { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' }
+      { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
+      { emoji: '💾', label: 'Backup Database', type: 'internal', page: 'backup' }
     ]
   }
 ];
@@ -5163,6 +5167,27 @@ function initMiniSearch() {
   });
 }
 
+// ── Database Backup ──
+function hdBackupDatabase() {
+  showToast('📦 Preparing backup...');
+  db.ref('philinity').get().then(function(snap) {
+    if (!snap.exists()) { showToast('No data to backup'); return; }
+    var data = JSON.stringify(snap.val(), null, 2);
+    var blob = new Blob([data], {type: 'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var date = new Date().toISOString().slice(0,10);
+    a.download = 'philinity-backup-' + date + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('✅ Backup saved: philinity-backup-' + date + '.json');
+  }).catch(function(e) {
+    showToast('Backup failed: ' + e.message);
+  });
+}
+
 // Init Firebase then load KB
 async function appInit() {
   await initFirebase();
@@ -5181,7 +5206,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.4
+// Philinity Command Center © Rev 6.5
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5214,7 +5239,7 @@ if (document.readyState === 'loading') {
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
-// Rev 6.4  Removed table-layout:fixed that broke House Data layout
+// Rev 6.5  Removed table-layout:fixed that broke House Data layout
 // ============================================================
 
 </script>
