@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.8</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.9</span>
       </div>
     </div>
 
@@ -2983,8 +2983,8 @@ async function hdSelectSheet(key) {
   hdSortDir = 1;
   var sheet = hdAllSheets[key];
   if (!sheet) return;
-  // Load column config for this sheet
-  await hdLoadColConfig(key);
+  // Load column config for this sheet (never block rendering)
+  try { await hdLoadColConfig(key); } catch(e) { hdColConfig[key] = { col_order: [], col_names: {}, col_hidden: [] }; }
 
   // Get own rows + tagged rows from other sheets
   var ownRows = (sheet.rows || []).map(function(r) { return Object.assign({}, r, {_sheet: key}); });
@@ -3925,6 +3925,54 @@ function hdHandleColTap(e, colKey, sheetKey) {
 }
 
 
+
+// ══════════ COLUMN CONFIG CORE ══════════
+var HD_COL_CONFIG_PATH = 'philinity/house_col_config';
+var hdColConfig = {};
+
+function hdColConfigKey(k) {
+  return String(k).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 60);
+}
+
+async function hdLoadColConfig(sheetKey) {
+  if (hdColConfig[sheetKey]) return hdColConfig[sheetKey];
+  var empty = { col_order: [], col_names: {}, col_hidden: [] };
+  try {
+    var snap = await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).get();
+    hdColConfig[sheetKey] = snap.exists() ? snap.val() : empty;
+  } catch(e) {
+    hdColConfig[sheetKey] = empty;
+  }
+  return hdColConfig[sheetKey];
+}
+
+async function hdSaveColConfig(sheetKey) {
+  var cfg = hdColConfig[sheetKey];
+  if (!cfg) return;
+  try {
+    await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).set(cfg);
+  } catch(e) { console.warn('Col config save failed:', e.message); }
+}
+
+function hdGetColDisplayName(sheetKey, colKey) {
+  var cfg = hdColConfig[sheetKey];
+  if (cfg && cfg.col_names && cfg.col_names[colKey]) return cfg.col_names[colKey];
+  return hdCapitalize(colKey);
+}
+
+function hdGetOrderedKeys(sheetKey, allKeys) {
+  var cfg = hdColConfig[sheetKey];
+  if (!cfg) return allKeys;
+  if (!cfg.col_order || cfg.col_order.length === 0) {
+    cfg.col_order = allKeys.slice();
+    hdSaveColConfig(sheetKey);
+    return allKeys;
+  }
+  var ordered = cfg.col_order.filter(function(k) { return allKeys.indexOf(k) > -1; });
+  allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
+  return ordered;
+}
+
 // ══════════ NAV EDITOR ══════════
 const NAV_EDITOR_PATH = 'philinity/nav_structure';
 
@@ -4777,7 +4825,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.8
+// Philinity Command Center © Rev 4.9
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -4809,7 +4857,7 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 4.8  Rename (sheet + column) via proper modal UI
+// Rev 4.9  Rename (sheet + column) via proper modal UI
 //          Delete (sheet) via proper confirm modal
 //          Works on mobile and desktop without browser dialogs
 // ============================================================
