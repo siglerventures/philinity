@@ -1078,38 +1078,7 @@ function checkPW() {
     <span class="nav-icon">✦</span> Philinity AI
   </div>
 
-  <!-- 🏠 House Info -->
-  <div class="nav-label nav-collapsible" data-group="home" onclick="toggleNavGroup('home')">
-    <span>🏠 House Info</span><span class="nav-caret" id="caret-home">›</span>
-  </div>
-  <div class="nav-group" id="group-home" style="display:none">
-    <div class="nav-item" data-page="house"><span class="nav-icon">🏠</span> Philinity</div>
-    <div class="nav-item" data-page="systems"><span class="nav-icon">⚡</span> Smart Home</div>
-    <div class="nav-item" data-page="pool"><span class="nav-icon">🏊</span> Pool & Spa</div>
-    <div class="nav-item" data-page="housedata"><span class="nav-icon">📋</span> House Data</div>
-  </div>
-
-  <!-- 💼 Sigler Ventures -->
-  <div class="nav-label nav-collapsible" data-group="ventures" onclick="toggleNavGroup('ventures')">
-    <span>💼 Sigler Ventures</span><span class="nav-caret" id="caret-ventures">›</span>
-  </div>
-  <div class="nav-group" id="group-ventures" style="display:none">
-    <div class="nav-item" data-page="ventures"><span class="nav-icon">📈</span> Portfolio</div>
-    <div class="nav-item" data-page="philinity-prop"><span class="nav-icon">🏡</span> Philinity Asset</div>
-    <div class="nav-item" data-page="synergy"><span class="nav-icon">🏗</span> Synergy Summit</div>
-  </div>
-
-  <!-- 🌿 Life -->
-  <div class="nav-label nav-collapsible" data-group="life" onclick="toggleNavGroup('life')">
-    <span>🌿 Life</span><span class="nav-caret" id="caret-life">›</span>
-  </div>
-  <div class="nav-group" id="group-life" style="display:none">
-    <div class="nav-item" data-page="home"><span class="nav-icon">📊</span> Overview</div>
-    <div class="nav-item" data-page="contacts"><span class="nav-icon">👥</span> Contacts</div>
-    <div class="nav-item" data-page="drinks"><span class="nav-icon">🥃</span> Cocktails</div>
-    <div class="nav-item" data-page="housedata"><span class="nav-icon">📋</span> House Data</div>
-    <div class="nav-item" data-page="knowledge"><span class="nav-icon">📚</span> Nav Editor</div>
-  </div>
+  <!-- Nav groups injected by applyNavStructure() from Firebase -->
 
   <!-- 🚀 Apps -->
   <div class="nav-label nav-collapsible" data-group="apps" onclick="toggleNavGroup('apps')">
@@ -2745,7 +2714,8 @@ var hdLoaded = false;
 var hdItemImgData = '';
 
 async function hdInit() {
-  if (hdLoaded) return;
+  if (hdLoaded && Object.keys(hdAllSheets).length > 0) return;
+  hdLoaded = false;
   try {
     document.getElementById('hd-status').textContent = 'Loading...';
     var snap = await db.ref(HD_PATH).get();
