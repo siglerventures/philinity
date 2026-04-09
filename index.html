@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.2</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.3</span>
       </div>
     </div>
 
@@ -5119,7 +5119,7 @@ function parseCSVLine(line) {
 function initMiniSearch() {
   document.querySelectorAll('.page-title').forEach(function(titleDiv) {
     var page = titleDiv.closest('.page');
-    if (!page || page.id === 'page-ai' || page.id === 'page-contacts') return;
+    if (!page || page.id === 'page-ai' || page.id === 'page-contacts' || page.id === 'page-housedata') return;
 
     // Wrap existing children in left group
     var left = document.createElement('div');
@@ -5178,7 +5178,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.2
+// Philinity Command Center © Rev 6.3
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5211,7 +5211,7 @@ if (document.readyState === 'loading') {
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
-// Rev 6.2  Removed table-layout:fixed that broke House Data layout
+// Rev 6.3  Removed table-layout:fixed that broke House Data layout
 // ============================================================
 
 </script>
