@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.8</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.9</span>
       </div>
     </div>
 
@@ -2144,7 +2144,7 @@ function checkPW() {
     <div onclick="hdColCtxMoveRight()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#8594; Move Right</div>
     <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
-    <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
+    <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
     <div onclick="hdResetColWidths(hdCurrentSheet)" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#8596; Reset Column Widths</div>
     <div onclick="hdColCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">&#128465;&#65039; Delete Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
@@ -2470,6 +2470,20 @@ Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% h
 - **Larissa** — larissa.sigler@gmail.com · 208-559-1678 · 12805 W Berghan St, Boise ID 83709 · DOB Jun 26, 2004
 - **Sierra** VanTassell — SierraKVanTassell@gmail.com · 208-713-8714 · DOB Mar 28, 2005
 
+## HOUSE DATA — SAVING ITEMS
+When the user asks you to add, save, or log an item to House Data (furniture, appliances, purchases, etc.), you MUST:
+1. Confirm what you're saving in natural language
+2. Output a save command at the END of your reply in this exact format (no spaces inside the tags):
+%%SAVE_TO_HOUSE_DATA:{"sheet_key":"furniture","sheet_name":"Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"","url":"https://amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall, ergonomic with footrest, white"}%%
+
+Rules for the JSON:
+- sheet_key: lowercase-hyphenated key matching the sheet (furniture, appliances, office-furniture, etc.)
+- sheet_name: display name of the sheet
+- item: full descriptive item name
+- brand, qty, price, url, notes: include whatever the user provided
+- If user mentions multiple distinct items, output multiple %%SAVE_TO_HOUSE_DATA:...%% blocks
+- Never fabricate prices or quantities not mentioned by the user
+
 ## POOL CHEMICALS
 - EASYTEST 7-Way Pool Test Strips
 - In The Swim pH Increase
@@ -2673,6 +2687,40 @@ window.quickSend = function(text) {
   sendMessage();
 };
 
+// ── AI → Firebase write ──
+async function aiSaveToHouseData(itemJson) {
+  try {
+    var item = typeof itemJson === 'string' ? JSON.parse(itemJson) : itemJson;
+    var sheetKey = item.sheet_key || 'furniture';
+    var sheetName = item.sheet_name || 'Furniture';
+
+    // Ensure sheet exists
+    if (!hdAllSheets[sheetKey]) {
+      hdAllSheets[sheetKey] = { sheet_name: sheetName, rows: [], row_count: 0, exported_at: new Date().toISOString() };
+      if (hdSheetOrder.indexOf(sheetKey) === -1) hdSheetOrder.push(sheetKey);
+      await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
+    }
+    if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
+
+    // Build clean row
+    var row = { added: new Date().toLocaleDateString('en-US') };
+    if (item.item)    row.item    = item.item;
+    if (item.brand)   row.brand   = item.brand;
+    if (item.qty)     row.qty     = String(item.qty);
+    if (item.price)   row.price   = String(item.price);
+    if (item.variant) row.variant = item.variant;
+    if (item.url)     row.url     = item.url;
+    if (item.notes)   row.notes   = item.notes;
+
+    hdAllSheets[sheetKey].rows.push(row);
+    hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
+    await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
+    return { success: true, sheet: sheetName, item: row.item };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
 window.sendMessage = async function() {
   if (isLoading) return;
   const input = document.getElementById('chat-input');
@@ -2721,7 +2769,28 @@ window.sendMessage = async function() {
       addMessage('ai', `Error: ${data.error.message}`);
     } else {
       const reply = data.content?.[0]?.text || 'No response received.';
-      addMessage('ai', reply);
+
+      // ── Detect Firebase save command in AI reply ──
+      const saveMatch = reply.match(/%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/);
+      if (saveMatch) {
+        try {
+          const result = await aiSaveToHouseData(saveMatch[1]);
+          const cleanReply = reply.replace(/%%SAVE_TO_HOUSE_DATA:[\s\S]*?%%/, '').trim();
+          addMessage('ai', cleanReply);
+          if (result.success) {
+            showToast('✅ Saved "' + result.item + '" to ' + result.sheet);
+            // Reload house data if it's loaded
+            if (hdLoaded) { hdLoaded = false; await hdInit(); }
+          } else {
+            showToast('⚠️ Save failed: ' + result.error);
+          }
+        } catch(e) {
+          addMessage('ai', reply);
+        }
+      } else {
+        addMessage('ai', reply);
+      }
+
       messages.push({ role: 'assistant', content: reply });
       if (messages.length > 40) messages = messages.slice(-40);
     }
@@ -5190,7 +5259,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.8
+// Philinity Command Center © Rev 5.9
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5222,10 +5291,9 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.7  FORMAT AS, drag-resize columns, Also In auto-hidden
-//          Delete (sheet) via proper confirm modal
-//          Works on mobile and desktop without browser dialogs
-// Rev 5.8   Allowing AI to write to FB 
+// Rev 5.7  FORMAT AS column types, drag-resize columns, Also In auto-hidden
+// Rev 5.8  AI chat can now write items directly to Firebase House Data
+// Rev 5.9  Multi-item AI saves, system prompt save rules, sheet auto-create
 // ============================================================
 
 </script>
