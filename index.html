@@ -2471,15 +2471,10 @@ Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% h
 - **Sierra** VanTassell — SierraKVanTassell@gmail.com · 208-713-8714 · DOB Mar 28, 2005
 
 ## HOUSE DATA — SAVING ITEMS
-When the user asks you to add, save, or log any item to House Data, you MUST:
-1. Respond naturally describing what you saved
-2. At the END of your reply emit one %%SAVE_TO_HOUSE_DATA:...%% block per distinct item
-
-Format (valid JSON, no line breaks inside the block):
-%%SAVE_TO_HOUSE_DATA:{"sheet_key":"furniture","sheet_name":"Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
-
-sheet_key rules: furniture, appliances, office-furniture, blinds, lighting, plumbing, electronics — use the closest match or create a logical new one (lowercase-hyphenated).
-Never fabricate prices or quantities not stated by the user. If multiple distinct items, emit multiple blocks.
+When the user asks you to add, save, or log any item to House Data, respond naturally then emit one %%SAVE_TO_HOUSE_DATA:...%% block per distinct item at the END of your reply.
+Format (single line, valid JSON): %%SAVE_TO_HOUSE_DATA:{"sheet_key":"office-furniture","sheet_name":"Office Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
+sheet_key: lowercase-hyphenated (furniture, appliances, office-furniture, blinds, lighting, electronics, etc.)
+Never fabricate prices or quantities not stated by the user. Multiple items = multiple blocks.
 
 ## POOL CHEMICALS
 - EASYTEST 7-Way Pool Test Strips
@@ -2696,11 +2691,10 @@ async function aiSaveToHouseData(itemJson) {
       await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
     }
     if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
-    // Build row — normalize image field to 'img' so it renders left as thumbnail
+    // Normalize image field to 'img' so it renders as thumbnail
     var row = { added: new Date().toLocaleDateString('en-US') };
-    if (item.img || item.pic || item.pics || item.photo || item.image) {
-      row.img = item.img || item.pic || item.pics || item.photo || item.image;
-    }
+    var imgVal = item.img || item.pic || item.pics || item.photo || item.image || '';
+    if (imgVal) row.img = imgVal;
     if (item.item)    row.item    = item.item;
     if (item.brand)   row.brand   = item.brand;
     if (item.qty)     row.qty     = String(item.qty);
@@ -2711,6 +2705,12 @@ async function aiSaveToHouseData(itemJson) {
     hdAllSheets[sheetKey].rows.push(row);
     hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
     await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
+    // Reset col_order for this sheet so img pins to front on next load
+    if (hdColConfig[sheetKey] && hdColConfig[sheetKey].col_order && hdColConfig[sheetKey].col_order.length > 0) {
+      var co = hdColConfig[sheetKey].col_order;
+      var ii = co.indexOf('img');
+      if (ii > 0) { co.splice(ii,1); co.unshift('img'); await db.ref('philinity/house_col_config/'+hdColConfigKey(sheetKey)).set(hdColConfig[sheetKey]); }
+    }
     return { success: true, sheet: sheetName, item: row.item };
   } catch(e) {
     return { success: false, error: e.message };
@@ -2765,7 +2765,6 @@ window.sendMessage = async function() {
       addMessage('ai', `Error: ${data.error.message}`);
     } else {
       const reply = data.content?.[0]?.text || 'No response received.';
-      // Check for save commands
       const saveRegex = /%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/g;
       const saveMatches = [...reply.matchAll(saveRegex)];
       if (saveMatches.length > 0) {
@@ -2777,9 +2776,7 @@ window.sendMessage = async function() {
             if (result.success) {
               showToast('\u2705 Saved \u201c' + result.item + '\u201d to ' + result.sheet);
               if (hdLoaded) { hdLoaded = false; await hdInit(); }
-            } else {
-              showToast('\u26a0\ufe0f Save failed: ' + result.error);
-            }
+            } else { showToast('\u26a0\ufe0f Save failed: ' + result.error); }
           } catch(e) { showToast('Save error: ' + e.message); }
         }
       } else {
@@ -3174,7 +3171,12 @@ function hdRenderTable(rows) {
   allKeys.forEach(function(k) {
     var th = document.createElement('th');
     if (k === 'img' || k === 'photo') {
-      th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border)';
+      th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border);cursor:pointer';
+      th.title = 'Right-click to move column';
+      (function(colKey, sk) {
+        th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
+        th.ontouchstart = function(e) { hdHandleColTap(e, colKey, sk); };
+      })(k, hdCurrentSheet);
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
       var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
@@ -3194,11 +3196,11 @@ function hdRenderTable(rows) {
         resizeHandle.onmousedown = function(e) {
           e.preventDefault(); e.stopPropagation();
           var startX = e.clientX, startW = thEl.offsetWidth;
-          function onMove(ev) { var newW = Math.max(50, startW + (ev.clientX - startX)); thEl.style.width = newW + 'px'; thEl.style.minWidth = newW + 'px'; }
+          function onMove(ev) { var newW = Math.max(50, startW+(ev.clientX-startX)); thEl.style.width=newW+'px'; thEl.style.minWidth=newW+'px'; }
           function onUp(ev) {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
-            hdSaveColWidth(hdCurrentSheet, colKey, Math.max(50, startW + (ev.clientX - startX)));
+            hdSaveColWidth(hdCurrentSheet, colKey, Math.max(50, startW+(ev.clientX-startX)));
           }
           document.addEventListener('mousemove', onMove);
           document.addEventListener('mouseup', onUp);
@@ -3275,7 +3277,6 @@ function hdRenderTable(rows) {
       tr.appendChild(td);
     });
 
-    // Tags cell — only render if sheet has tagged rows
     if (hdHasAnyTags) {
       var tdTags = document.createElement('td');
       tdTags.style.cssText = 'padding:4px 12px;border-bottom:1px solid var(--border)';
@@ -4317,6 +4318,9 @@ function hdGetOrderedKeys(sheetKey, allKeys) {
   }
   var ordered = cfg.col_order.filter(function(k) { return allKeys.indexOf(k) > -1; });
   allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
+  // Always pin img/photo to first position
+  var imgIdx = ordered.indexOf('img'); if (imgIdx > 0) { ordered.splice(imgIdx,1); ordered.unshift('img'); }
+  var photoIdx = ordered.indexOf('photo'); if (photoIdx > 0) { ordered.splice(photoIdx,1); ordered.unshift('photo'); }
   return ordered;
 }
 
@@ -4329,36 +4333,36 @@ function hdFormatCellValue(colKey, val, sheetKey) {
   var cfg = hdColConfig[sheetKey || hdCurrentSheet];
   if (cfg && cfg.col_formats && cfg.col_formats[colKey]) { fmt = cfg.col_formats[colKey]; }
   else if (hdLooksLikePrice(colKey, val)) { fmt = 'currency'; }
-  if (fmt === 'currency') { var num = parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(num) ? '$'+Math.round(num).toLocaleString('en-US') : str; }
+  if (fmt === 'currency') { var num=parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(num)?'$'+Math.round(num).toLocaleString('en-US'):str; }
   if (fmt === 'date') { if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) return str; var d=new Date(str); return !isNaN(d.getTime())&&str.length>3?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():str; }
   if (fmt === 'number') { var n=parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(n)?n.toLocaleString('en-US'):str; }
   var m=parseFloat(str); if(!isNaN(m)&&str.indexOf('.')>-1){var r=parseFloat(m.toFixed(2));if(String(r)!==str)return String(r);}
   return str;
 }
 function hdGetColFormat(sheetKey, colKey) {
-  var cfg = hdColConfig[sheetKey];
-  return (cfg && cfg.col_formats && cfg.col_formats[colKey]) ? cfg.col_formats[colKey] : 'auto';
+  var cfg=hdColConfig[sheetKey];
+  return (cfg&&cfg.col_formats&&cfg.col_formats[colKey])?cfg.col_formats[colKey]:'auto';
 }
 async function hdColCtxFormat(formatType) {
-  var savedKey=hdColCtxKey, savedSheet=hdColCtxSheetKey; hdHideColCtxMenu(true);
+  var savedKey=hdColCtxKey,savedSheet=hdColCtxSheetKey; hdHideColCtxMenu(true);
   if (!savedKey||!savedSheet) return;
   if (!hdColConfig[savedSheet]) hdColConfig[savedSheet]={col_order:[],col_names:{},col_hidden:[],col_formats:{}};
   if (!hdColConfig[savedSheet].col_formats) hdColConfig[savedSheet].col_formats={};
-  if (formatType==='auto') { delete hdColConfig[savedSheet].col_formats[savedKey]; }
-  else { hdColConfig[savedSheet].col_formats[savedKey]=formatType; }
+  if (formatType==='auto'){delete hdColConfig[savedSheet].col_formats[savedKey];}
+  else{hdColConfig[savedSheet].col_formats[savedKey]=formatType;}
   try {
     await db.ref(HD_COL_CONFIG_PATH+'/'+hdColConfigKey(savedSheet)).set(hdColConfig[savedSheet]);
     hdSelectSheet(hdCurrentSheet);
     var names={currency:'Currency ($)',text:'Text',date:'Date',number:'Number',auto:'Auto'};
     showToast('Column format: '+(names[formatType]||formatType));
-  } catch(e) { showToast('Error: '+e.message); }
+  } catch(e){showToast('Error: '+e.message);}
 }
 // ── Column Width ──
 var HD_COL_WIDTHS_KEY='hd_col_widths';
-function hdGetColWidths() { try{return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY)||'{}')}catch(e){return{}} }
-function hdGetColWidth(sheetKey,colKey) { var w=hdGetColWidths(); return (w[sheetKey]&&w[sheetKey][colKey])?w[sheetKey][colKey]:null; }
-function hdSaveColWidth(sheetKey,colKey,width) { var w=hdGetColWidths(); if(!w[sheetKey])w[sheetKey]={}; w[sheetKey][colKey]=Math.round(width); localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w)); }
-function hdResetColWidths(sheetKey) { var w=hdGetColWidths(); delete w[sheetKey]; localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w)); hdSelectSheet(hdCurrentSheet); showToast('Column widths reset'); }
+function hdGetColWidths(){try{return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY)||'{}')}catch(e){return{}}}
+function hdGetColWidth(sheetKey,colKey){var w=hdGetColWidths();return(w[sheetKey]&&w[sheetKey][colKey])?w[sheetKey][colKey]:null;}
+function hdSaveColWidth(sheetKey,colKey,width){var w=hdGetColWidths();if(!w[sheetKey])w[sheetKey]={};w[sheetKey][colKey]=Math.round(width);localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w));}
+function hdResetColWidths(sheetKey){var w=hdGetColWidths();delete w[sheetKey];localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w));hdSelectSheet(hdCurrentSheet);showToast('Column widths reset');}
 
 // ══════════ NAV EDITOR ══════════
 const NAV_EDITOR_PATH = 'philinity/nav_structure';
@@ -5246,7 +5250,8 @@ if (document.readyState === 'loading') {
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS column types, drag-resize columns, Also In auto-hidden
 // Rev 5.8  AI chat writes items directly to Firebase House Data
-// Rev 6.0  Image field normalized to 'img' so photos render far-left as thumbnail
+// Rev 5.9  Multi-item AI saves, system prompt save rules
+// Rev 6.0  img/photo column always pinned far-left; right-click to move image column
 // ============================================================
 
 </script>
