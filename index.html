@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.6</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.7</span>
       </div>
     </div>
 
@@ -3467,7 +3467,9 @@ async function hdDeleteRow() {
   var modal = document.getElementById('hd-edit-row-modal');
   var sourceSheet = modal.getAttribute('data-source-sheet') || hdCurrentSheet;
   var sourceIdx = parseInt(modal.getAttribute('data-source-idx')) || hdEditingRowIdx;
-  if (!confirm('Delete this item?')) return;
+  var row = hdAllSheets[sourceSheet] && hdAllSheets[sourceSheet].rows ? hdAllSheets[sourceSheet].rows[sourceIdx] : null;
+  var itemName = row ? (row.item || row.name || row.appliances || 'this item') : 'this item';
+  if (!confirm('Delete "' + itemName + '"? This cannot be undone.')) return;
 
   var rows = hdAllSheets[sourceSheet] ? (hdAllSheets[sourceSheet].rows || []) : [];
   rows.splice(sourceIdx, 1);
@@ -3728,46 +3730,94 @@ function hdHideCtxMenu() {
 
 function hdCtxRename() {
   hdHideCtxMenu();
-  if (!hdCtxTargetKey || !hdCtxTargetNameSpan || !hdCtxTargetDiv) return;
-  hdRenameSheet(hdCtxTargetKey, hdCtxTargetNameSpan, hdCtxTargetDiv);
-}
-
-async function hdCtxDelete() {
-  hdHideCtxMenu();
   if (!hdCtxTargetKey) return;
-  var sheet = hdAllSheets[hdCtxTargetKey];
-  var name = sheet ? (sheet.sheet_name || hdCtxTargetKey) : hdCtxTargetKey;
-  var rowCount = (sheet && sheet.rows) ? sheet.rows.length : 0;
-
-  var msg = 'Delete sheet "' + name + '"?';
-  if (rowCount > 0) msg += '\n\nThis will permanently delete ' + rowCount + ' item' + (rowCount > 1 ? 's' : '') + ' from this sheet.';
-  msg += '\n\nThis cannot be undone.';
-
-  if (!confirm(msg)) return;
-
-  try {
-    await db.ref(HD_PATH + '/' + hdCtxTargetKey).remove();
-    delete hdAllSheets[hdCtxTargetKey];
-    var idx = hdSheetOrder.indexOf(hdCtxTargetKey);
-    if (idx > -1) hdSheetOrder.splice(idx, 1);
-    await hdSaveSheetOrder();
-
-    if (hdCurrentSheet === hdCtxTargetKey) {
-      hdCurrentSheet = null;
-      document.getElementById('hd-panel-title').textContent = 'Select a sheet';
-      document.getElementById('hd-table-wrap').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px;font-size:0.82rem">Select a sheet on the left to view its data</div>';
-      document.getElementById('hd-row-search-wrap').style.display = 'none';
-      document.getElementById('hd-add-to-sheet-btn').style.display = 'none';
-      document.getElementById('hd-row-count').textContent = '';
+  // Re-find the sheet div by key since DOM may have refreshed
+  var list = document.getElementById('hd-sheet-list');
+  if (!list) return;
+  var divs = list.querySelectorAll('div[data-key]');
+  for (var i = 0; i < divs.length; i++) {
+    if (divs[i].getAttribute('data-key') === hdCtxTargetKey) {
+      var spans = divs[i].querySelectorAll('span');
+      var nameSpan = spans[1]; // second span is the name (first is drag handle)
+      hdRenameSheet(hdCtxTargetKey, nameSpan, divs[i]);
+      return;
     }
-
+  }
+  // Fallback: use prompt
+  var sheet = hdAllSheets[hdCtxTargetKey];
+  var oldName = sheet ? (sheet.sheet_name || hdCtxTargetKey) : hdCtxTargetKey;
+  var newName = prompt('Rename sheet:', oldName);
+  if (newName && newName.trim() && newName.trim() !== oldName) {
+    hdAllSheets[hdCtxTargetKey].sheet_name = newName.trim();
+    db.ref(HD_PATH + '/' + hdCtxTargetKey + '/sheet_name').set(newName.trim());
     hdRenderSheetList();
     hdPopulateSheetSelect();
-    document.getElementById('hd-status').textContent = hdSheetOrder.length + ' sheets loaded';
-    showToast('Sheet deleted: ' + name);
-  } catch(e) {
-    showToast('Error: ' + e.message);
+    showToast('Renamed to ' + newName.trim());
   }
+}
+
+function hdCtxDelete() {
+  hdHideCtxMenu();
+  if (!hdCtxTargetKey) return;
+  var key = hdCtxTargetKey;
+  var sheet = hdAllSheets[key];
+  var name = sheet ? (sheet.sheet_name || key) : key;
+  var rowCount = (sheet && sheet.rows) ? sheet.rows.length : 0;
+
+  // Show inline confirm toast instead of browser confirm()
+  var msg = 'Delete "' + name + '"?' + (rowCount > 0 ? ' (' + rowCount + ' items will be lost)' : '');
+  hdShowDeleteConfirm(msg, key, name);
+}
+
+function hdShowDeleteConfirm(msg, key, name) {
+  var existing = document.getElementById('hd-delete-confirm');
+  if (existing) existing.remove();
+
+  var bar = document.createElement('div');
+  bar.id = 'hd-delete-confirm';
+  bar.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--red);border-radius:10px;padding:14px 20px;z-index:9999;display:flex;align-items:center;gap:12px;font-size:0.82rem;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:90vw';
+
+  var text = document.createElement('span');
+  text.textContent = msg;
+  text.style.flex = '1';
+  bar.appendChild(text);
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'border:1px solid var(--border);background:none;color:var(--text-dim);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.78rem;white-space:nowrap';
+  cancelBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(cancelBtn);
+
+  var deleteBtn = document.createElement('button');
+  deleteBtn.textContent = 'Delete';
+  deleteBtn.style.cssText = 'border:none;background:var(--red);color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap';
+  deleteBtn.onclick = async function() {
+    bar.remove();
+    try {
+      await db.ref(HD_PATH + '/' + key).remove();
+      delete hdAllSheets[key];
+      var idx = hdSheetOrder.indexOf(key);
+      if (idx > -1) hdSheetOrder.splice(idx, 1);
+      await hdSaveSheetOrder();
+      if (hdCurrentSheet === key) {
+        hdCurrentSheet = null;
+        document.getElementById('hd-panel-title').textContent = 'Select a sheet';
+        document.getElementById('hd-table-wrap').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px;font-size:0.82rem">Select a sheet on the left to view its data</div>';
+        document.getElementById('hd-row-search-wrap').style.display = 'none';
+        document.getElementById('hd-add-to-sheet-btn').style.display = 'none';
+        document.getElementById('hd-row-count').textContent = '';
+      }
+      hdRenderSheetList();
+      hdPopulateSheetSelect();
+      document.getElementById('hd-status').textContent = hdSheetOrder.length + ' sheets loaded';
+      showToast('Deleted: ' + name);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+  bar.appendChild(deleteBtn);
+
+  document.body.appendChild(bar);
+  // Auto-dismiss after 8 seconds
+  setTimeout(function() { if (bar.parentNode) bar.remove(); }, 8000);
 }
 
 // Close context menu on any click elsewhere
@@ -4796,7 +4846,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.6
+// Philinity Command Center © Rev 4.7
 // 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
