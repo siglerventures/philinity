@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 3.9</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.0</span>
       </div>
     </div>
 
@@ -2092,6 +2092,19 @@ function checkPW() {
     </div>
   </div>
 
+  <!-- House Data Edit Row Modal -->
+  <div class="modal-overlay" id="hd-edit-row-modal">
+    <div class="modal-box" style="max-width:560px">
+      <div class="modal-title" id="hd-edit-row-modal-title">Edit Row</div>
+      <div id="hd-edit-row-body" style="display:flex;flex-direction:column;gap:0;max-height:60vh;overflow-y:auto;padding-right:4px"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-save" onclick="hdSaveEditRow()">Save Changes</button>
+        <button class="btn-cancel" onclick="document.getElementById('hd-edit-row-modal').classList.remove('open')">Cancel</button>
+        <button class="btn-delete" onclick="hdDeleteRow()">Delete Row</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════ NAV EDITOR ══════════ -->
   <div class="page" id="page-knowledge">
     <div class="page-title">
@@ -2712,6 +2725,17 @@ var hdCurrentSheet = null;
 var hdCurrentRows = [];
 var hdLoaded = false;
 var hdItemImgData = '';
+var hdEditingRowIdx = null;
+var hdEditRowKeys = [];
+var hdPriceKeys = ['price','extended','extended_price','cost','total','amount'];
+
+function hdFormatPrice(val) {
+  if (!val) return '';
+  var str = String(val).replace(/[^0-9.]/g, '');
+  var num = parseFloat(str);
+  if (isNaN(num)) return val;
+  return '$' + Math.round(num).toLocaleString('en-US');
+}
 
 async function hdInit() {
   if (hdLoaded && Object.keys(hdAllSheets).length > 0) return;
@@ -2764,8 +2788,14 @@ function hdRenderSheetList(keys) {
     } else {
       div.style.color = 'var(--text-dim)';
     }
-    div.innerHTML = '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + name + '</span>' +
-      '<span style="font-family:DM Mono,monospace;font-size:0.6rem;color:var(--text-muted);flex-shrink:0;margin-left:6px">' + count + '</span>';
+    var nameSpan = document.createElement('span');
+    nameSpan.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1';
+    nameSpan.textContent = name;
+    var countSpan = document.createElement('span');
+    countSpan.style.cssText = 'font-family:DM Mono,monospace;font-size:0.6rem;color:var(--text-muted);flex-shrink:0;margin-left:6px';
+    countSpan.textContent = count;
+    div.appendChild(nameSpan);
+    div.appendChild(countSpan);
     div.onclick = function() { hdSelectSheet(key); };
     list.appendChild(div);
   });
@@ -2785,6 +2815,12 @@ function hdSelectSheet(key) {
   hdRenderSheetList(Object.keys(hdAllSheets).sort());
 }
 
+function hdCapitalize(str) {
+  return str.replace(/_/g, ' ').replace(/\w\S*/g, function(w) {
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  });
+}
+
 function hdRenderTable(rows) {
   var wrap = document.getElementById('hd-table-wrap');
   if (!rows || rows.length === 0) {
@@ -2794,10 +2830,12 @@ function hdRenderTable(rows) {
 
   var allKeys = [];
   rows.forEach(function(row) {
-    Object.keys(row).forEach(function(k) { if (allKeys.indexOf(k) === -1) allKeys.push(k); });
+    Object.keys(row).forEach(function(k) {
+      if (allKeys.indexOf(k) === -1) allKeys.push(k);
+    });
   });
 
-  var priority = ['img','photo','item','name','brand','qty','price','extended','variant','notes','notes_details'];
+  var priority = ['img','photo','item','name','brand','qty','price','extended','extended_price','variant','notes','notes_details'];
   allKeys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -2811,16 +2849,21 @@ function hdRenderTable(rows) {
   var table = document.createElement('table');
   table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem';
 
+  // Header
   var thead = document.createElement('thead');
   var hrow = document.createElement('tr');
   hrow.style.cssText = 'position:sticky;top:0;background:var(--surface2);z-index:10';
+
+  var thEdit = document.createElement('th');
+  thEdit.style.cssText = 'padding:8px 6px;width:36px;border-bottom:1px solid var(--border)';
+  hrow.appendChild(thEdit);
+
   allKeys.forEach(function(k) {
     var th = document.createElement('th');
     if (k === 'img' || k === 'photo') {
       th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border)';
     } else {
-      var label = k.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-      th.textContent = label;
+      th.textContent = hdCapitalize(k);
       th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap';
     }
     hrow.appendChild(th);
@@ -2828,10 +2871,29 @@ function hdRenderTable(rows) {
   thead.appendChild(hrow);
   table.appendChild(thead);
 
+  // Body
   var tbody = document.createElement('tbody');
   rows.forEach(function(row, i) {
     var tr = document.createElement('tr');
-    tr.style.background = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+    var baseBg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+    tr.style.background = baseBg;
+    tr.onmouseover = function() { this.style.background = 'rgba(201,169,110,0.06)'; };
+    tr.onmouseout = function() { this.style.background = baseBg; };
+
+    // Edit button
+    var tdEdit = document.createElement('td');
+    tdEdit.style.cssText = 'padding:4px 6px;border-bottom:1px solid var(--border)';
+    var editBtn = document.createElement('button');
+    editBtn.textContent = 'edit';
+    editBtn.style.cssText = 'border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:0.65rem;font-family:DM Mono,monospace;padding:2px 4px;border-radius:4px';
+    editBtn.onmouseover = function() { this.style.color = 'var(--gold)'; };
+    editBtn.onmouseout = function() { this.style.color = 'var(--text-muted)'; };
+    (function(idx) {
+      editBtn.onclick = function(e) { e.stopPropagation(); hdOpenEditRow(idx); };
+    })(i);
+    tdEdit.appendChild(editBtn);
+    tr.appendChild(tdEdit);
+
     allKeys.forEach(function(k) {
       var val = row[k] || '';
       var td = document.createElement('td');
@@ -2853,9 +2915,9 @@ function hdRenderTable(rows) {
         a.textContent = String(val).length > 28 ? String(val).substring(0, 28) + '...' : val;
         a.style.cssText = 'color:var(--accent);text-decoration:none';
         td.appendChild(a);
-      } else if (k === 'extended' || k === 'price') {
+      } else if (hdPriceKeys.indexOf(k) > -1) {
         td.style.color = 'var(--green)';
-        td.textContent = val;
+        td.textContent = hdFormatPrice(val);
       } else {
         td.textContent = val;
       }
@@ -2876,7 +2938,9 @@ function hdFilterRows(q) {
   }
   q = q.toLowerCase();
   var filtered = hdCurrentRows.filter(function(row) {
-    return Object.values(row).some(function(v) { return String(v).toLowerCase().indexOf(q) > -1; });
+    return Object.values(row).some(function(v) {
+      return String(v).toLowerCase().indexOf(q) > -1;
+    });
   });
   document.getElementById('hd-row-count').textContent = filtered.length + ' / ' + hdCurrentRows.length + ' rows';
   hdRenderTable(filtered);
@@ -2895,14 +2959,191 @@ function hdSearch(q) {
     var sheet = hdAllSheets[key];
     if ((sheet.sheet_name || key).toLowerCase().indexOf(q) > -1) return true;
     return (sheet.rows || []).some(function(row) {
-      return Object.values(row).some(function(v) { return String(v).toLowerCase().indexOf(q) > -1; });
+      return Object.values(row).some(function(v) {
+        return String(v).toLowerCase().indexOf(q) > -1;
+      });
     });
   });
   hdRenderSheetList(matched.sort());
   document.getElementById('hd-status').textContent = matched.length + ' sheets match';
 }
 
-// Add Item Modal
+// ── Edit Row ──
+function hdOpenEditRow(rowIdx) {
+  hdEditingRowIdx = rowIdx;
+  var row = hdCurrentRows[rowIdx];
+  if (!row) return;
+  hdEditRowKeys = Object.keys(row);
+
+  var body = document.getElementById('hd-edit-row-body');
+  body.innerHTML = '';
+
+  // Photo field
+  var photoVal = row.img || row.photo || '';
+  var photoDiv = document.createElement('div');
+  photoDiv.className = 'form-group';
+  photoDiv.style.marginBottom = '12px';
+
+  var photoLabel = document.createElement('label');
+  photoLabel.className = 'form-label';
+  photoLabel.textContent = 'PHOTO';
+  photoDiv.appendChild(photoLabel);
+
+  var photoRow = document.createElement('div');
+  photoRow.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+
+  if (photoVal) {
+    var thumb = document.createElement('img');
+    thumb.id = 'hd-edit-thumb';
+    thumb.src = photoVal;
+    thumb.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0';
+    photoRow.appendChild(thumb);
+  }
+
+  var photoCtrl = document.createElement('div');
+  photoCtrl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:6px';
+
+  var imgInput = document.createElement('input');
+  imgInput.className = 'form-input';
+  imgInput.id = 'hd-edit-img-url';
+  imgInput.placeholder = 'Image URL';
+  imgInput.value = photoVal;
+  imgInput.oninput = function() {
+    var t = document.getElementById('hd-edit-thumb');
+    if (t) t.src = this.value;
+  };
+  photoCtrl.appendChild(imgInput);
+
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.id = 'hd-edit-file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+  fileInput.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var data = ev.target.result;
+      var i2 = new Image();
+      i2.onload = function() {
+        var canvas = document.createElement('canvas');
+        var MAX = 600;
+        var w = i2.width, h = i2.height;
+        if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+        else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(i2, 0, 0, w, h);
+        var compressed = canvas.toDataURL('image/jpeg', 0.7);
+        var urlField = document.getElementById('hd-edit-img-url');
+        if (urlField) urlField.value = compressed;
+        var t2 = document.getElementById('hd-edit-thumb');
+        if (t2) { t2.src = compressed; } else {
+          var newThumb = document.createElement('img');
+          newThumb.id = 'hd-edit-thumb';
+          newThumb.src = compressed;
+          newThumb.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0';
+          photoRow.insertBefore(newThumb, photoCtrl);
+        }
+      };
+      i2.src = data;
+    };
+    reader.readAsDataURL(file);
+  };
+  photoCtrl.appendChild(fileInput);
+
+  var photoBtn = document.createElement('button');
+  photoBtn.textContent = 'Choose / Take Photo';
+  photoBtn.style.cssText = 'border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);border-radius:6px;padding:5px 10px;font-size:0.75rem;cursor:pointer;width:fit-content';
+  photoBtn.onclick = function() { document.getElementById('hd-edit-file').click(); };
+  photoCtrl.appendChild(photoBtn);
+
+  photoRow.appendChild(photoCtrl);
+  photoDiv.appendChild(photoRow);
+  body.appendChild(photoDiv);
+
+  // All other fields
+  hdEditRowKeys.forEach(function(k) {
+    if (k === 'img' || k === 'photo' || k === 'added' || k === 'updated') return;
+    var div = document.createElement('div');
+    div.className = 'form-group';
+    div.style.marginBottom = '10px';
+
+    var lbl = document.createElement('label');
+    lbl.className = 'form-label';
+    lbl.textContent = hdCapitalize(k);
+    div.appendChild(lbl);
+
+    var isLong = k === 'notes' || k === 'notes_details' || (row[k] && String(row[k]).length > 80);
+    if (isLong) {
+      var ta = document.createElement('textarea');
+      ta.className = 'form-input';
+      ta.id = 'hd-edit-field-' + k;
+      ta.rows = 2;
+      ta.value = String(row[k] || '');
+      div.appendChild(ta);
+    } else {
+      var inp = document.createElement('input');
+      inp.className = 'form-input';
+      inp.id = 'hd-edit-field-' + k;
+      inp.value = String(row[k] || '');
+      div.appendChild(inp);
+    }
+    body.appendChild(div);
+  });
+
+  var titleVal = row.item || row.name || row.appliances || ('Row ' + (rowIdx + 1));
+  document.getElementById('hd-edit-row-modal-title').textContent = 'Edit: ' + String(titleVal).substring(0, 50);
+  document.getElementById('hd-edit-row-modal').classList.add('open');
+}
+
+async function hdSaveEditRow() {
+  if (hdEditingRowIdx === null) return;
+  var row = hdCurrentRows[hdEditingRowIdx];
+
+  hdEditRowKeys.forEach(function(k) {
+    if (k === 'img' || k === 'photo' || k === 'added' || k === 'updated') return;
+    var el = document.getElementById('hd-edit-field-' + k);
+    if (el) row[k] = el.value.trim();
+  });
+
+  var imgUrlEl = document.getElementById('hd-edit-img-url');
+  if (imgUrlEl && imgUrlEl.value.trim()) {
+    row.img = imgUrlEl.value.trim();
+    delete row.photo;
+  }
+  row.updated = new Date().toLocaleDateString('en-US');
+  hdAllSheets[hdCurrentSheet].rows = hdCurrentRows;
+
+  try {
+    await db.ref(HD_PATH + '/' + hdCurrentSheet).set(hdAllSheets[hdCurrentSheet]);
+    document.getElementById('hd-edit-row-modal').classList.remove('open');
+    hdRenderTable(hdCurrentRows);
+    showToast('Row updated!');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function hdDeleteRow() {
+  if (hdEditingRowIdx === null) return;
+  if (!confirm('Delete this row?')) return;
+  hdCurrentRows.splice(hdEditingRowIdx, 1);
+  hdAllSheets[hdCurrentSheet].rows = hdCurrentRows;
+  hdAllSheets[hdCurrentSheet].row_count = hdCurrentRows.length;
+  try {
+    await db.ref(HD_PATH + '/' + hdCurrentSheet).set(hdAllSheets[hdCurrentSheet]);
+    document.getElementById('hd-edit-row-modal').classList.remove('open');
+    document.getElementById('hd-row-count').textContent = hdCurrentRows.length + ' rows';
+    hdRenderSheetList(Object.keys(hdAllSheets).sort());
+    hdRenderTable(hdCurrentRows);
+    showToast('Row deleted');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// ── Add Item ──
 function hdOpenAddModal() {
   hdItemImgData = '';
   document.getElementById('hd-item-name').value = '';
@@ -2955,12 +3196,7 @@ async function hdSaveItem() {
 
   try {
     if (!hdAllSheets[sheetKey]) {
-      hdAllSheets[sheetKey] = {
-        sheet_name: newSheetName || sheetKey,
-        rows: [],
-        row_count: 0,
-        exported_at: new Date().toISOString()
-      };
+      hdAllSheets[sheetKey] = { sheet_name: newSheetName || sheetKey, rows: [], row_count: 0, exported_at: new Date().toISOString() };
     }
     if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
     hdAllSheets[sheetKey].rows.push(item);
@@ -2986,7 +3222,7 @@ async function hdSaveItem() {
   }
 }
 
-// New Sheet
+// ── New Sheet ──
 function hdOpenAddSheet() {
   document.getElementById('hd-new-sheet-name').value = '';
   document.getElementById('hd-sheet-modal').classList.add('open');
@@ -3006,7 +3242,7 @@ async function hdSaveNewSheet() {
   showToast('Sheet created: ' + name);
 }
 
-// Photo Handling
+// ── Photo Handling ──
 function hdHandleFile(event) {
   var file = event.target.files[0];
   if (!file) return;
@@ -3055,14 +3291,11 @@ function hdLoadImgPreview(dataUrl) {
 
 function hdClearPhoto() {
   hdItemImgData = '';
-  var img = document.getElementById('hd-item-preview-img');
-  if (img) img.src = '';
-  var label = document.getElementById('hd-item-drop-label');
-  if (label) label.style.display = 'block';
-  var preview = document.getElementById('hd-item-drop-preview');
-  if (preview) preview.style.display = 'none';
-  var urlInput = document.getElementById('hd-item-img-url');
-  if (urlInput) urlInput.value = '';
+  var el;
+  el = document.getElementById('hd-item-preview-img'); if (el) el.src = '';
+  el = document.getElementById('hd-item-drop-label'); if (el) el.style.display = 'block';
+  el = document.getElementById('hd-item-drop-preview'); if (el) el.style.display = 'none';
+  el = document.getElementById('hd-item-img-url'); if (el) el.value = '';
 }
 
 // Close modals on overlay click
@@ -3070,6 +3303,9 @@ document.getElementById('hd-add-modal').addEventListener('click', function(e) {
   if (e.target === this) hdCloseAddModal();
 });
 document.getElementById('hd-sheet-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+document.getElementById('hd-edit-row-modal').addEventListener('click', function(e) {
   if (e.target === this) this.classList.remove('open');
 });
 
@@ -3925,7 +4161,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 3.9
+// Philinity Command Center © Rev 4.0
 // 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
