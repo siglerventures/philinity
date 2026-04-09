@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.9</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.0</span>
       </div>
     </div>
 
@@ -3749,10 +3749,10 @@ function hdShowCtxMenu(e, key, nameSpan, div) {
   menu.style.top = y + 'px';
 }
 
-function hdHideCtxMenu() {
+function hdHideCtxMenu(clearKey) {
   var menu = document.getElementById('hd-sheet-ctx-menu');
   if (menu) menu.style.display = 'none';
-  hdCtxTargetKey = null;
+  if (clearKey) hdCtxTargetKey = null;
 }
 
 
@@ -3764,7 +3764,9 @@ var hdDeleteKey = null;
 
 // ── Sheet Rename (via modal) ──
 function hdCtxRename() {
-  hdHideCtxMenu();
+  var savedKey = hdCtxTargetKey;
+  hdHideCtxMenu(true);
+  hdCtxTargetKey = savedKey; // restore after hide clears it
   if (!hdCtxTargetKey) return;
   hdRenameMode = 'sheet';
   hdRenameKey = hdCtxTargetKey;
@@ -3782,7 +3784,11 @@ function hdCtxRename() {
 
 // ── Column Rename (via modal) ──
 function hdColCtxRename() {
-  hdHideColCtxMenu();
+  var savedKey = hdColCtxKey;
+  var savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  hdColCtxKey = savedKey;
+  hdColCtxSheetKey = savedSheet;
   if (!hdColCtxKey) return;
   hdRenameMode = 'column';
   hdRenameKey = hdColCtxKey;
@@ -3840,7 +3846,9 @@ function hdRenameCancel() {
 
 // ── Sheet Delete (via modal) ──
 function hdCtxDelete() {
-  hdHideCtxMenu();
+  var savedKey = hdCtxTargetKey;
+  hdHideCtxMenu(true);
+  hdCtxTargetKey = savedKey;
   if (!hdCtxTargetKey) return;
   hdDeleteMode = 'sheet';
   hdDeleteKey = hdCtxTargetKey;
@@ -3904,10 +3912,88 @@ document.getElementById('hd-delete-modal').addEventListener('click', function(e)
 // Close col context menu on outside click
 document.addEventListener('click', function(e) {
   var menu = document.getElementById('hd-col-ctx-menu');
-  if (menu && !menu.contains(e.target)) hdHideColCtxMenu();
+  if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) hdHideColCtxMenu(true);
 });
 
 // ── Column Rename via double-tap (mobile friendly) ──
+var hdColCtxKey = null;
+var hdColCtxSheetKey = null;
+
+function hdShowColCtxMenu(e, colKey, sheetKey) {
+  e.preventDefault();
+  e.stopPropagation();
+  hdColCtxKey = colKey;
+  hdColCtxSheetKey = sheetKey;
+  var menu = document.getElementById('hd-col-ctx-menu');
+  if (!menu) return;
+  menu.style.display = 'block';
+  var x = e.clientX, y = e.clientY;
+  if (x + 200 > window.innerWidth) x = window.innerWidth - 208;
+  if (y + 140 > window.innerHeight) y = window.innerHeight - 148;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  var label = document.getElementById('hd-col-ctx-label');
+  if (label) label.textContent = hdGetColDisplayName(sheetKey, colKey);
+}
+
+function hdHideColCtxMenu(clearKey) {
+  var menu = document.getElementById('hd-col-ctx-menu');
+  if (menu) menu.style.display = 'none';
+  if (clearKey) hdColCtxKey = null;
+}
+
+function hdColCtxMoveLeft() {
+  var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  hdColCtxKey = savedKey; hdColCtxSheetKey = savedSheet;
+  if (!savedKey || !savedSheet) return;
+  var cfg = hdColConfig[savedSheet];
+  if (!cfg) return;
+  var idx = cfg.col_order.indexOf(savedKey);
+  if (idx <= 0) return;
+  var tmp = cfg.col_order[idx-1]; cfg.col_order[idx-1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
+  hdSaveColConfig(savedSheet);
+  hdSelectSheet(hdCurrentSheet);
+}
+
+function hdColCtxMoveRight() {
+  var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  hdColCtxKey = savedKey; hdColCtxSheetKey = savedSheet;
+  if (!savedKey || !savedSheet) return;
+  var cfg = hdColConfig[savedSheet];
+  if (!cfg) return;
+  var idx = cfg.col_order.indexOf(savedKey);
+  if (idx === -1 || idx >= cfg.col_order.length - 1) return;
+  var tmp = cfg.col_order[idx+1]; cfg.col_order[idx+1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
+  hdSaveColConfig(savedSheet);
+  hdSelectSheet(hdCurrentSheet);
+}
+
+function hdColCtxHide() {
+  var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  if (!savedKey || !savedSheet) return;
+  var cfg = hdColConfig[savedSheet];
+  if (!cfg) return;
+  if (cfg.col_hidden.indexOf(savedKey) === -1) cfg.col_hidden.push(savedKey);
+  hdSaveColConfig(savedSheet);
+  hdSelectSheet(hdCurrentSheet);
+  showToast('Column hidden. Right-click any header > Show All to restore.');
+}
+
+function hdColCtxShowAll() {
+  var savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  if (!savedSheet) return;
+  var cfg = hdColConfig[savedSheet];
+  if (!cfg) return;
+  cfg.col_hidden = [];
+  hdSaveColConfig(savedSheet);
+  hdSelectSheet(hdCurrentSheet);
+  showToast('All columns visible');
+}
+
 var hdLastTapCol = null;
 var hdLastTapTime = 0;
 
@@ -4825,7 +4911,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.9
+// Philinity Command Center © Rev 5.0
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -4857,7 +4943,7 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 4.9  Rename (sheet + column) via proper modal UI
+// Rev 5.0  Rename (sheet + column) via proper modal UI
 //          Delete (sheet) via proper confirm modal
 //          Works on mobile and desktop without browser dialogs
 // ============================================================
