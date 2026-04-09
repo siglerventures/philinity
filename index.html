@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.3</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.6</span>
       </div>
     </div>
 
@@ -2109,6 +2109,27 @@ function checkPW() {
     </div>
   </div>
 
+  <!-- House Data Column Context Menu -->
+  <div id="hd-col-ctx-menu" style="display:none;position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border-bright);border-radius:8px;padding:6px 0;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+    <div style="padding:6px 16px 4px;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:4px" id="hd-col-ctx-label"></div>
+    <div onclick="hdColCtxRename()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#9999;&#65039; Rename Column</div>
+    <div onclick="hdColCtxMoveLeft()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#8592; Move Left</div>
+    <div onclick="hdColCtxMoveRight()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#8594; Move Right</div>
+    <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
+    <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+    <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
+  </div>
+
+  <!-- House Data Sheet Context Menu -->
+  <div id="hd-sheet-ctx-menu" style="display:none;position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border-bright);border-radius:8px;padding:6px 0;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+    <div class="hd-ctx-item" onclick="hdCtxRename()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">
+      <span>✏️</span> Rename Sheet
+    </div>
+    <div class="hd-ctx-item" onclick="hdCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">
+      <span>🗑</span> Delete Sheet
+    </div>
+  </div>
+
   <!-- ══════════ NAV EDITOR ══════════ -->
   <div class="page" id="page-knowledge">
     <div class="page-title">
@@ -2740,9 +2761,11 @@ var hdPriceKeys = ['price','extended','extended_price','cost','total','total_pri
 
 function hdFormatPrice(val) {
   if (!val) return '';
-  var str = String(val).replace(/[^0-9.]/g, '');
+  var str = String(val).replace(/[^0-9.-]/g, '');
   var num = parseFloat(str);
-  if (isNaN(num) || num === 0) return val;
+  if (isNaN(num)) return val;
+  if (num === 0) return '';
+  // Round to nearest dollar
   return '$' + Math.round(num).toLocaleString('en-US');
 }
 
@@ -2754,7 +2777,23 @@ function hdLooksLikePrice(key, val) {
   return false;
 }
 
+// Known column name overrides
+var HD_COL_NAMES = {
+  'wwwmldcom': 'URL', 'wwwcom': 'URL', 'url': 'URL', 'urls': 'URL', 'link': 'URL', 'website': 'URL',
+  'tyler': 'Contact', 'contact': 'Contact', 'contacts': 'Contact',
+  'qty': 'QTY', 'extended': 'Extended Price', 'extended_price': 'Extended Price',
+  'total_price': 'Total Price', 'unit_price': 'Unit Price',
+  'img': 'Photo', 'photo': 'Photo',
+  'col1': 'Col 1', 'col2': 'Col 2', 'col3': 'Col 3', 'col4': 'Col 4', 'col5': 'Col 5',
+  'col6': 'Col 6', 'col7': 'Col 7', 'col8': 'Col 8'
+};
+
 function hdCapitalize(str) {
+  var key = String(str).toLowerCase().trim();
+  if (HD_COL_NAMES[key]) return HD_COL_NAMES[key];
+  // Clean up auto-generated col names from Apps Script
+  // e.g. "wwwmldcom" -> try to detect URL-like patterns
+  if (/^www/.test(key) || /com$/.test(key) || /org$/.test(key)) return 'URL';
   return String(str).replace(/_/g, ' ').replace(/\w\S*/g, function(w) {
     return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
   });
@@ -2845,6 +2884,7 @@ function hdRenderSheetList() {
     // Events
     div.onclick = function() { hdSelectSheet(key); };
     div.ondblclick = function(e) { e.stopPropagation(); hdRenameSheet(key, nameSpan, div); };
+    div.oncontextmenu = function(e) { hdShowCtxMenu(e, key, nameSpan, div); };
     div.ondragstart = function(e) {
       hdSheetDragSrc = idx;
       e.dataTransfer.effectAllowed = 'move';
@@ -2910,12 +2950,14 @@ function hdRenameSheet(key, nameSpan, div) {
 }
 
 // ── Select Sheet ──
-function hdSelectSheet(key) {
+async function hdSelectSheet(key) {
   hdCurrentSheet = key;
   hdSortKey = null;
   hdSortDir = 1;
   var sheet = hdAllSheets[key];
   if (!sheet) return;
+  // Load column config for this sheet
+  await hdLoadColConfig(key);
 
   // Get own rows + tagged rows from other sheets
   var ownRows = (sheet.rows || []).map(function(r) { return Object.assign({}, r, {_sheet: key}); });
@@ -2994,6 +3036,15 @@ function hdRenderTable(rows) {
     return a.localeCompare(b);
   });
 
+  // Apply column config: order, hide
+  if (hdCurrentSheet) {
+    allKeys = hdGetOrderedKeys(hdCurrentSheet, allKeys);
+    var cfg = hdColConfig[hdCurrentSheet];
+    if (cfg && cfg.col_hidden && cfg.col_hidden.length > 0) {
+      allKeys = allKeys.filter(function(k) { return cfg.col_hidden.indexOf(k) === -1; });
+    }
+  }
+
   var table = document.createElement('table');
   table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem';
 
@@ -3008,12 +3059,17 @@ function hdRenderTable(rows) {
       th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border)';
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
-      th.textContent = hdCapitalize(k) + arrow;
+      var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
+      th.textContent = displayName + arrow;
       th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none';
-      th.title = 'Click to sort';
+      th.title = 'Click to sort  |  Right-click or double-tap to rename/reorder';
       th.onmouseover = function() { this.style.color = 'var(--text)'; };
       th.onmouseout = function() { this.style.color = 'var(--gold)'; };
-      (function(colKey) { th.onclick = function() { hdSortBy(colKey); }; })(k);
+      (function(colKey, sk) {
+        th.onclick = function(e) { if (!e.ctrlKey) hdSortBy(colKey); };
+        th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
+        th.ontouchstart = function(e) { hdHandleColTap(e, colKey, sk); };
+      })(k, hdCurrentSheet);
     }
     hrow.appendChild(th);
   });
@@ -3154,44 +3210,103 @@ function hdSearch(q) {
 
 // ── Build Tag Picker for Edit Modal ──
 function hdBuildTagPicker(currentTags, excludeSheet) {
-  var container = document.createElement('div');
-  container.id = 'hd-tag-picker';
-  container.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:4px';
+  var wrapper = document.createElement('div');
+  wrapper.id = 'hd-tag-picker';
+  wrapper.style.cssText = 'position:relative';
+
+  // Selected summary bar
+  var summary = document.createElement('div');
+  summary.id = 'hd-tag-summary';
+  summary.style.cssText = 'background:var(--surface2);border:1px solid var(--border-bright);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:0.8rem;color:var(--text-dim);display:flex;align-items:center;justify-content:space-between;user-select:none';
+
+  var selectedKeys = (currentTags || []).filter(function(k) { return k !== excludeSheet; });
+
+  function updateSummary() {
+    var count = wrapper.querySelectorAll('input[type=checkbox]:checked').length;
+    summary.firstChild.textContent = count === 0 ? 'Select sheets...' : count + ' sheet' + (count > 1 ? 's' : '') + ' selected';
+  }
+
+  var summaryText = document.createTextNode(selectedKeys.length === 0 ? 'Select sheets...' : selectedKeys.length + ' sheet' + (selectedKeys.length > 1 ? 's' : '') + ' selected');
+  summary.appendChild(summaryText);
+  var caret = document.createElement('span');
+  caret.textContent = '›';
+  caret.style.cssText = 'transform:rotate(90deg);display:inline-block;font-size:1rem;color:var(--text-muted)';
+  summary.appendChild(caret);
+
+  // Dropdown
+  var dropdown = document.createElement('div');
+  dropdown.style.cssText = 'display:none;position:absolute;z-index:200;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border-bright);border-radius:8px;max-height:220px;overflow-y:auto;padding:6px 0;box-shadow:0 8px 24px rgba(0,0,0,0.4)';
+
+  // Search inside dropdown
+  var searchWrap = document.createElement('div');
+  searchWrap.style.cssText = 'padding:6px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface2)';
+  var searchInput = document.createElement('input');
+  searchInput.placeholder = 'Search sheets...';
+  searchInput.style.cssText = 'width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:0.78rem;outline:none;font-family:Outfit,sans-serif';
+  searchInput.oninput = function() {
+    var q = this.value.toLowerCase();
+    dropdown.querySelectorAll('.hd-tag-row').forEach(function(row) {
+      row.style.display = row.getAttribute('data-name').toLowerCase().indexOf(q) > -1 ? 'flex' : 'none';
+    });
+  };
+  searchWrap.appendChild(searchInput);
+  dropdown.appendChild(searchWrap);
 
   hdSheetOrder.forEach(function(key) {
     if (key === excludeSheet) return;
     var sheet = hdAllSheets[key];
     var name = sheet ? (sheet.sheet_name || key) : key;
-    var isSelected = currentTags && currentTags.indexOf(key) > -1;
+    var isChecked = selectedKeys.indexOf(key) > -1;
 
-    var chip = document.createElement('button');
-    chip.textContent = name;
-    chip.setAttribute('data-key', key);
-    chip.setAttribute('data-selected', isSelected ? '1' : '0');
-    chip.style.cssText = 'padding:4px 10px;border-radius:12px;font-size:0.7rem;cursor:pointer;font-family:Outfit,sans-serif;transition:all 0.15s;border:1px solid ' +
-      (isSelected ? 'var(--gold)' : 'var(--border-bright)') + ';background:' +
-      (isSelected ? 'var(--gold-dim)' : 'transparent') + ';color:' +
-      (isSelected ? 'var(--gold)' : 'var(--text-muted)');
+    var row = document.createElement('label');
+    row.className = 'hd-tag-row';
+    row.setAttribute('data-name', name);
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:0.8rem;color:var(--text-dim);transition:background 0.1s';
+    row.onmouseover = function() { this.style.background = 'var(--gold-dim)'; this.style.color = 'var(--gold)'; };
+    row.onmouseout = function() { this.style.background = ''; this.style.color = 'var(--text-dim)'; };
 
-    chip.onclick = function() {
-      var sel = this.getAttribute('data-selected') === '1';
-      sel = !sel;
-      this.setAttribute('data-selected', sel ? '1' : '0');
-      this.style.borderColor = sel ? 'var(--gold)' : 'var(--border-bright)';
-      this.style.background = sel ? 'var(--gold-dim)' : 'transparent';
-      this.style.color = sel ? 'var(--gold)' : 'var(--text-muted)';
-    };
-    container.appendChild(chip);
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = key;
+    cb.checked = isChecked;
+    cb.style.cssText = 'accent-color:var(--gold);width:14px;height:14px;flex-shrink:0';
+    cb.onclick = function(e) { e.stopPropagation(); updateSummary(); };
+
+    var nameSpan = document.createElement('span');
+    nameSpan.textContent = name;
+
+    row.appendChild(cb);
+    row.appendChild(nameSpan);
+    dropdown.appendChild(row);
   });
-  return container;
+
+  summary.onclick = function(e) {
+    e.stopPropagation();
+    var isOpen = dropdown.style.display !== 'none';
+    dropdown.style.display = isOpen ? 'none' : 'block';
+    caret.style.transform = isOpen ? 'rotate(90deg)' : 'rotate(-90deg)';
+    if (!isOpen) setTimeout(function() { searchInput.focus(); }, 50);
+  };
+
+  document.addEventListener('click', function closeDropdown(e) {
+    if (!wrapper.contains(e.target)) {
+      dropdown.style.display = 'none';
+      caret.style.transform = 'rotate(90deg)';
+      document.removeEventListener('click', closeDropdown);
+    }
+  });
+
+  wrapper.appendChild(summary);
+  wrapper.appendChild(dropdown);
+  return wrapper;
 }
 
 function hdGetSelectedTags() {
   var picker = document.getElementById('hd-tag-picker');
   if (!picker) return [];
   var selected = [];
-  picker.querySelectorAll('button[data-selected="1"]').forEach(function(btn) {
-    selected.push(btn.getAttribute('data-key'));
+  picker.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb) {
+    selected.push(cb.value);
   });
   return selected;
 }
@@ -3289,6 +3404,10 @@ function hdOpenEditRow(rowIdx, sheetKey) {
       var inp = document.createElement('input');
       inp.className = 'form-input'; inp.id = 'hd-edit-field-' + k;
       inp.value = String(row[k] || ''); div.appendChild(inp);
+      inp.onfocus = function() {
+        // Strip $ and commas on focus for easy editing
+        this.value = this.value.replace(/[$,]/g, '');
+      };
     }
     body.appendChild(div);
   });
@@ -3574,6 +3693,255 @@ function hdInitClipboardPaste() {
 document.getElementById('hd-add-modal').addEventListener('click', function(e) { if (e.target === this) hdCloseAddModal(); });
 document.getElementById('hd-sheet-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
 document.getElementById('hd-edit-row-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+
+
+
+// ── Sheet Context Menu ──
+var hdCtxTargetKey = null;
+var hdCtxTargetNameSpan = null;
+var hdCtxTargetDiv = null;
+
+function hdShowCtxMenu(e, key, nameSpan, div) {
+  e.preventDefault();
+  e.stopPropagation();
+  hdCtxTargetKey = key;
+  hdCtxTargetNameSpan = nameSpan;
+  hdCtxTargetDiv = div;
+
+  var menu = document.getElementById('hd-sheet-ctx-menu');
+  menu.style.display = 'block';
+
+  // Position near cursor but keep on screen
+  var x = e.clientX, y = e.clientY;
+  var mw = 180, mh = 80;
+  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+
+function hdHideCtxMenu() {
+  var menu = document.getElementById('hd-sheet-ctx-menu');
+  if (menu) menu.style.display = 'none';
+  hdCtxTargetKey = null;
+}
+
+function hdCtxRename() {
+  hdHideCtxMenu();
+  if (!hdCtxTargetKey || !hdCtxTargetNameSpan || !hdCtxTargetDiv) return;
+  hdRenameSheet(hdCtxTargetKey, hdCtxTargetNameSpan, hdCtxTargetDiv);
+}
+
+async function hdCtxDelete() {
+  hdHideCtxMenu();
+  if (!hdCtxTargetKey) return;
+  var sheet = hdAllSheets[hdCtxTargetKey];
+  var name = sheet ? (sheet.sheet_name || hdCtxTargetKey) : hdCtxTargetKey;
+  var rowCount = (sheet && sheet.rows) ? sheet.rows.length : 0;
+
+  var msg = 'Delete sheet "' + name + '"?';
+  if (rowCount > 0) msg += '\n\nThis will permanently delete ' + rowCount + ' item' + (rowCount > 1 ? 's' : '') + ' from this sheet.';
+  msg += '\n\nThis cannot be undone.';
+
+  if (!confirm(msg)) return;
+
+  try {
+    await db.ref(HD_PATH + '/' + hdCtxTargetKey).remove();
+    delete hdAllSheets[hdCtxTargetKey];
+    var idx = hdSheetOrder.indexOf(hdCtxTargetKey);
+    if (idx > -1) hdSheetOrder.splice(idx, 1);
+    await hdSaveSheetOrder();
+
+    if (hdCurrentSheet === hdCtxTargetKey) {
+      hdCurrentSheet = null;
+      document.getElementById('hd-panel-title').textContent = 'Select a sheet';
+      document.getElementById('hd-table-wrap').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px;font-size:0.82rem">Select a sheet on the left to view its data</div>';
+      document.getElementById('hd-row-search-wrap').style.display = 'none';
+      document.getElementById('hd-add-to-sheet-btn').style.display = 'none';
+      document.getElementById('hd-row-count').textContent = '';
+    }
+
+    hdRenderSheetList();
+    hdPopulateSheetSelect();
+    document.getElementById('hd-status').textContent = hdSheetOrder.length + ' sheets loaded';
+    showToast('Sheet deleted: ' + name);
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// Close context menu on any click elsewhere
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('hd-sheet-ctx-menu');
+  if (menu && !menu.contains(e.target)) hdHideCtxMenu();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') hdHideCtxMenu();
+});
+
+
+
+// ══════════ COLUMN MANAGEMENT ══════════
+// Stored at philinity/house_col_config/{sheetKey} = { col_order: [], col_names: {}, col_hidden: [] }
+var HD_COL_CONFIG_PATH = 'philinity/house_col_config';
+var hdColConfig = {}; // { sheetKey: { col_order, col_names, col_hidden } }
+
+async function hdLoadColConfig(sheetKey) {
+  if (hdColConfig[sheetKey]) return hdColConfig[sheetKey];
+  try {
+    var snap = await db.ref(HD_COL_CONFIG_PATH + '/' + sheetKey.replace(/[^a-z0-9]/gi, '_')).get();
+    hdColConfig[sheetKey] = snap.exists() ? snap.val() : { col_order: [], col_names: {}, col_hidden: [] };
+  } catch(e) {
+    hdColConfig[sheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
+  }
+  return hdColConfig[sheetKey];
+}
+
+async function hdSaveColConfig(sheetKey) {
+  var cfg = hdColConfig[sheetKey];
+  if (!cfg) return;
+  try {
+    await db.ref(HD_COL_CONFIG_PATH + '/' + sheetKey.replace(/[^a-z0-9]/gi, '_')).set(cfg);
+  } catch(e) { console.warn('Col config save failed:', e.message); }
+}
+
+function hdGetColDisplayName(sheetKey, colKey) {
+  var cfg = hdColConfig[sheetKey];
+  if (cfg && cfg.col_names && cfg.col_names[colKey]) return cfg.col_names[colKey];
+  return hdCapitalize(colKey);
+}
+
+function hdGetOrderedKeys(sheetKey, allKeys) {
+  var cfg = hdColConfig[sheetKey];
+  if (!cfg) return allKeys;
+  // If no order saved yet, init it from current allKeys and save
+  if (!cfg.col_order || cfg.col_order.length === 0) {
+    cfg.col_order = allKeys.slice();
+    hdSaveColConfig(sheetKey);
+    return allKeys;
+  }
+  // Put configured keys first in order, then any new keys at end
+  var ordered = cfg.col_order.filter(function(k) { return allKeys.indexOf(k) > -1; });
+  allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
+  return ordered;
+}
+
+// ── Column Context Menu ──
+var hdColCtxKey = null;
+var hdColCtxSheetKey = null;
+
+function hdShowColCtxMenu(e, colKey, sheetKey) {
+  e.preventDefault();
+  e.stopPropagation();
+  hdColCtxKey = colKey;
+  hdColCtxSheetKey = sheetKey;
+
+  var menu = document.getElementById('hd-col-ctx-menu');
+  if (!menu) return;
+  menu.style.display = 'block';
+
+  var x = e.clientX, y = e.clientY;
+  if (x + 200 > window.innerWidth) x = window.innerWidth - 208;
+  if (y + 120 > window.innerHeight) y = window.innerHeight - 128;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+
+  // Show current name in menu
+  var label = document.getElementById('hd-col-ctx-label');
+  if (label) label.textContent = hdGetColDisplayName(sheetKey, colKey);
+}
+
+function hdHideColCtxMenu() {
+  var menu = document.getElementById('hd-col-ctx-menu');
+  if (menu) menu.style.display = 'none';
+  hdColCtxKey = null;
+}
+
+function hdColCtxRename() {
+  hdHideColCtxMenu();
+  if (!hdColCtxKey) return;
+  var currentName = hdGetColDisplayName(hdColCtxSheetKey, hdColCtxKey);
+  var newName = prompt('Rename column "' + currentName + '" to:', currentName);
+  if (!newName || newName.trim() === currentName) return;
+  newName = newName.trim();
+
+  if (!hdColConfig[hdColCtxSheetKey]) hdColConfig[hdColCtxSheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
+  hdColConfig[hdColCtxSheetKey].col_names[hdColCtxKey] = newName;
+  hdSaveColConfig(hdColCtxSheetKey);
+  hdSelectSheet(hdCurrentSheet); // re-render
+  showToast('Column renamed to ' + newName);
+}
+
+function hdColCtxMoveLeft() {
+  hdHideColCtxMenu();
+  if (!hdColCtxKey || !hdColCtxSheetKey) return;
+  var cfg = hdColConfig[hdColCtxSheetKey];
+  if (!cfg) return;
+  var order = cfg.col_order;
+  var idx = order.indexOf(hdColCtxKey);
+  if (idx <= 0) return;
+  var tmp = order[idx - 1]; order[idx - 1] = order[idx]; order[idx] = tmp;
+  hdSaveColConfig(hdColCtxSheetKey);
+  hdSelectSheet(hdCurrentSheet);
+}
+
+function hdColCtxMoveRight() {
+  hdHideColCtxMenu();
+  if (!hdColCtxKey || !hdColCtxSheetKey) return;
+  var cfg = hdColConfig[hdColCtxSheetKey];
+  if (!cfg) return;
+  var order = cfg.col_order;
+  var idx = order.indexOf(hdColCtxKey);
+  if (idx === -1 || idx >= order.length - 1) return;
+  var tmp = order[idx + 1]; order[idx + 1] = order[idx]; order[idx] = tmp;
+  hdSaveColConfig(hdColCtxSheetKey);
+  hdSelectSheet(hdCurrentSheet);
+}
+
+function hdColCtxHide() {
+  hdHideColCtxMenu();
+  if (!hdColCtxKey || !hdColCtxSheetKey) return;
+  var cfg = hdColConfig[hdColCtxSheetKey];
+  if (!cfg) return;
+  if (cfg.col_hidden.indexOf(hdColCtxKey) === -1) cfg.col_hidden.push(hdColCtxKey);
+  hdSaveColConfig(hdColCtxSheetKey);
+  hdSelectSheet(hdCurrentSheet);
+  showToast('Column hidden. Right-click any header to show hidden columns.');
+}
+
+function hdColCtxShowAll() {
+  hdHideColCtxMenu();
+  if (!hdColCtxSheetKey) return;
+  var cfg = hdColConfig[hdColCtxSheetKey];
+  if (!cfg) return;
+  cfg.col_hidden = [];
+  hdSaveColConfig(hdColCtxSheetKey);
+  hdSelectSheet(hdCurrentSheet);
+  showToast('All columns visible');
+}
+
+// Close col context menu on outside click
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('hd-col-ctx-menu');
+  if (menu && !menu.contains(e.target)) hdHideColCtxMenu();
+});
+
+// ── Column Rename via double-tap (mobile friendly) ──
+var hdLastTapCol = null;
+var hdLastTapTime = 0;
+
+function hdHandleColTap(e, colKey, sheetKey) {
+  var now = Date.now();
+  if (hdLastTapCol === colKey && now - hdLastTapTime < 400) {
+    // Double tap
+    e.preventDefault();
+    hdColCtxKey = colKey;
+    hdColCtxSheetKey = sheetKey;
+    hdColCtxRename();
+  }
+  hdLastTapCol = colKey;
+  hdLastTapTime = now;
+}
 
 
 // ══════════ NAV EDITOR ══════════
@@ -4428,7 +4796,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.3
+// Philinity Command Center © Rev 4.6
 // 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
