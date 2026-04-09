@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.6</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.7</span>
       </div>
     </div>
 
@@ -2145,14 +2145,8 @@ function checkPW() {
     <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
+    <div onclick="hdResetColWidths(hdCurrentSheet)" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#8596; Reset Column Widths</div>
     <div onclick="hdColCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">&#128465;&#65039; Delete Column</div>
-    <div style="border-top:1px solid var(--border);margin:4px 0"></div>
-    <div style="padding:4px 16px 2px;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-muted)">FORMAT AS</div>
-    <div onclick="hdColCtxFormat('currency')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128176; Currency ($19,000)</div>
-    <div onclick="hdColCtxFormat('date')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128197; Date (4/9/2026)</div>
-    <div onclick="hdColCtxFormat('number')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128290; Number</div>
-    <div onclick="hdColCtxFormat('text')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128196; Text</div>
-    <div onclick="hdColCtxFormat('auto')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#9881;&#65039; Auto (default)</div>
   </div>
 
   <!-- House Data Sheet Context Menu -->
@@ -3100,7 +3094,7 @@ function hdRenderTable(rows) {
   }
 
   var table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem';
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem;table-layout:fixed';
 
   // Header
   var thead = document.createElement('thead');
@@ -3114,13 +3108,39 @@ function hdRenderTable(rows) {
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
       var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
-      var hdFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
-      var hdFmtBadge = hdFmt === 'currency' ? ' $' : hdFmt === 'date' ? ' [D]' : hdFmt === 'number' ? ' #' : hdFmt === 'text' ? ' T' : '';
-      th.textContent = displayName + hdFmtBadge + arrow;
-      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none';
-      th.title = 'Click to sort  |  Right-click or double-tap to rename/reorder';
+      th.textContent = displayName + arrow;
+      var savedW = hdCurrentSheet ? hdGetColWidth(hdCurrentSheet, k) : null;
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:relative;overflow:hidden;' + (savedW ? 'width:'+savedW+'px;min-width:'+savedW+'px' : 'min-width:60px');
+      th.title = 'Click to sort  |  Right-click or double-tap to rename/reorder  |  Drag right edge to resize';
       th.onmouseover = function() { this.style.color = 'var(--text)'; };
       th.onmouseout = function() { this.style.color = 'var(--gold)'; };
+      // Resize handle
+      var resizeHandle = document.createElement('div');
+      resizeHandle.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize;background:transparent;z-index:5';
+      resizeHandle.onmouseover = function(e) { e.stopPropagation(); this.style.background='rgba(201,169,110,0.4)'; };
+      resizeHandle.onmouseout = function() { this.style.background='transparent'; };
+      (function(thEl, colKey) {
+        resizeHandle.onmousedown = function(e) {
+          e.preventDefault(); e.stopPropagation();
+          var startX = e.clientX;
+          var startW = thEl.offsetWidth;
+          thEl.style.userSelect = 'none';
+          function onMove(ev) {
+            var newW = Math.max(50, startW + (ev.clientX - startX));
+            thEl.style.width = newW + 'px';
+            thEl.style.minWidth = newW + 'px';
+          }
+          function onUp(ev) {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            var finalW = Math.max(50, startW + (ev.clientX - startX));
+            hdSaveColWidth(hdCurrentSheet, colKey, finalW);
+          }
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        };
+      })(th, k);
+      th.appendChild(resizeHandle);
       (function(colKey, sk) {
         th.onclick = function(e) { if (!e.ctrlKey) hdSortBy(colKey); };
         th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
@@ -3175,15 +3195,11 @@ function hdRenderTable(rows) {
         a.textContent = String(val).length > 28 ? String(val).substring(0, 28) + '...' : val;
         a.style.cssText = 'color:var(--accent);text-decoration:none';
         td.appendChild(a);
+      } else if (hdLooksLikePrice(k, val)) {
+        td.style.color = 'var(--green)';
+        td.textContent = hdFormatPrice(val);
       } else {
-        var cellFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
-        var cellDisplay = hdFormatCellValue(k, val, hdCurrentSheet);
-        if (cellFmt === 'currency' || (cellFmt === 'auto' && hdLooksLikePrice(k, val))) {
-          td.style.color = 'var(--green)';
-        } else if (cellFmt === 'date') {
-          td.style.color = 'var(--accent)';
-        }
-        td.textContent = cellDisplay;
+        td.textContent = val;
       }
       tr.appendChild(td);
     });
@@ -4185,7 +4201,7 @@ function hdColConfigKey(k) {
 
 async function hdLoadColConfig(sheetKey) {
   // Always fetch fresh from Firebase - don't rely on cache
-  var empty = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
+  var empty = { col_order: [], col_names: {}, col_hidden: [] };
   try {
     var snap = await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).get();
     if (snap.exists()) {
@@ -4194,7 +4210,6 @@ async function hdLoadColConfig(sheetKey) {
       if (!val.col_order) val.col_order = [];
       if (!val.col_names) val.col_names = {};
       if (!val.col_hidden) val.col_hidden = [];
-      if (!val.col_formats) val.col_formats = {};
       hdColConfig[sheetKey] = val;
     } else {
       hdColConfig[sheetKey] = empty;
@@ -4233,62 +4248,31 @@ function hdGetOrderedKeys(sheetKey, allKeys) {
 }
 
 
-// ── Column Format ──
-function hdFormatCellValue(colKey, val, sheetKey) {
-  if (!val || val === '') return '';
-  var str = String(val).trim();
-  var fmt = 'auto';
-  var cfg = hdColConfig[sheetKey || hdCurrentSheet];
-  if (cfg && cfg.col_formats && cfg.col_formats[colKey]) {
-    fmt = cfg.col_formats[colKey];
-  } else if (hdLooksLikePrice(colKey, val)) {
-    fmt = 'currency';
-  }
-  if (fmt === 'currency') {
-    var num = parseFloat(str.replace(/[^0-9.-]/g, ''));
-    if (!isNaN(num)) return '$' + Math.round(num).toLocaleString('en-US');
-    return str;
-  }
-  if (fmt === 'date') {
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) return str;
-    var d = new Date(str);
-    if (!isNaN(d.getTime()) && str.length > 3) return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
-    return str;
-  }
-  if (fmt === 'number') {
-    var n = parseFloat(str.replace(/[^0-9.-]/g, ''));
-    if (!isNaN(n)) return n.toLocaleString('en-US');
-    return str;
-  }
-  var maybeNum = parseFloat(str);
-  if (!isNaN(maybeNum) && str.indexOf('.') > -1) {
-    var rounded = parseFloat(maybeNum.toFixed(2));
-    if (String(rounded) !== str) return String(rounded);
-  }
-  return str;
+// ── Column Width ──
+var HD_COL_WIDTHS_KEY = 'hd_col_widths';
+
+function hdGetColWidths() {
+  try { return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY) || '{}'); } catch(e) { return {}; }
 }
 
-function hdGetColFormat(sheetKey, colKey) {
-  var cfg = hdColConfig[sheetKey];
-  if (cfg && cfg.col_formats && cfg.col_formats[colKey]) return cfg.col_formats[colKey];
-  return 'auto';
+function hdGetColWidth(sheetKey, colKey) {
+  var widths = hdGetColWidths();
+  return (widths[sheetKey] && widths[sheetKey][colKey]) ? widths[sheetKey][colKey] : null;
 }
 
-async function hdColCtxFormat(formatType) {
-  var savedKey = hdColCtxKey;
-  var savedSheet = hdColCtxSheetKey;
-  hdHideColCtxMenu(true);
-  if (!savedKey || !savedSheet) return;
-  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
-  if (!hdColConfig[savedSheet].col_formats) hdColConfig[savedSheet].col_formats = {};
-  if (formatType === 'auto') { delete hdColConfig[savedSheet].col_formats[savedKey]; }
-  else { hdColConfig[savedSheet].col_formats[savedKey] = formatType; }
-  try {
-    await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(savedSheet)).set(hdColConfig[savedSheet]);
-    hdSelectSheet(hdCurrentSheet);
-    var names = { currency: 'Currency ($)', text: 'Text', date: 'Date', number: 'Number', auto: 'Auto' };
-    showToast('Column format: ' + (names[formatType] || formatType));
-  } catch(e) { showToast('Error: ' + e.message); }
+function hdSaveColWidth(sheetKey, colKey, width) {
+  var widths = hdGetColWidths();
+  if (!widths[sheetKey]) widths[sheetKey] = {};
+  widths[sheetKey][colKey] = Math.round(width);
+  localStorage.setItem(HD_COL_WIDTHS_KEY, JSON.stringify(widths));
+}
+
+function hdResetColWidths(sheetKey) {
+  var widths = hdGetColWidths();
+  delete widths[sheetKey];
+  localStorage.setItem(HD_COL_WIDTHS_KEY, JSON.stringify(widths));
+  hdSelectSheet(hdCurrentSheet);
+  showToast('Column widths reset');
 }
 
 // ══════════ NAV EDITOR ══════════
@@ -5143,7 +5127,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.6
+// Philinity Command Center © Rev 5.7
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5175,7 +5159,7 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.6  Column FORMAT AS: Currency, Date, Number, Text, Auto
+// Rev 5.7  Drag-to-resize column widths (localStorage, reset via right-click menu)
 //          Delete (sheet) via proper confirm modal
 //          Works on mobile and desktop without browser dialogs
 // ============================================================
