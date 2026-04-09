@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.0</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.1</span>
       </div>
     </div>
 
@@ -2061,7 +2061,7 @@ function checkPW() {
           ondragover="event.preventDefault();this.classList.add('drag-over')"
           ondragleave="this.classList.remove('drag-over')"
           onclick="document.getElementById('hd-item-file').click()">
-          <div id="hd-item-drop-label" class="drop-zone-label">Drag and drop &middot; Tap to take photo &middot; or paste URL below</div>
+          <div id="hd-item-drop-label" class="drop-zone-label">Drag &amp; drop image &middot; Tap to take photo &middot; Paste screenshot (Ctrl+V) &middot; or paste URL below</div>
           <div id="hd-item-drop-preview" style="display:none;position:relative">
             <img id="hd-item-preview-img" src="" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px">
             <button class="drop-clear" onclick="event.stopPropagation();hdClearPhoto()">X</button>
@@ -2854,9 +2854,7 @@ function hdRenderTable(rows) {
   var hrow = document.createElement('tr');
   hrow.style.cssText = 'position:sticky;top:0;background:var(--surface2);z-index:10';
 
-  var thEdit = document.createElement('th');
-  thEdit.style.cssText = 'padding:8px 6px;width:36px;border-bottom:1px solid var(--border)';
-  hrow.appendChild(thEdit);
+
 
   allKeys.forEach(function(k) {
     var th = document.createElement('th');
@@ -2881,18 +2879,12 @@ function hdRenderTable(rows) {
     tr.onmouseout = function() { this.style.background = baseBg; };
 
     // Edit button
-    var tdEdit = document.createElement('td');
-    tdEdit.style.cssText = 'padding:4px 6px;border-bottom:1px solid var(--border)';
-    var editBtn = document.createElement('button');
-    editBtn.textContent = 'edit';
-    editBtn.style.cssText = 'border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:0.65rem;font-family:DM Mono,monospace;padding:2px 4px;border-radius:4px';
-    editBtn.onmouseover = function() { this.style.color = 'var(--gold)'; };
-    editBtn.onmouseout = function() { this.style.color = 'var(--text-muted)'; };
+    // Double-click row to edit
+    tr.style.cursor = 'pointer';
+    tr.title = 'Double-click to edit';
     (function(idx) {
-      editBtn.onclick = function(e) { e.stopPropagation(); hdOpenEditRow(idx); };
+      tr.ondblclick = function() { hdOpenEditRow(idx); };
     })(i);
-    tdEdit.appendChild(editBtn);
-    tr.appendChild(tdEdit);
 
     allKeys.forEach(function(k) {
       var val = row[k] || '';
@@ -3247,7 +3239,7 @@ function hdHandleFile(event) {
   var file = event.target.files[0];
   if (!file) return;
   var reader = new FileReader();
-  reader.onload = function(e) { hdLoadImgPreview(e.target.result); };
+  reader.onload = function(e) { hdLoadImgPreviewAndUpload(e.target.result, 'add'); };
   reader.readAsDataURL(file);
 }
 
@@ -3257,7 +3249,7 @@ function hdHandleDrop(event) {
   var file = event.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) {
     var reader = new FileReader();
-    reader.onload = function(e) { hdLoadImgPreview(e.target.result); };
+    reader.onload = function(e) { hdLoadImgPreviewAndUpload(e.target.result, 'add'); };
     reader.readAsDataURL(file);
   }
 }
@@ -3271,22 +3263,7 @@ function hdHandleImgUrl(url) {
 }
 
 function hdLoadImgPreview(dataUrl) {
-  var img = new Image();
-  img.onload = function() {
-    var canvas = document.createElement('canvas');
-    var MAX = 600;
-    var w = img.width, h = img.height;
-    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
-    else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var compressed = canvas.toDataURL('image/jpeg', 0.7);
-    hdItemImgData = compressed;
-    document.getElementById('hd-item-preview-img').src = compressed;
-    document.getElementById('hd-item-drop-label').style.display = 'none';
-    document.getElementById('hd-item-drop-preview').style.display = 'block';
-  };
-  img.src = dataUrl;
+  hdLoadImgPreviewAndUpload(dataUrl, 'add');
 }
 
 function hdClearPhoto() {
@@ -3297,6 +3274,104 @@ function hdClearPhoto() {
   el = document.getElementById('hd-item-drop-preview'); if (el) el.style.display = 'none';
   el = document.getElementById('hd-item-img-url'); if (el) el.value = '';
 }
+
+
+// ── HD Image Upload to Firebase Storage ──
+async function hdUploadImageToStorage(dataUrl, filename) {
+  try {
+    var storageRef = storage.ref('house_data/' + filename);
+    var snapshot = await storageRef.putString(dataUrl, 'data_url');
+    var downloadUrl = await snapshot.ref.getDownloadURL();
+    return downloadUrl;
+  } catch(e) {
+    console.warn('Storage upload failed, using base64:', e.message);
+    return dataUrl; // fallback to base64
+  }
+}
+
+function hdGenerateFilename() {
+  return 'item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6) + '.jpg';
+}
+
+async function hdProcessAndUploadImage(dataUrl) {
+  // Compress first
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = async function() {
+      var canvas = document.createElement('canvas');
+      var MAX = 800;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.75);
+      // Upload to Storage
+      var url = await hdUploadImageToStorage(compressed, hdGenerateFilename());
+      resolve(url);
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ── Clipboard paste support ──
+function hdInitClipboardPaste() {
+  document.addEventListener('paste', function(e) {
+    var modal = document.getElementById('hd-add-modal');
+    var editModal = document.getElementById('hd-edit-row-modal');
+    var addOpen = modal && modal.classList.contains('open');
+    var editOpen = editModal && editModal.classList.contains('open');
+    if (!addOpen && !editOpen) return;
+
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        var file = items[i].getAsFile();
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          if (addOpen) {
+            hdLoadImgPreviewAndUpload(ev.target.result, 'add');
+          } else {
+            hdLoadImgPreviewAndUpload(ev.target.result, 'edit');
+          }
+        };
+        reader.readAsDataURL(file);
+        e.preventDefault();
+        break;
+      }
+    }
+  });
+}
+
+async function hdLoadImgPreviewAndUpload(dataUrl, mode) {
+  showToast('Uploading image...');
+  var url = await hdProcessAndUploadImage(dataUrl);
+
+  if (mode === 'add') {
+    hdItemImgData = url;
+    var previewImg = document.getElementById('hd-item-preview-img');
+    if (previewImg) previewImg.src = url;
+    var dropLabel = document.getElementById('hd-item-drop-label');
+    if (dropLabel) dropLabel.style.display = 'none';
+    var dropPreview = document.getElementById('hd-item-drop-preview');
+    if (dropPreview) dropPreview.style.display = 'block';
+  } else {
+    var urlField = document.getElementById('hd-edit-img-url');
+    if (urlField) urlField.value = url;
+    var thumb = document.getElementById('hd-edit-thumb');
+    if (thumb) { thumb.src = url; } else {
+      var newThumb = document.createElement('img');
+      newThumb.id = 'hd-edit-thumb';
+      newThumb.src = url;
+      newThumb.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0';
+      var photoRow = document.querySelector('#hd-edit-row-body div div');
+      if (photoRow) photoRow.insertBefore(newThumb, photoRow.firstChild);
+    }
+  }
+  showToast('Image uploaded!');
+}
+
 
 // Close modals on overlay click
 document.getElementById('hd-add-modal').addEventListener('click', function(e) {
@@ -4150,6 +4225,7 @@ async function appInit() {
   await navEditorInit(); // loads nav structure
   await loadAIProjects(); // loads AI project bubbles
   initMiniSearch();       // adds mini search to all page titles
+  hdInitClipboardPaste(); // enable paste image from clipboard
   // Contacts load lazily when Contacts page is first opened
 }
 
@@ -4161,7 +4237,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.0
+// Philinity Command Center © Rev 4.1
 // 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
