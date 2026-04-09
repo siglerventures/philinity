@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.0</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.1</span>
       </div>
     </div>
 
@@ -2691,10 +2691,9 @@ async function aiSaveToHouseData(itemJson) {
       await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
     }
     if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
-    // Normalize image field to 'img' so it renders as thumbnail
-    var row = { added: new Date().toLocaleDateString('en-US') };
     var imgVal = item.img || item.pic || item.pics || item.photo || item.image || '';
-    if (imgVal) row.img = imgVal;
+    var row = { added: new Date().toLocaleDateString('en-US') };
+    if (imgVal)       row.img     = imgVal;
     if (item.item)    row.item    = item.item;
     if (item.brand)   row.brand   = item.brand;
     if (item.qty)     row.qty     = String(item.qty);
@@ -2705,12 +2704,6 @@ async function aiSaveToHouseData(itemJson) {
     hdAllSheets[sheetKey].rows.push(row);
     hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
     await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
-    // Reset col_order for this sheet so img pins to front on next load
-    if (hdColConfig[sheetKey] && hdColConfig[sheetKey].col_order && hdColConfig[sheetKey].col_order.length > 0) {
-      var co = hdColConfig[sheetKey].col_order;
-      var ii = co.indexOf('img');
-      if (ii > 0) { co.splice(ii,1); co.unshift('img'); await db.ref('philinity/house_col_config/'+hdColConfigKey(sheetKey)).set(hdColConfig[sheetKey]); }
-    }
     return { success: true, sheet: sheetName, item: row.item };
   } catch(e) {
     return { success: false, error: e.message };
@@ -3171,12 +3164,7 @@ function hdRenderTable(rows) {
   allKeys.forEach(function(k) {
     var th = document.createElement('th');
     if (k === 'img' || k === 'photo') {
-      th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border);cursor:pointer';
-      th.title = 'Right-click to move column';
-      (function(colKey, sk) {
-        th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
-        th.ontouchstart = function(e) { hdHandleColTap(e, colKey, sk); };
-      })(k, hdCurrentSheet);
+      th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border)';
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
       var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
@@ -3196,7 +3184,7 @@ function hdRenderTable(rows) {
         resizeHandle.onmousedown = function(e) {
           e.preventDefault(); e.stopPropagation();
           var startX = e.clientX, startW = thEl.offsetWidth;
-          function onMove(ev) { var newW = Math.max(50, startW+(ev.clientX-startX)); thEl.style.width=newW+'px'; thEl.style.minWidth=newW+'px'; }
+          function onMove(ev) { var newW=Math.max(50,startW+(ev.clientX-startX)); thEl.style.width=newW+'px'; thEl.style.minWidth=newW+'px'; }
           function onUp(ev) {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
@@ -3216,7 +3204,6 @@ function hdRenderTable(rows) {
     hrow.appendChild(th);
   });
 
-  // Tags column — only show when rows actually have tags
   var hdHasAnyTags = rows.some(function(r) { return (r.tags && r.tags.length > 0) || r._tagged; });
   if (hdHasAnyTags) {
     var thTags = document.createElement('th');
@@ -4318,9 +4305,6 @@ function hdGetOrderedKeys(sheetKey, allKeys) {
   }
   var ordered = cfg.col_order.filter(function(k) { return allKeys.indexOf(k) > -1; });
   allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
-  // Always pin img/photo to first position
-  var imgIdx = ordered.indexOf('img'); if (imgIdx > 0) { ordered.splice(imgIdx,1); ordered.unshift('img'); }
-  var photoIdx = ordered.indexOf('photo'); if (photoIdx > 0) { ordered.splice(photoIdx,1); ordered.unshift('photo'); }
   return ordered;
 }
 
@@ -5216,7 +5200,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.0
+// Philinity Command Center © Rev 6.1
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5250,8 +5234,7 @@ if (document.readyState === 'loading') {
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS column types, drag-resize columns, Also In auto-hidden
 // Rev 5.8  AI chat writes items directly to Firebase House Data
-// Rev 5.9  Multi-item AI saves, system prompt save rules
-// Rev 6.0  img/photo column always pinned far-left; right-click to move image column
+// Rev 6.1  Reverted broken img-pin; stable col ordering restored
 // ============================================================
 
 </script>
