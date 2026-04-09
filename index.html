@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.1</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.2</span>
       </div>
     </div>
 
@@ -3828,17 +3828,20 @@ async function hdRenameConfirm() {
   } else if (hdRenameMode === 'column') {
     var sheetKey = hdRenameSheetKey || hdColCtxSheetKey || hdCurrentSheet;
     if (!sheetKey) { showToast('Error: could not identify sheet'); return; }
+    // Ensure config object exists with all required fields
     if (!hdColConfig[sheetKey]) hdColConfig[sheetKey] = { col_order: [], col_names: {}, col_hidden: [] };
+    if (!hdColConfig[sheetKey].col_names) hdColConfig[sheetKey].col_names = {};
+    if (!hdColConfig[sheetKey].col_order) hdColConfig[sheetKey].col_order = [];
+    if (!hdColConfig[sheetKey].col_hidden) hdColConfig[sheetKey].col_hidden = [];
+    // Set the new name
     hdColConfig[sheetKey].col_names[hdRenameKey] = newName;
     try {
-      await hdSaveColConfig(sheetKey);
-      // Force reload col config for this sheet
-      delete hdColConfig[sheetKey];
-      await hdLoadColConfig(sheetKey);
-      hdColConfig[sheetKey].col_names[hdRenameKey] = newName;
-      hdSelectSheet(hdCurrentSheet);
+      // Save to Firebase
+      await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).set(hdColConfig[sheetKey]);
       showToast('Column renamed to "' + newName + '"');
-    } catch(e) { showToast('Error: ' + e.message); }
+      // Re-render with updated config (already in memory)
+      hdSelectSheet(hdCurrentSheet);
+    } catch(e) { showToast('Error saving: ' + e.message); }
   }
 
   hdRenameMode = null;
@@ -4028,13 +4031,22 @@ function hdColConfigKey(k) {
 }
 
 async function hdLoadColConfig(sheetKey) {
-  if (hdColConfig[sheetKey]) return hdColConfig[sheetKey];
+  // Always fetch fresh from Firebase - don't rely on cache
   var empty = { col_order: [], col_names: {}, col_hidden: [] };
   try {
     var snap = await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).get();
-    hdColConfig[sheetKey] = snap.exists() ? snap.val() : empty;
+    if (snap.exists()) {
+      var val = snap.val();
+      // Ensure all fields exist
+      if (!val.col_order) val.col_order = [];
+      if (!val.col_names) val.col_names = {};
+      if (!val.col_hidden) val.col_hidden = [];
+      hdColConfig[sheetKey] = val;
+    } else {
+      hdColConfig[sheetKey] = empty;
+    }
   } catch(e) {
-    hdColConfig[sheetKey] = empty;
+    if (!hdColConfig[sheetKey]) hdColConfig[sheetKey] = empty;
   }
   return hdColConfig[sheetKey];
 }
@@ -4918,7 +4930,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.1
+// Philinity Command Center © Rev 5.2
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -4950,7 +4962,7 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.1  Rename (sheet + column) via proper modal UI
+// Rev 5.2  Rename (sheet + column) via proper modal UI
 //          Delete (sheet) via proper confirm modal
 //          Works on mobile and desktop without browser dialogs
 // ============================================================
