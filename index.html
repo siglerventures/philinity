@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.1</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 4.2</span>
       </div>
     </div>
 
@@ -2727,7 +2727,22 @@ var hdLoaded = false;
 var hdItemImgData = '';
 var hdEditingRowIdx = null;
 var hdEditRowKeys = [];
-var hdPriceKeys = ['price','extended','extended_price','cost','total','amount'];
+var hdPriceKeys = ['price','extended','extended_price','cost','total','amount','col2','col3','col4'];
+var hdSortKey = null;
+var hdSortDir = 1; // 1=asc, -1=desc
+
+function hdLooksLikePrice(key, val) {
+  // Detect price columns by name pattern
+  var k = String(key).toLowerCase();
+  if (k.indexOf('price') > -1 || k.indexOf('cost') > -1 || k.indexOf('total') > -1 ||
+      k.indexOf('amount') > -1 || k.indexOf('extended') > -1 || k.indexOf('subtotal') > -1) return true;
+  // col2/col3 with numeric values are likely prices
+  if (/^col\d+$/.test(k) && val) {
+    var num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+    return !isNaN(num) && num > 0;
+  }
+  return false;
+}
 
 function hdFormatPrice(val) {
   if (!val) return '';
@@ -2821,6 +2836,25 @@ function hdCapitalize(str) {
   });
 }
 
+function hdSortBy(key) {
+  if (hdSortKey === key) {
+    hdSortDir *= -1;
+  } else {
+    hdSortKey = key;
+    hdSortDir = 1;
+  }
+  var sorted = hdCurrentRows.slice().sort(function(a, b) {
+    var av = a[key] || '';
+    var bv = b[key] || '';
+    // Try numeric sort
+    var an = parseFloat(String(av).replace(/[^0-9.-]/g, ''));
+    var bn = parseFloat(String(bv).replace(/[^0-9.-]/g, ''));
+    if (!isNaN(an) && !isNaN(bn)) return (an - bn) * hdSortDir;
+    return String(av).localeCompare(String(bv)) * hdSortDir;
+  });
+  hdRenderTable(sorted);
+}
+
 function hdRenderTable(rows) {
   var wrap = document.getElementById('hd-table-wrap');
   if (!rows || rows.length === 0) {
@@ -2861,8 +2895,13 @@ function hdRenderTable(rows) {
     if (k === 'img' || k === 'photo') {
       th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border)';
     } else {
-      th.textContent = hdCapitalize(k);
-      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap';
+      var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' ↑' : ' ↓') : '';
+      th.textContent = hdCapitalize(k) + arrow;
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none';
+      th.title = 'Click to sort';
+      th.onmouseover = function() { this.style.color = 'var(--text)'; };
+      th.onmouseout = function() { this.style.color = 'var(--gold)'; };
+      (function(colKey) { th.onclick = function() { hdSortBy(colKey); }; })(k);
     }
     hrow.appendChild(th);
   });
@@ -2907,7 +2946,7 @@ function hdRenderTable(rows) {
         a.textContent = String(val).length > 28 ? String(val).substring(0, 28) + '...' : val;
         a.style.cssText = 'color:var(--accent);text-decoration:none';
         td.appendChild(a);
-      } else if (hdPriceKeys.indexOf(k) > -1) {
+      } else if (hdPriceKeys.indexOf(k) > -1 || hdLooksLikePrice(k, val)) {
         td.style.color = 'var(--green)';
         td.textContent = hdFormatPrice(val);
       } else {
@@ -4237,7 +4276,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 4.1
+// Philinity Command Center © Rev 4.2
 // 3.7:   Mini AI search bar added to all page title headers
 // Fixes: password gate, Firebase Storage SDK, async bugs fixed,
 //        photo URL stripping on CSV import
