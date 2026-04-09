@@ -1184,7 +1184,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.3</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.5</span>
       </div>
     </div>
 
@@ -2145,6 +2145,7 @@ function checkPW() {
     <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
+    <div onclick="hdColCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">&#128465;&#65039; Delete Column</div>
   </div>
 
   <!-- House Data Sheet Context Menu -->
@@ -2152,6 +2153,10 @@ function checkPW() {
     <div class="hd-ctx-item" onclick="hdCtxRename()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">
       <span>✏️</span> Rename Sheet
     </div>
+    <div class="hd-ctx-item" onclick="hdCtxHideSheet()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">
+      <span>🙈</span> Hide Sheet
+    </div>
+    <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div class="hd-ctx-item" onclick="hdCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">
       <span>🗑</span> Delete Sheet
     </div>
@@ -2867,7 +2872,10 @@ function hdRenderSheetList() {
   var list = document.getElementById('hd-sheet-list');
   if (!list) return;
   list.innerHTML = '';
+  var hidden = hdGetHiddenSheets();
+  var showingHidden = list.getAttribute('data-show-hidden') === '1';
   hdSheetOrder.forEach(function(key, idx) {
+    if (!showingHidden && hidden.indexOf(key) > -1) return;
     var sheet = hdAllSheets[key];
     if (!sheet) return;
     var name = sheet.sheet_name || key;
@@ -2936,6 +2944,18 @@ function hdRenderSheetList() {
 
     list.appendChild(div);
   });
+
+  // Show hidden sheets toggle at bottom
+  if (hidden.length > 0) {
+    var toggleDiv = document.createElement('div');
+    toggleDiv.style.cssText = 'padding:6px 10px;font-size:0.68rem;color:var(--text-muted);cursor:pointer;text-align:center;margin-top:4px;border-top:1px solid var(--border)';
+    toggleDiv.textContent = showingHidden ? '🙈 Hide hidden sheets' : '👁 ' + hidden.length + ' hidden sheet' + (hidden.length > 1 ? 's' : '');
+    toggleDiv.onclick = function() {
+      list.setAttribute('data-show-hidden', showingHidden ? '0' : '1');
+      hdRenderSheetList();
+    };
+    list.appendChild(toggleDiv);
+  }
 }
 
 function hdCountTaggedItems(sheetKey) {
@@ -3778,6 +3798,7 @@ function hdShowCtxMenu(e, key, nameSpan, div) {
   hdCtxTargetKey = key;
   hdCtxTargetNameSpan = nameSpan;
   hdCtxTargetDiv = div;
+  hdCtxMenuJustOpened = true;
 
   var menu = document.getElementById('hd-sheet-ctx-menu');
   menu.style.display = 'block';
@@ -3897,6 +3918,23 @@ function hdRenameCancel() {
 }
 
 // ── Sheet Delete (via modal) ──
+function hdCtxHideSheet() {
+  var key = hdCtxTargetKey;
+  hdHideCtxMenu(true);
+  if (!key) return;
+  if (!hdSheetOrder._hidden) hdSheetOrder._hidden = [];
+  var hiddenSnap = JSON.parse(localStorage.getItem('hd_hidden_sheets') || '[]');
+  if (hiddenSnap.indexOf(key) === -1) hiddenSnap.push(key);
+  localStorage.setItem('hd_hidden_sheets', JSON.stringify(hiddenSnap));
+  if (hdCurrentSheet === key) hdCurrentSheet = null;
+  hdRenderSheetList();
+  showToast('Sheet hidden. Click "Show Hidden" to restore.');
+}
+
+function hdGetHiddenSheets() {
+  try { return JSON.parse(localStorage.getItem('hd_hidden_sheets') || '[]'); } catch(e) { return []; }
+}
+
 function hdCtxDelete() {
   var savedKey = hdCtxTargetKey;
   hdHideCtxMenu(true);
@@ -3909,17 +3947,50 @@ function hdCtxDelete() {
   var rowCount = (sheet && sheet.rows) ? sheet.rows.length : 0;
   var msg = 'Delete sheet "' + name + '"?';
   if (rowCount > 0) {
-    msg += ' This will permanently remove ' + rowCount + ' item' + (rowCount !== 1 ? 's' : '') + '. This cannot be undone.';
+    msg += ' \u26a0\ufe0f This will permanently delete ALL ' + rowCount + ' item' + (rowCount !== 1 ? 's' : '') + ' in this sheet from Firebase. This CANNOT be undone. Consider hiding it instead.';
   } else {
-    msg += ' This cannot be undone.';
+    msg += ' This cannot be undone. Consider hiding it instead if you may need it later.';
   }
   document.getElementById('hd-delete-msg').textContent = msg;
   document.getElementById('hd-delete-modal').classList.add('open');
 }
 
 async function hdDeleteConfirmed() {
-  document.getElementById('hd-delete-modal').classList.remove('open');
+  var modal = document.getElementById('hd-delete-modal');
+  var deleteMode = modal.getAttribute('data-delete-mode') || hdDeleteMode;
+  modal.classList.remove('open');
 
+  // Handle column delete
+  if (deleteMode === 'column') {
+    var colKey = modal.getAttribute('data-delete-col');
+    var sheetKey = modal.getAttribute('data-delete-col-sheet');
+    modal.removeAttribute('data-delete-col');
+    modal.removeAttribute('data-delete-col-sheet');
+    modal.removeAttribute('data-delete-mode');
+    if (!colKey || !sheetKey || !hdAllSheets[sheetKey]) return;
+
+    var rows = hdAllSheets[sheetKey].rows || [];
+    rows.forEach(function(row) { delete row[colKey]; });
+    hdAllSheets[sheetKey].rows = rows;
+
+    // Remove from col config order/hidden
+    if (hdColConfig[sheetKey]) {
+      var cfg = hdColConfig[sheetKey];
+      cfg.col_order = (cfg.col_order || []).filter(function(k) { return k !== colKey; });
+      cfg.col_hidden = (cfg.col_hidden || []).filter(function(k) { return k !== colKey; });
+      delete cfg.col_names[colKey];
+      await hdSaveColConfig(sheetKey);
+    }
+
+    try {
+      await db.ref(HD_PATH + '/' + sheetKey).set(hdAllSheets[sheetKey]);
+      hdSelectSheet(hdCurrentSheet);
+      showToast('Column deleted');
+    } catch(e) { showToast('Error: ' + e.message); }
+    return;
+  }
+
+  modal.removeAttribute('data-delete-mode');
   if (hdDeleteMode === 'sheet') {
     var key = hdDeleteKey;
     var sheet = hdAllSheets[key];
@@ -3962,9 +4033,16 @@ document.getElementById('hd-delete-modal').addEventListener('click', function(e)
 
 
 // Close col context menu on outside click
+var hdCtxMenuJustOpened = false;
 document.addEventListener('click', function(e) {
-  var menu = document.getElementById('hd-col-ctx-menu');
-  if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) hdHideColCtxMenu(true);
+  if (hdCtxMenuJustOpened) { hdCtxMenuJustOpened = false; return; }
+  var sheetMenu = document.getElementById('hd-sheet-ctx-menu');
+  if (sheetMenu && sheetMenu.style.display !== 'none' && !sheetMenu.contains(e.target)) hdHideCtxMenu(true);
+  var colMenu = document.getElementById('hd-col-ctx-menu');
+  if (colMenu && colMenu.style.display !== 'none' && !colMenu.contains(e.target)) hdHideColCtxMenu(true);
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { hdHideCtxMenu(true); hdHideColCtxMenu(true); }
 });
 
 // ── Column Rename via double-tap (mobile friendly) ──
@@ -4044,6 +4122,26 @@ function hdColCtxShowAll() {
   hdSaveColConfig(savedSheet);
   hdSelectSheet(hdCurrentSheet);
   showToast('All columns visible');
+}
+
+function hdColCtxDelete() {
+  var savedKey = hdColCtxKey;
+  var savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  if (!savedKey || !savedSheet) return;
+
+  var sheet = hdAllSheets[savedSheet];
+  var colName = hdGetColDisplayName(savedSheet, savedKey);
+  var rowCount = sheet && sheet.rows ? sheet.rows.filter(function(r) { return r[savedKey]; }).length : 0;
+
+  var msg = 'Delete column "' + colName + '" from all ' + rowCount + ' rows in "' + (sheet ? (sheet.sheet_name || savedSheet) : savedSheet) + '"? This cannot be undone.';
+  document.getElementById('hd-delete-msg').textContent = msg;
+
+  // Store what to delete
+  document.getElementById('hd-delete-modal').setAttribute('data-delete-col', savedKey);
+  document.getElementById('hd-delete-modal').setAttribute('data-delete-col-sheet', savedSheet);
+  document.getElementById('hd-delete-modal').setAttribute('data-delete-mode', 'column');
+  document.getElementById('hd-delete-modal').classList.add('open');
 }
 
 var hdLastTapCol = null;
@@ -4972,7 +5070,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.3
+// Philinity Command Center © Rev 5.5
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5004,7 +5102,7 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.3  Rename (sheet + column) via proper modal UI
+// Rev 5.5  Rename (sheet + column) via proper modal UI
 //          Delete (sheet) via proper confirm modal
 //          Works on mobile and desktop without browser dialogs
 // ============================================================
