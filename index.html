@@ -1094,6 +1094,9 @@ function checkPW() {
     <div class="nav-item" onclick="hdBackupDatabase()">
       <span class="nav-icon">💾</span> Backup Database
     </div>
+    <div class="nav-item" onclick="openDataImporter()">
+      <span class="nav-icon">🗄️</span> Data Importer
+    </div>
   </div>
 
   <div style="padding: 0 12px 16px; margin-top: 4px; text-align:center;">
@@ -1187,7 +1190,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.5</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.6</span>
       </div>
     </div>
 
@@ -2240,6 +2243,27 @@ function checkPW() {
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+
+  <!-- Data Importer Modal -->
+  <div class="modal-overlay" id="data-importer-modal">
+    <div class="modal-box" style="max-width:560px">
+      <div class="modal-title">🗄️ Data Importer</div>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:20px;line-height:1.6">Push datasets directly to Firebase House Data. Each import creates or replaces a sheet.</p>
+      <div style="display:flex;flex-direction:column;gap:10px" id="importer-items">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div>
+            <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">🏠 House Build Costs</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">69 line items + totals · All contractors & costs</div>
+          </div>
+          <button onclick="importHouseBuildCosts()" id="import-hbc-btn" style="padding:8px 16px;border-radius:8px;border:none;background:var(--gold);color:var(--bg);font-family:Outfit,sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;white-space:nowrap">Import</button>
+        </div>
+      </div>
+      <div id="importer-status" style="margin-top:14px;font-family:DM Mono,monospace;font-size:0.7rem;color:var(--text-muted);line-height:1.8"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-cancel" onclick="document.getElementById('data-importer-modal').classList.remove('open')">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- AI Projects Edit Modal -->
   <div class="modal-overlay" id="ai-proj-modal">
@@ -4602,6 +4626,8 @@ function applyNavStructure() {
         itemDiv.onclick = function() { window.open(item.url, '_blank'); closeMobileNav(); };
       } else if (item.page === 'backup') {
         itemDiv.onclick = function() { hdBackupDatabase(); closeMobileNav(); };
+      } else if (item.page === 'importer') {
+        itemDiv.onclick = function() { openDataImporter(); closeMobileNav(); };
       } else {
         itemDiv.setAttribute('data-page', item.page || '');
         (function(el, pg) { el.onclick = function() { navigateTo(pg, el); closeMobileNav(); }; })(itemDiv, item.page);
@@ -5169,6 +5195,58 @@ function initMiniSearch() {
   });
 }
 
+// ── Data Importer ──
+function openDataImporter() {
+  document.getElementById('importer-status').innerHTML = '';
+  var btn = document.getElementById('import-hbc-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Import'; }
+  document.getElementById('data-importer-modal').classList.add('open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var m = document.getElementById('data-importer-modal');
+  if (m) m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+});
+
+async function importHouseBuildCosts() {
+  var btn = document.getElementById('import-hbc-btn');
+  var status = document.getElementById('importer-status');
+  btn.disabled = true;
+  btn.textContent = 'Importing...';
+  status.innerHTML = '';
+
+  var rows = [{"emoji":"🛠️","category":"Architect / Plans","cost":"21046","notes":"Architect is $1.25/sq ft, paid thru MMCI"},{"emoji":"🏗️","category":"Structural Engineering","cost":"13745","notes":"Sean is $1.35/sq ft, paid thru MMCI"},{"emoji":"🔨","category":"Sub Contractors","cost":"51870","notes":"Doug Atwood 208-860-8898 with Legacy Homes $46.6k + $5,270 to others"},{"emoji":"🏗️","category":"Civil, Draining & Grading","cost":"7500","notes":"Fees for drainage, hillside, etc."},{"emoji":"🌆","category":"City Building Permits / Impact Fees","cost":"21631","notes":"$1,682.88 + $688 Plumbing + $10,568.42 + $6,994.75 + $1,102 Hillside + $304 Category 2 + $290 Hillside Mod"},{"emoji":"🔌","category":"Appliances","cost":"57748","notes":"Includes walk-in, wine cooler, & central vac"},{"emoji":"🏗️","category":"Railings (Inside & Outside)","cost":"12043","notes":"Mailahn Innovation Quote $14,211.37 — purchased from Amazon"},{"emoji":"🏗️","category":"Balcony Decking","cost":"14875","notes":"Concrete $12k + TPO covering"},{"emoji":"🧰","category":"Cabinets / Closets","cost":"46179","notes":"Kitchen, wine bar, bathrooms, laundry"},{"emoji":"🍽️","category":"Countertops (Kitchen & Baths)","cost":"8216","notes":"Cosmos Granite, Brent Walker 208-830-8352, sealed by Perma Treat Josh 208-982-1703"},{"emoji":"🚜","category":"Central Vac - Hide A Hose","cost":"8822","notes":"Coltrin - Isaac 208-789-3438"},{"emoji":"🛠️","category":"Concrete Washout","cost":"676","notes":""},{"emoji":"🛠️","category":"Concrete Prep","cost":"3000","notes":"David - Excavator 208-859-8880"},{"emoji":"🚧","category":"Concrete Flatwork Material","cost":"13077","notes":"Garages, patio, driveway - Express Concrete, Carlos 208-602-2491"},{"emoji":"🛠️","category":"Concrete Foundation","cost":"27150","notes":"E&J Concrete - Edgar 208-550-5569 & Jose 208-697-1975"},{"emoji":"🧱","category":"Concrete / Retaining Wall Labor","cost":"10000","notes":"David Porrasado, Royal Construction 208-859-8880"},{"emoji":"🌿","category":"Retaining Walls & Landscape","cost":"43646","notes":"M&D Landscaping labor, materials from Basalite"},{"emoji":"🚪","category":"Retaining Wall Railing","cost":"6320","notes":"Amazon 10/3/22 - Muzata Brand"},{"emoji":"🚪","category":"Doors & Trim (Interior)","cost":"41000","notes":"Doors, trim, paint, hardware"},{"emoji":"🛋️","category":"Drywall / Sheetrock Material","cost":"15800","notes":"L&W Supply"},{"emoji":"🎨","category":"Drywall, Tape, Texture, Labor","cost":"50000","notes":"VM Drywall - Victor Milanes 208-919-0248"},{"emoji":"💡","category":"Electrical / Span","cost":"82328","notes":"Includes labor, CAN lights, Span.io"},{"emoji":"💡","category":"Electrical - Temp Meter","cost":"1425","notes":"Temp power from Idaho Power, then 400A permanent"},{"emoji":"🔨","category":"Equipment & Tools Rental","cost":"800","notes":"Tates Rent, Home Depot Rentals"},{"emoji":"🛠️","category":"Finish Carpentry","cost":"5000","notes":"Mud room benches, baseboards, etc."},{"emoji":"🔥","category":"Fireplace","cost":"2156","notes":"Master Fireplace 80 inch purchased 5/15/23 Amazon"},{"emoji":"🚒","category":"Fire Sprinkler","cost":"15950","notes":"Thorpe Fire Sprinklers - Anthony & Alicia 208-936-3337"},{"emoji":"🛋️","category":"Flooring","cost":"26872","notes":"LVT Flooring from Fashion Floors - Marcia"},{"emoji":"🧰","category":"Flooring / LVT Install","cost":"12000","notes":"Paint Kings"},{"emoji":"🛁","category":"Flooring / Tile Install","cost":"42520","notes":"VORR - Vince 208-573-7194, $15/sq ft floors & $20 walls"},{"emoji":"🛋️","category":"Furniture (Office & Master)","cost":"53079","notes":"Living room, kitchen table, chairs, master bedroom"},{"emoji":"🏠","category":"Framing Labor","cost":"89352","notes":"Oscar w/ Cummings Construction 208-860-3823"},{"emoji":"🌲","category":"Trusses (Roof & Subfloor)","cost":"37332","notes":"InteFrame / MiTek Quote #221476 $21,936.52 & #221477 $15,395.20"},{"emoji":"🚪","category":"Garage Doors & Workbenches","cost":"8621","notes":"Overhead Doors - Braeden Millburn 208-995-5254"},{"emoji":"🌿","category":"Gutters","cost":"4466","notes":"Copper Cloud Rain Gutters - Cassidy, quote 12/30/22"},{"emoji":"🏋️","category":"Gym","cost":"4500","notes":"Equipment & rubber flooring from China"},{"emoji":"🔥","category":"Heat Mats / Heaters","cost":"2605","notes":"Bathroom heater fans $920, floor wire heat, Cadette heater mud room"},{"emoji":"❄️","category":"HVAC","cost":"68341","notes":"Mitsubishi mini-splits, ERVs, ducting - Peppy HVAC 208-906-6928"},{"emoji":"🔧","category":"Gas Lines & Heater Vents","cost":"21660","notes":"Peppy H&C / formerly Shanco"},{"emoji":"🛠️","category":"Insulation","cost":"65285","notes":"GoGreen Insulation - Matt Bostaph 208-912-0028, spray foam polyurethane"},{"emoji":"🛡️","category":"Insurance (General Liability)","cost":"6000","notes":"Farm Bureau - Dale Zimney 208-888-1821"},{"emoji":"🌿","category":"Landscape & Backflow System","cost":"6000","notes":"Driplines and backflow system"},{"emoji":"💡","category":"Lights","cost":"6404","notes":"CAN lights - see Electrical tab also"},{"emoji":"🌐","category":"Low Voltage / Networking","cost":"1900","notes":"Doorbell, Wi-Fi, Cat6 wiring to pool, Span, fire sprinkler"},{"emoji":"🪵","category":"Lumber","cost":"108044","notes":"Builders FirstSource"},{"emoji":"🛁","category":"Master Bathroom","cost":"4780","notes":"Tub from HomeDepot & Steam SPA"},{"emoji":"🚽","category":"Porta Potty","cost":"1560","notes":"Rocky Mountain Porta Potty 208-789-0395, $120/month"},{"emoji":"🎨","category":"Paint Exterior / Metal Siding","cost":"23636","notes":"Paint Kings - $7,861 soffit/trim + $14,575 metal fascia + $1,200 extra"},{"emoji":"🖌️","category":"Paint Interior","cost":"12800","notes":"Paint Kings - Michael Deegan 208-451-3721"},{"emoji":"🚰","category":"Plumbing Fixtures","cost":"21002","notes":"Sinks & toilets, includes kids & office bathroom cabinets"},{"emoji":"🔧","category":"Plumbing Rough-In & Trim","cost":"28463","notes":"Trojan Plumbing 7-17-23 + parts from Grovers"},{"emoji":"🛠️","category":"Roof / Roofing","cost":"47116","notes":"Rafa Twister Roofing 208-286-5719"},{"emoji":"🏠","category":"Soffit, Fascia, Material & Labor","cost":"13837","notes":"Geraldo 208-605-0147, RMT Siding 208-740-4101"},{"emoji":"🔌","category":"Security","cost":"480","notes":"Blink Camera Security"},{"emoji":"🪟","category":"Skylights","cost":"6642","notes":"Boise Skylights - Paul, Chase Chk# 7972"},{"emoji":"🚜","category":"Soils & Erosion","cost":"3633","notes":"Kevin Farrell, RiveRidge Engineering 208-344-1180"},{"emoji":"⚡","category":"Solar Panels","cost":"55865","notes":"Tesla Solar Panels & Powerwall"},{"emoji":"📈","category":"Stairs x 2","cost":"16587","notes":"Framers & Home Depot for spiral"},{"emoji":"🔨","category":"Steel","cost":"72051","notes":"Idaho Custom Iron Works"},{"emoji":"🎨","category":"Stucco","cost":"40500","notes":"Carlos Gonzalez 208-703-8634, CC Stucco LLC"},{"emoji":"🏊","category":"Swimming Pool","cost":"96888","notes":"Jays Pool & Spa 208-713-1574"},{"emoji":"🏊","category":"Dehumidifier / Hot Tub","cost":"28000","notes":"Hot tub from Costco & Debac Dehumidifier"},{"emoji":"🗑️","category":"Trash Removal & Clean-up","cost":"4000","notes":"Felix Olvera 208-908-9494 + Victor Milanes 208-919-0248"},{"emoji":"♻️","category":"Utilities","cost":"2500","notes":"Water, sewer, power, etc."},{"emoji":"🍷","category":"Wet Bar","cost":"8830","notes":"Shelving & cabinets; stick-on tile vs $12k full labor & material"},{"emoji":"🌐","category":"Wi-Fi / Routers","cost":"1500","notes":"Jetstream Omada routers, switches, access points"},{"emoji":"💧","category":"Water Line & Booster","cost":"2747","notes":"Gandolfo pump 200ft from inlet, backflow setup & water hydrant"},{"emoji":"🏢","category":"Windows","cost":"155461","notes":"Tanner Dame 801-835-6948, Woodgrain Windows & Doors, paid 3/17/22"},{"emoji":"🏢","category":"Window Install","cost":"9550","notes":"John Gibson, The Covering Construction 208-921-0087"},{"emoji":"━━━","category":"── TOTALS ──","cost":"","notes":""},{"emoji":"🏁","category":"Total Build Cost (excl. lot)","cost":"1805412","notes":""},{"emoji":"🏡","category":"Lot Purchase","cost":"475000","notes":""},{"emoji":"💰","category":"Grand Total with Lot","cost":"2280412","notes":""},{"emoji":"📐","category":"First Floor Sq Ft","cost":"3080","notes":""},{"emoji":"📐","category":"Second Floor Sq Ft","cost":"3158","notes":""},{"emoji":"📐","category":"Total House Sq Ft","cost":"6238","notes":"Excludes outdoor balconies/party deck 2,277 & Garage 1,318 — otherwise 9,833 sq ft"},{"emoji":"💵","category":"Total Price Per Sq Ft","cost":"289","notes":"Includes landscaping, Solar, Gym, Pool, Hot Tub, WiFi, Security Cams"},{"emoji":"🏗️","category":"Construction Cost Per Sq Ft","cost":"262","notes":"Excludes above"},{"emoji":"🔢","category":"Actual Construction Cost of House","cost":"1634126","notes":"$50k was just in Landscape & Retaining Walls"}];
+
+  try {
+    var sheetData = {
+      sheet_name: 'House Build Costs',
+      row_count: rows.length,
+      exported_at: new Date().toISOString(),
+      rows: rows
+    };
+    await db.ref('philinity/house_data/house-build-costs').set(sheetData);
+    status.innerHTML += '<span style="color:var(--green)">✅ Sheet written: house-build-costs (' + rows.length + ' rows)</span><br>';
+
+    var orderSnap = await db.ref('philinity/house_sheet_order').get();
+    var order = orderSnap.exists() ? orderSnap.val() : [];
+    if (order.indexOf('house-build-costs') === -1) {
+      order.unshift('house-build-costs');
+      await db.ref('philinity/house_sheet_order').set(order);
+      if (!hdAllSheets) hdAllSheets = {};
+      hdAllSheets['house-build-costs'] = sheetData;
+      hdSheetOrder = order;
+    }
+    status.innerHTML += '<span style="color:var(--green)">✅ Added to sheet list</span><br>';
+    status.innerHTML += '<span style="color:var(--gold)">🎉 Done! Go to House Data and select "House Build Costs"</span>';
+    btn.textContent = '✓ Imported!';
+    if (hdLoaded) { hdLoaded = false; await hdInit(); }
+  } catch(e) {
+    status.innerHTML += '<span style="color:var(--red)">❌ Error: ' + e.message + '</span>';
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+  }
+}
+
 // ── Database Backup ──
 function hdBackupDatabase() {
   showToast('📦 Preparing backup...');
@@ -5208,7 +5286,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.5
+// Philinity Command Center © Rev 6.6
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5241,7 +5319,7 @@ if (document.readyState === 'loading') {
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
-// Rev 6.5  Removed table-layout:fixed that broke House Data layout
+// Rev 6.6  Removed table-layout:fixed that broke House Data layout, Added Data Importer under apps
 // ============================================================
 
 </script>
