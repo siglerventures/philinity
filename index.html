@@ -1190,7 +1190,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.6</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 6.7</span>
       </div>
     </div>
 
@@ -3182,7 +3182,19 @@ function hdRenderTable(rows) {
   }
 
   var table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem';
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem;table-layout:fixed';
+
+  // Colgroup for column width control
+  var colgroup = document.createElement('colgroup');
+  allKeys.forEach(function(k) {
+    var col = document.createElement('col');
+    var savedW = hdCurrentSheet ? hdGetColWidth(hdCurrentSheet, k) : null;
+    if (k === 'img' || k === 'photo') { col.style.width = '60px'; }
+    else if (savedW) { col.style.width = savedW + 'px'; }
+    col.setAttribute('data-col', k);
+    colgroup.appendChild(col);
+  });
+  table.appendChild(colgroup);
 
   // Header
   var thead = document.createElement('thead');
@@ -3199,8 +3211,32 @@ function hdRenderTable(rows) {
       var hdFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
       var hdFmtBadge = hdFmt === 'currency' ? ' $' : hdFmt === 'date' ? ' [D]' : hdFmt === 'number' ? ' #' : hdFmt === 'text' ? ' T' : '';
       th.textContent = displayName + hdFmtBadge + arrow;
-      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none';
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:relative;overflow:hidden;';
       th.title = 'Click to sort  |  Right-click to format/rename/reorder';
+      // Resize handle — updates <col> element width for table-layout:fixed
+      (function(colKey, thEl) {
+        var handle = document.createElement('div');
+        handle.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:5;background:transparent;';
+        handle.onmousedown = function(e) {
+          e.stopPropagation(); e.preventDefault();
+          var startX = e.clientX, startW = thEl.offsetWidth;
+          var colEl = table.querySelector('col[data-col="' + colKey + '"]');
+          function onMove(e) {
+            var newW = Math.max(40, startW + e.clientX - startX);
+            if (colEl) colEl.style.width = newW + 'px';
+          }
+          function onUp(e) {
+            var newW = Math.max(40, startW + e.clientX - startX);
+            if (colEl) colEl.style.width = newW + 'px';
+            hdSaveColWidth(hdCurrentSheet, colKey, newW);
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+          }
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        };
+        thEl.appendChild(handle);
+      })(k, th);
       th.onmouseover = function() { this.style.color = 'var(--text)'; };
       th.onmouseout = function() { this.style.color = 'var(--gold)'; };
       (function(colKey, sk) {
@@ -5286,7 +5322,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.6
+// Philinity Command Center © Rev 6.7
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5319,7 +5355,7 @@ if (document.readyState === 'loading') {
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
-// Rev 6.6  Removed table-layout:fixed that broke House Data layout, Added Data Importer under apps
+// Rev 6.7  Removed table-layout:fixed that broke House Data layout
 // ============================================================
 
 </script>
