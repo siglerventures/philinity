@@ -2328,6 +2328,7 @@ function navigateTo(page, clickedItem) {
     }, 100);
   }
   if (page === 'housedata') {
+    hdLoaded = false;
     setTimeout(function() {
       if (typeof hdInit === 'function') hdInit();
     }, 100);
