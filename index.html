@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 
 <style>
@@ -1091,6 +1092,12 @@ function checkPW() {
     <div class="nav-item nav-external" onclick="window.open('https://siglerventures.github.io/taskboard/','_blank')">
       <span class="nav-icon">📋</span> Task Board ↗
     </div>
+    <div class="nav-item" onclick="hdBackupDatabase()">
+      <span class="nav-icon">💾</span> Backup Database
+    </div>
+    <div class="nav-item" onclick="openDataImporter()">
+      <span class="nav-icon">🗄️</span> Data Importer
+    </div>
   </div>
 
   <div style="padding: 0 12px 16px; margin-top: 4px; text-align:center;">
@@ -1184,7 +1191,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 5.5</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.0</span>
       </div>
     </div>
 
@@ -2145,7 +2152,15 @@ function checkPW() {
     <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
+    <div onclick="hdResetColWidths(hdCurrentSheet)" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#8596; Reset Column Widths</div>
     <div onclick="hdColCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">&#128465;&#65039; Delete Column</div>
+    <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+    <div style="padding:4px 16px 2px;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-muted)">FORMAT AS</div>
+    <div onclick="hdColCtxFormat('currency')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128176; Currency ($19,000)</div>
+    <div onclick="hdColCtxFormat('date')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128197; Date (4/9/2026)</div>
+    <div onclick="hdColCtxFormat('number')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128290; Number</div>
+    <div onclick="hdColCtxFormat('text')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#128196; Text</div>
+    <div onclick="hdColCtxFormat('auto')" style="padding:6px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''">&#9881;&#65039; Auto (default)</div>
   </div>
 
   <!-- House Data Sheet Context Menu -->
@@ -2230,6 +2245,27 @@ function checkPW() {
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <!-- Data Importer Modal -->
+  <div class="modal-overlay" id="data-importer-modal">
+    <div class="modal-box" style="max-width:560px">
+      <div class="modal-title">🗄️ Data Importer</div>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:20px;line-height:1.6">Push datasets directly to Firebase House Data. Each import creates or replaces a sheet.</p>
+      <div style="display:flex;flex-direction:column;gap:10px" id="importer-items">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div>
+            <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">🏠 House Build Costs</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">69 line items + totals · All contractors & costs</div>
+          </div>
+          <button onclick="importHouseBuildCosts()" id="import-hbc-btn" style="padding:8px 16px;border-radius:8px;border:none;background:var(--gold);color:var(--bg);font-family:Outfit,sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;white-space:nowrap">Import</button>
+        </div>
+      </div>
+      <div id="importer-status" style="margin-top:14px;font-family:DM Mono,monospace;font-size:0.7rem;color:var(--text-muted);line-height:1.8"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-cancel" onclick="document.getElementById('data-importer-modal').classList.remove('open')">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Projects Edit Modal -->
   <div class="modal-overlay" id="ai-proj-modal">
     <div class="modal-box" style="max-width:480px">
@@ -2260,16 +2296,19 @@ function toggleNavGroup(group) {
   caret.classList.toggle('open', !isOpen);
 }
 
-function navigateTo(page) {
+function navigateTo(page, clickedItem) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const item = document.querySelector('.nav-item[data-page="' + page + '"]');
-  if (item) item.classList.add('active');
+  // Mark ALL nav items for this page as active
+  document.querySelectorAll('.nav-item[data-page="' + page + '"]').forEach(function(n) {
+    n.classList.add('active');
+  });
   const pageEl = document.getElementById('page-' + page);
   if (pageEl) pageEl.classList.add('active');
-  // Auto-expand parent group
-  if (item) {
-    const group = item.closest('.nav-group');
+  // Only expand the group containing the clicked item (not the first match)
+  var itemToExpand = clickedItem || null;
+  if (itemToExpand) {
+    const group = itemToExpand.closest('.nav-group');
     if (group) {
       group.style.display = 'block';
       const id = group.id.replace('group-', '');
@@ -2289,7 +2328,6 @@ function navigateTo(page) {
     }, 100);
   }
   if (page === 'housedata') {
-    hdLoaded = false;
     setTimeout(function() {
       if (typeof hdInit === 'function') hdInit();
     }, 100);
@@ -2300,7 +2338,7 @@ function navigateTo(page) {
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.nav-item[data-page]').forEach(function(item) {
     item.addEventListener('click', function() {
-      navigateTo(item.dataset.page);
+      navigateTo(item.dataset.page, item);
       closeMobileNav(); // close nav on mobile after selecting
     });
   });
@@ -2335,6 +2373,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
+const auth = firebase.auth();
+
+// Wait for anonymous auth before any Firebase reads
+let authReady = false;
+const authReadyPromise = new Promise(function(resolve) {
+  auth.onAuthStateChanged(function(user) {
+    if (!authReady) {
+      authReady = true;
+      resolve(user);
+    }
+  });
+});
+auth.signInAnonymously().catch(function(e) { console.warn('Auth error:', e.message); });
 
 let ANTHROPIC_KEY = '';
 
@@ -2462,6 +2513,12 @@ Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% h
 - **Kaylin** — kaylin.sigler@gmail.com · 208-914-3109 · 1412 W A St Apt 304, Moscow ID 83843 · DOB Dec 14, 2002
 - **Larissa** — larissa.sigler@gmail.com · 208-559-1678 · 12805 W Berghan St, Boise ID 83709 · DOB Jun 26, 2004
 - **Sierra** VanTassell — SierraKVanTassell@gmail.com · 208-713-8714 · DOB Mar 28, 2005
+
+## HOUSE DATA — SAVING ITEMS
+When the user asks you to add, save, or log any item to House Data, respond naturally then emit one %%SAVE_TO_HOUSE_DATA:...%% block per distinct item at the END of your reply.
+Format (single line, valid JSON): %%SAVE_TO_HOUSE_DATA:{"sheet_key":"office-furniture","sheet_name":"Office Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
+sheet_key: lowercase-hyphenated (furniture, appliances, office-furniture, blinds, lighting, electronics, etc.)
+Never fabricate prices or quantities not stated by the user. Multiple items = multiple blocks.
 
 ## POOL CHEMICALS
 - EASYTEST 7-Way Pool Test Strips
@@ -2666,6 +2723,35 @@ window.quickSend = function(text) {
   sendMessage();
 };
 
+// ── AI → Firebase write ──
+async function aiSaveToHouseData(itemJson) {
+  try {
+    var item = typeof itemJson === 'string' ? JSON.parse(itemJson) : itemJson;
+    var sheetKey = item.sheet_key || 'furniture';
+    var sheetName = item.sheet_name || 'Furniture';
+    if (!hdAllSheets[sheetKey]) {
+      hdAllSheets[sheetKey] = { sheet_name: sheetName, rows: [], row_count: 0, exported_at: new Date().toISOString() };
+      if (hdSheetOrder.indexOf(sheetKey) === -1) hdSheetOrder.push(sheetKey);
+      await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
+    }
+    if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
+    var imgVal = item.img || item.pic || item.pics || item.photo || item.image || '';
+    var row = { added: new Date().toLocaleDateString('en-US') };
+    if (imgVal)       row.img     = imgVal;
+    if (item.item)    row.item    = item.item;
+    if (item.brand)   row.brand   = item.brand;
+    if (item.qty)     row.qty     = String(item.qty);
+    if (item.price)   row.price   = String(item.price);
+    if (item.variant) row.variant = item.variant;
+    if (item.url)     row.url     = item.url;
+    if (item.notes)   row.notes   = item.notes;
+    hdAllSheets[sheetKey].rows.push(row);
+    hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
+    await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
+    return { success: true, sheet: sheetName, item: row.item };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
 window.sendMessage = async function() {
   if (isLoading) return;
   const input = document.getElementById('chat-input');
@@ -2714,7 +2800,23 @@ window.sendMessage = async function() {
       addMessage('ai', `Error: ${data.error.message}`);
     } else {
       const reply = data.content?.[0]?.text || 'No response received.';
-      addMessage('ai', reply);
+      const saveRegex = /%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/g;
+      const saveMatches = [...reply.matchAll(saveRegex)];
+      if (saveMatches.length > 0) {
+        const cleanReply = reply.replace(/%%SAVE_TO_HOUSE_DATA:[\s\S]*?%%/g, '').trim();
+        addMessage('ai', cleanReply);
+        for (const match of saveMatches) {
+          try {
+            const result = await aiSaveToHouseData(match[1]);
+            if (result.success) {
+              showToast('\u2705 Saved \u201c' + result.item + '\u201d to ' + result.sheet);
+              if (hdLoaded) { hdLoaded = false; await hdInit(); }
+            } else { showToast('\u26a0\ufe0f Save failed: ' + result.error); }
+          } catch(e) { showToast('Save error: ' + e.message); }
+        }
+      } else {
+        addMessage('ai', reply);
+      }
       messages.push({ role: 'assistant', content: reply });
       if (messages.length > 40) messages = messages.slice(-40);
     }
@@ -3094,7 +3196,19 @@ function hdRenderTable(rows) {
   }
 
   var table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem';
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem;table-layout:fixed';
+
+  // Colgroup for column width control
+  var colgroup = document.createElement('colgroup');
+  allKeys.forEach(function(k) {
+    var col = document.createElement('col');
+    var savedW = hdCurrentSheet ? hdGetColWidth(hdCurrentSheet, k) : null;
+    if (k === 'img' || k === 'photo') { col.style.width = '60px'; }
+    else if (savedW) { col.style.width = savedW + 'px'; }
+    col.setAttribute('data-col', k);
+    colgroup.appendChild(col);
+  });
+  table.appendChild(colgroup);
 
   // Header
   var thead = document.createElement('thead');
@@ -3108,9 +3222,35 @@ function hdRenderTable(rows) {
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
       var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
-      th.textContent = displayName + arrow;
-      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none';
-      th.title = 'Click to sort  |  Right-click or double-tap to rename/reorder';
+      var hdFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
+      var hdFmtBadge = hdFmt === 'currency' ? ' $' : hdFmt === 'date' ? ' [D]' : hdFmt === 'number' ? ' #' : hdFmt === 'text' ? ' T' : '';
+      th.textContent = displayName + hdFmtBadge + arrow;
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:relative;overflow:hidden;';
+      th.title = 'Click to sort  |  Right-click to format/rename/reorder';
+      // Resize handle — updates <col> element width for table-layout:fixed
+      (function(colKey, thEl) {
+        var handle = document.createElement('div');
+        handle.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:5;background:transparent;';
+        handle.onmousedown = function(e) {
+          e.stopPropagation(); e.preventDefault();
+          var startX = e.clientX, startW = thEl.offsetWidth;
+          var colEl = table.querySelector('col[data-col="' + colKey + '"]');
+          function onMove(e) {
+            var newW = Math.max(40, startW + e.clientX - startX);
+            if (colEl) colEl.style.width = newW + 'px';
+          }
+          function onUp(e) {
+            var newW = Math.max(40, startW + e.clientX - startX);
+            if (colEl) colEl.style.width = newW + 'px';
+            hdSaveColWidth(hdCurrentSheet, colKey, newW);
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+          }
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        };
+        thEl.appendChild(handle);
+      })(k, th);
       th.onmouseover = function() { this.style.color = 'var(--text)'; };
       th.onmouseout = function() { this.style.color = 'var(--gold)'; };
       (function(colKey, sk) {
@@ -3122,11 +3262,13 @@ function hdRenderTable(rows) {
     hrow.appendChild(th);
   });
 
-  // Tags column header
-  var thTags = document.createElement('th');
-  thTags.textContent = 'Also In';
-  thTags.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap';
-  hrow.appendChild(thTags);
+  var hdHasAnyTags = rows.some(function(r) { return (r.tags && r.tags.length > 0) || r._tagged; });
+  if (hdHasAnyTags) {
+    var thTags = document.createElement('th');
+    thTags.textContent = 'Also In';
+    thTags.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap';
+    hrow.appendChild(thTags);
+  }
 
   thead.appendChild(hrow);
   table.appendChild(thead);
@@ -3167,39 +3309,43 @@ function hdRenderTable(rows) {
         a.textContent = String(val).length > 28 ? String(val).substring(0, 28) + '...' : val;
         a.style.cssText = 'color:var(--accent);text-decoration:none';
         td.appendChild(a);
-      } else if (hdLooksLikePrice(k, val)) {
-        td.style.color = 'var(--green)';
-        td.textContent = hdFormatPrice(val);
       } else {
-        td.textContent = val;
+        var cellFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
+        var cellDisplay = hdFormatCellValue(k, val, hdCurrentSheet);
+        if (cellFmt === 'currency' || (cellFmt === 'auto' && hdLooksLikePrice(k, val))) {
+          td.style.color = 'var(--green)';
+        } else if (cellFmt === 'date') {
+          td.style.color = 'var(--accent)';
+        }
+        td.textContent = cellDisplay;
       }
       tr.appendChild(td);
     });
 
-    // Tags cell
-    var tdTags = document.createElement('td');
-    tdTags.style.cssText = 'padding:4px 12px;border-bottom:1px solid var(--border)';
-    var tags = row.tags || [];
-    if (isTagged) {
-      // Show source sheet
-      var sourceSheet = hdAllSheets[row._sheet];
-      var sourceName = sourceSheet ? (sourceSheet.sheet_name || row._sheet) : row._sheet;
-      var badge = document.createElement('span');
-      badge.textContent = sourceName;
-      badge.style.cssText = 'display:inline-block;padding:2px 6px;border-radius:10px;font-size:0.62rem;background:var(--accent-dim);color:var(--accent);font-family:DM Mono,monospace';
-      tdTags.appendChild(badge);
-    } else if (tags.length > 0) {
-      tags.forEach(function(tagKey) {
-        if (tagKey === hdCurrentSheet) return;
-        var tagSheet = hdAllSheets[tagKey];
-        var tagName = tagSheet ? (tagSheet.sheet_name || tagKey) : tagKey;
+    if (hdHasAnyTags) {
+      var tdTags = document.createElement('td');
+      tdTags.style.cssText = 'padding:4px 12px;border-bottom:1px solid var(--border)';
+      var tags = row.tags || [];
+      if (isTagged) {
+        var sourceSheet = hdAllSheets[row._sheet];
+        var sourceName = sourceSheet ? (sourceSheet.sheet_name || row._sheet) : row._sheet;
         var badge = document.createElement('span');
-        badge.textContent = tagName;
-        badge.style.cssText = 'display:inline-block;padding:2px 6px;border-radius:10px;font-size:0.62rem;background:var(--gold-dim);color:var(--gold);margin-right:3px;font-family:DM Mono,monospace';
+        badge.textContent = sourceName;
+        badge.style.cssText = 'display:inline-block;padding:2px 6px;border-radius:10px;font-size:0.62rem;background:var(--accent-dim);color:var(--accent);font-family:DM Mono,monospace';
         tdTags.appendChild(badge);
-      });
+      } else if (tags.length > 0) {
+        tags.forEach(function(tagKey) {
+          if (tagKey === hdCurrentSheet) return;
+          var tagSheet = hdAllSheets[tagKey];
+          var tagName = tagSheet ? (tagSheet.sheet_name || tagKey) : tagKey;
+          var badge = document.createElement('span');
+          badge.textContent = tagName;
+          badge.style.cssText = 'display:inline-block;padding:2px 6px;border-radius:10px;font-size:0.62rem;background:var(--gold-dim);color:var(--gold);margin-right:3px;font-family:DM Mono,monospace';
+          tdTags.appendChild(badge);
+        });
+      }
+      tr.appendChild(tdTags);
     }
-    tr.appendChild(tdTags);
 
     tbody.appendChild(tr);
   });
@@ -4173,7 +4319,7 @@ function hdColConfigKey(k) {
 
 async function hdLoadColConfig(sheetKey) {
   // Always fetch fresh from Firebase - don't rely on cache
-  var empty = { col_order: [], col_names: {}, col_hidden: [] };
+  var empty = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   try {
     var snap = await db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).get();
     if (snap.exists()) {
@@ -4182,6 +4328,7 @@ async function hdLoadColConfig(sheetKey) {
       if (!val.col_order) val.col_order = [];
       if (!val.col_names) val.col_names = {};
       if (!val.col_hidden) val.col_hidden = [];
+      if (!val.col_formats) val.col_formats = {};
       hdColConfig[sheetKey] = val;
     } else {
       hdColConfig[sheetKey] = empty;
@@ -4218,6 +4365,46 @@ function hdGetOrderedKeys(sheetKey, allKeys) {
   allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
   return ordered;
 }
+
+
+// ── Column Format ──
+function hdFormatCellValue(colKey, val, sheetKey) {
+  if (!val || val === '') return '';
+  var str = String(val).trim();
+  var fmt = 'auto';
+  var cfg = hdColConfig[sheetKey || hdCurrentSheet];
+  if (cfg && cfg.col_formats && cfg.col_formats[colKey]) { fmt = cfg.col_formats[colKey]; }
+  else if (hdLooksLikePrice(colKey, val)) { fmt = 'currency'; }
+  if (fmt === 'currency') { var num=parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(num)?'$'+Math.round(num).toLocaleString('en-US'):str; }
+  if (fmt === 'date') { if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) return str; var d=new Date(str); return !isNaN(d.getTime())&&str.length>3?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():str; }
+  if (fmt === 'number') { var n=parseFloat(str.replace(/[^0-9.-]/g,'')); return !isNaN(n)?n.toLocaleString('en-US'):str; }
+  var m=parseFloat(str); if(!isNaN(m)&&str.indexOf('.')>-1){var r=parseFloat(m.toFixed(2));if(String(r)!==str)return String(r);}
+  return str;
+}
+function hdGetColFormat(sheetKey, colKey) {
+  var cfg=hdColConfig[sheetKey];
+  return (cfg&&cfg.col_formats&&cfg.col_formats[colKey])?cfg.col_formats[colKey]:'auto';
+}
+async function hdColCtxFormat(formatType) {
+  var savedKey=hdColCtxKey,savedSheet=hdColCtxSheetKey; hdHideColCtxMenu(true);
+  if (!savedKey||!savedSheet) return;
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet]={col_order:[],col_names:{},col_hidden:[],col_formats:{}};
+  if (!hdColConfig[savedSheet].col_formats) hdColConfig[savedSheet].col_formats={};
+  if (formatType==='auto'){delete hdColConfig[savedSheet].col_formats[savedKey];}
+  else{hdColConfig[savedSheet].col_formats[savedKey]=formatType;}
+  try {
+    await db.ref(HD_COL_CONFIG_PATH+'/'+hdColConfigKey(savedSheet)).set(hdColConfig[savedSheet]);
+    hdSelectSheet(hdCurrentSheet);
+    var names={currency:'Currency ($)',text:'Text',date:'Date',number:'Number',auto:'Auto'};
+    showToast('Column format: '+(names[formatType]||formatType));
+  } catch(e){showToast('Error: '+e.message);}
+}
+// ── Column Width (localStorage, no table-layout change) ──
+var HD_COL_WIDTHS_KEY='hd_col_widths';
+function hdGetColWidths(){try{return JSON.parse(localStorage.getItem(HD_COL_WIDTHS_KEY)||'{}')}catch(e){return{}}}
+function hdGetColWidth(sheetKey,colKey){var w=hdGetColWidths();return(w[sheetKey]&&w[sheetKey][colKey])?w[sheetKey][colKey]:null;}
+function hdSaveColWidth(sheetKey,colKey,width){var w=hdGetColWidths();if(!w[sheetKey])w[sheetKey]={};w[sheetKey][colKey]=Math.round(width);localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w));}
+function hdResetColWidths(sheetKey){var w=hdGetColWidths();delete w[sheetKey];localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w));hdSelectSheet(hdCurrentSheet);showToast('Column widths reset');}
 
 // ══════════ NAV EDITOR ══════════
 const NAV_EDITOR_PATH = 'philinity/nav_structure';
@@ -4257,7 +4444,8 @@ var DEFAULT_NAV = [
   {
     id: 'apps-group', label: '🚀 Apps', items: [
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
-      { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' }
+      { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
+      { emoji: '💾', label: 'Backup Database', type: 'internal', page: 'backup' }
     ]
   }
 ];
@@ -4486,9 +4674,13 @@ function applyNavStructure() {
       itemDiv.className = 'nav-item';
       if (item.type === 'external') {
         itemDiv.onclick = function() { window.open(item.url, '_blank'); closeMobileNav(); };
+      } else if (item.page === 'backup') {
+        itemDiv.onclick = function() { hdBackupDatabase(); closeMobileNav(); };
+      } else if (item.page === 'importer') {
+        itemDiv.onclick = function() { openDataImporter(); closeMobileNav(); };
       } else {
         itemDiv.setAttribute('data-page', item.page || '');
-        itemDiv.onclick = function() { navigateTo(item.page); closeMobileNav(); };
+        (function(el, pg) { el.onclick = function() { navigateTo(pg, el); closeMobileNav(); }; })(itemDiv, item.page);
       }
       itemDiv.innerHTML = '<span class="nav-icon">' + (item.emoji || '📄') + '</span> ' + (item.label || '');
       groupDiv.appendChild(itemDiv);
@@ -5012,7 +5204,7 @@ function parseCSVLine(line) {
 function initMiniSearch() {
   document.querySelectorAll('.page-title').forEach(function(titleDiv) {
     var page = titleDiv.closest('.page');
-    if (!page || page.id === 'page-ai' || page.id === 'page-contacts') return;
+    if (!page || page.id === 'page-ai' || page.id === 'page-contacts' || page.id === 'page-housedata') return;
 
     // Wrap existing children in left group
     var left = document.createElement('div');
@@ -5053,8 +5245,82 @@ function initMiniSearch() {
   });
 }
 
+// ── Data Importer ──
+function openDataImporter() {
+  document.getElementById('importer-status').innerHTML = '';
+  var btn = document.getElementById('import-hbc-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Import'; }
+  document.getElementById('data-importer-modal').classList.add('open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var m = document.getElementById('data-importer-modal');
+  if (m) m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+});
+
+async function importHouseBuildCosts() {
+  var btn = document.getElementById('import-hbc-btn');
+  var status = document.getElementById('importer-status');
+  btn.disabled = true;
+  btn.textContent = 'Importing...';
+  status.innerHTML = '';
+
+  var rows = [{"emoji":"🛠️","category":"Architect / Plans","cost":"21046","notes":"Architect is $1.25/sq ft, paid thru MMCI"},{"emoji":"🏗️","category":"Structural Engineering","cost":"13745","notes":"Sean is $1.35/sq ft, paid thru MMCI"},{"emoji":"🔨","category":"Sub Contractors","cost":"51870","notes":"Doug Atwood 208-860-8898 with Legacy Homes $46.6k + $5,270 to others"},{"emoji":"🏗️","category":"Civil, Draining & Grading","cost":"7500","notes":"Fees for drainage, hillside, etc."},{"emoji":"🌆","category":"City Building Permits / Impact Fees","cost":"21631","notes":"$1,682.88 + $688 Plumbing + $10,568.42 + $6,994.75 + $1,102 Hillside + $304 Category 2 + $290 Hillside Mod"},{"emoji":"🔌","category":"Appliances","cost":"57748","notes":"Includes walk-in, wine cooler, & central vac"},{"emoji":"🏗️","category":"Railings (Inside & Outside)","cost":"12043","notes":"Mailahn Innovation Quote $14,211.37 — purchased from Amazon"},{"emoji":"🏗️","category":"Balcony Decking","cost":"14875","notes":"Concrete $12k + TPO covering"},{"emoji":"🧰","category":"Cabinets / Closets","cost":"46179","notes":"Kitchen, wine bar, bathrooms, laundry"},{"emoji":"🍽️","category":"Countertops (Kitchen & Baths)","cost":"8216","notes":"Cosmos Granite, Brent Walker 208-830-8352, sealed by Perma Treat Josh 208-982-1703"},{"emoji":"🚜","category":"Central Vac - Hide A Hose","cost":"8822","notes":"Coltrin - Isaac 208-789-3438"},{"emoji":"🛠️","category":"Concrete Washout","cost":"676","notes":""},{"emoji":"🛠️","category":"Concrete Prep","cost":"3000","notes":"David - Excavator 208-859-8880"},{"emoji":"🚧","category":"Concrete Flatwork Material","cost":"13077","notes":"Garages, patio, driveway - Express Concrete, Carlos 208-602-2491"},{"emoji":"🛠️","category":"Concrete Foundation","cost":"27150","notes":"E&J Concrete - Edgar 208-550-5569 & Jose 208-697-1975"},{"emoji":"🧱","category":"Concrete / Retaining Wall Labor","cost":"10000","notes":"David Porrasado, Royal Construction 208-859-8880"},{"emoji":"🌿","category":"Retaining Walls & Landscape","cost":"43646","notes":"M&D Landscaping labor, materials from Basalite"},{"emoji":"🚪","category":"Retaining Wall Railing","cost":"6320","notes":"Amazon 10/3/22 - Muzata Brand"},{"emoji":"🚪","category":"Doors & Trim (Interior)","cost":"41000","notes":"Doors, trim, paint, hardware"},{"emoji":"🛋️","category":"Drywall / Sheetrock Material","cost":"15800","notes":"L&W Supply"},{"emoji":"🎨","category":"Drywall, Tape, Texture, Labor","cost":"50000","notes":"VM Drywall - Victor Milanes 208-919-0248"},{"emoji":"💡","category":"Electrical / Span","cost":"82328","notes":"Includes labor, CAN lights, Span.io"},{"emoji":"💡","category":"Electrical - Temp Meter","cost":"1425","notes":"Temp power from Idaho Power, then 400A permanent"},{"emoji":"🔨","category":"Equipment & Tools Rental","cost":"800","notes":"Tates Rent, Home Depot Rentals"},{"emoji":"🛠️","category":"Finish Carpentry","cost":"5000","notes":"Mud room benches, baseboards, etc."},{"emoji":"🔥","category":"Fireplace","cost":"2156","notes":"Master Fireplace 80 inch purchased 5/15/23 Amazon"},{"emoji":"🚒","category":"Fire Sprinkler","cost":"15950","notes":"Thorpe Fire Sprinklers - Anthony & Alicia 208-936-3337"},{"emoji":"🛋️","category":"Flooring","cost":"26872","notes":"LVT Flooring from Fashion Floors - Marcia"},{"emoji":"🧰","category":"Flooring / LVT Install","cost":"12000","notes":"Paint Kings"},{"emoji":"🛁","category":"Flooring / Tile Install","cost":"42520","notes":"VORR - Vince 208-573-7194, $15/sq ft floors & $20 walls"},{"emoji":"🛋️","category":"Furniture (Office & Master)","cost":"53079","notes":"Living room, kitchen table, chairs, master bedroom"},{"emoji":"🏠","category":"Framing Labor","cost":"89352","notes":"Oscar w/ Cummings Construction 208-860-3823"},{"emoji":"🌲","category":"Trusses (Roof & Subfloor)","cost":"37332","notes":"InteFrame / MiTek Quote #221476 $21,936.52 & #221477 $15,395.20"},{"emoji":"🚪","category":"Garage Doors & Workbenches","cost":"8621","notes":"Overhead Doors - Braeden Millburn 208-995-5254"},{"emoji":"🌿","category":"Gutters","cost":"4466","notes":"Copper Cloud Rain Gutters - Cassidy, quote 12/30/22"},{"emoji":"🏋️","category":"Gym","cost":"4500","notes":"Equipment & rubber flooring from China"},{"emoji":"🔥","category":"Heat Mats / Heaters","cost":"2605","notes":"Bathroom heater fans $920, floor wire heat, Cadette heater mud room"},{"emoji":"❄️","category":"HVAC","cost":"68341","notes":"Mitsubishi mini-splits, ERVs, ducting - Peppy HVAC 208-906-6928"},{"emoji":"🔧","category":"Gas Lines & Heater Vents","cost":"21660","notes":"Peppy H&C / formerly Shanco"},{"emoji":"🛠️","category":"Insulation","cost":"65285","notes":"GoGreen Insulation - Matt Bostaph 208-912-0028, spray foam polyurethane"},{"emoji":"🛡️","category":"Insurance (General Liability)","cost":"6000","notes":"Farm Bureau - Dale Zimney 208-888-1821"},{"emoji":"🌿","category":"Landscape & Backflow System","cost":"6000","notes":"Driplines and backflow system"},{"emoji":"💡","category":"Lights","cost":"6404","notes":"CAN lights - see Electrical tab also"},{"emoji":"🌐","category":"Low Voltage / Networking","cost":"1900","notes":"Doorbell, Wi-Fi, Cat6 wiring to pool, Span, fire sprinkler"},{"emoji":"🪵","category":"Lumber","cost":"108044","notes":"Builders FirstSource"},{"emoji":"🛁","category":"Master Bathroom","cost":"4780","notes":"Tub from HomeDepot & Steam SPA"},{"emoji":"🚽","category":"Porta Potty","cost":"1560","notes":"Rocky Mountain Porta Potty 208-789-0395, $120/month"},{"emoji":"🎨","category":"Paint Exterior / Metal Siding","cost":"23636","notes":"Paint Kings - $7,861 soffit/trim + $14,575 metal fascia + $1,200 extra"},{"emoji":"🖌️","category":"Paint Interior","cost":"12800","notes":"Paint Kings - Michael Deegan 208-451-3721"},{"emoji":"🚰","category":"Plumbing Fixtures","cost":"21002","notes":"Sinks & toilets, includes kids & office bathroom cabinets"},{"emoji":"🔧","category":"Plumbing Rough-In & Trim","cost":"28463","notes":"Trojan Plumbing 7-17-23 + parts from Grovers"},{"emoji":"🛠️","category":"Roof / Roofing","cost":"47116","notes":"Rafa Twister Roofing 208-286-5719"},{"emoji":"🏠","category":"Soffit, Fascia, Material & Labor","cost":"13837","notes":"Geraldo 208-605-0147, RMT Siding 208-740-4101"},{"emoji":"🔌","category":"Security","cost":"480","notes":"Blink Camera Security"},{"emoji":"🪟","category":"Skylights","cost":"6642","notes":"Boise Skylights - Paul, Chase Chk# 7972"},{"emoji":"🚜","category":"Soils & Erosion","cost":"3633","notes":"Kevin Farrell, RiveRidge Engineering 208-344-1180"},{"emoji":"⚡","category":"Solar Panels","cost":"55865","notes":"Tesla Solar Panels & Powerwall"},{"emoji":"📈","category":"Stairs x 2","cost":"16587","notes":"Framers & Home Depot for spiral"},{"emoji":"🔨","category":"Steel","cost":"72051","notes":"Idaho Custom Iron Works"},{"emoji":"🎨","category":"Stucco","cost":"40500","notes":"Carlos Gonzalez 208-703-8634, CC Stucco LLC"},{"emoji":"🏊","category":"Swimming Pool","cost":"96888","notes":"Jays Pool & Spa 208-713-1574"},{"emoji":"🏊","category":"Dehumidifier / Hot Tub","cost":"28000","notes":"Hot tub from Costco & Debac Dehumidifier"},{"emoji":"🗑️","category":"Trash Removal & Clean-up","cost":"4000","notes":"Felix Olvera 208-908-9494 + Victor Milanes 208-919-0248"},{"emoji":"♻️","category":"Utilities","cost":"2500","notes":"Water, sewer, power, etc."},{"emoji":"🍷","category":"Wet Bar","cost":"8830","notes":"Shelving & cabinets; stick-on tile vs $12k full labor & material"},{"emoji":"🌐","category":"Wi-Fi / Routers","cost":"1500","notes":"Jetstream Omada routers, switches, access points"},{"emoji":"💧","category":"Water Line & Booster","cost":"2747","notes":"Gandolfo pump 200ft from inlet, backflow setup & water hydrant"},{"emoji":"🏢","category":"Windows","cost":"155461","notes":"Tanner Dame 801-835-6948, Woodgrain Windows & Doors, paid 3/17/22"},{"emoji":"🏢","category":"Window Install","cost":"9550","notes":"John Gibson, The Covering Construction 208-921-0087"},{"emoji":"━━━","category":"── TOTALS ──","cost":"","notes":""},{"emoji":"🏁","category":"Total Build Cost (excl. lot)","cost":"1805412","notes":""},{"emoji":"🏡","category":"Lot Purchase","cost":"475000","notes":""},{"emoji":"💰","category":"Grand Total with Lot","cost":"2280412","notes":""},{"emoji":"📐","category":"First Floor Sq Ft","cost":"3080","notes":""},{"emoji":"📐","category":"Second Floor Sq Ft","cost":"3158","notes":""},{"emoji":"📐","category":"Total House Sq Ft","cost":"6238","notes":"Excludes outdoor balconies/party deck 2,277 & Garage 1,318 — otherwise 9,833 sq ft"},{"emoji":"💵","category":"Total Price Per Sq Ft","cost":"289","notes":"Includes landscaping, Solar, Gym, Pool, Hot Tub, WiFi, Security Cams"},{"emoji":"🏗️","category":"Construction Cost Per Sq Ft","cost":"262","notes":"Excludes above"},{"emoji":"🔢","category":"Actual Construction Cost of House","cost":"1634126","notes":"$50k was just in Landscape & Retaining Walls"}];
+
+  try {
+    var sheetData = {
+      sheet_name: 'House Build Costs',
+      row_count: rows.length,
+      exported_at: new Date().toISOString(),
+      rows: rows
+    };
+    await db.ref('philinity/house_data/house-build-costs').set(sheetData);
+    status.innerHTML += '<span style="color:var(--green)">✅ Sheet written: house-build-costs (' + rows.length + ' rows)</span><br>';
+
+    var orderSnap = await db.ref('philinity/house_sheet_order').get();
+    var order = orderSnap.exists() ? orderSnap.val() : [];
+    if (order.indexOf('house-build-costs') === -1) {
+      order.unshift('house-build-costs');
+      await db.ref('philinity/house_sheet_order').set(order);
+      if (!hdAllSheets) hdAllSheets = {};
+      hdAllSheets['house-build-costs'] = sheetData;
+      hdSheetOrder = order;
+    }
+    status.innerHTML += '<span style="color:var(--green)">✅ Added to sheet list</span><br>';
+    status.innerHTML += '<span style="color:var(--gold)">🎉 Done! Go to House Data and select "House Build Costs"</span>';
+    btn.textContent = '✓ Imported!';
+    if (hdLoaded) { hdLoaded = false; await hdInit(); }
+  } catch(e) {
+    status.innerHTML += '<span style="color:var(--red)">❌ Error: ' + e.message + '</span>';
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+  }
+}
+
+// ── Database Backup ──
+function hdBackupDatabase() {
+  showToast('📦 Preparing backup...');
+  db.ref('philinity').get().then(function(snap) {
+    if (!snap.exists()) { showToast('No data to backup'); return; }
+    var data = JSON.stringify(snap.val(), null, 2);
+    var blob = new Blob([data], {type: 'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var date = new Date().toISOString().slice(0,10);
+    a.download = 'philinity-backup-' + date + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('✅ Backup saved: philinity-backup-' + date + '.json');
+  }).catch(function(e) {
+    showToast('Backup failed: ' + e.message);
+  });
+}
+
 // Init Firebase then load KB
 async function appInit() {
+  await authReadyPromise;  // wait for anonymous auth before any Firebase reads
   await initFirebase();
   await navEditorInit(); // loads nav structure
   await loadAIProjects(); // loads AI project bubbles
@@ -5071,7 +5337,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 5.5
+// Philinity Command Center © Rev 7.0
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5103,9 +5369,10 @@ if (document.readyState === 'loading') {
 // Rev 4.7  Sheet rename via modal (no more inline DOM edit)
 //          Sheet delete via inline confirm bar (no browser confirm)
 //          Column rename via prompt()
-// Rev 5.5  Rename (sheet + column) via proper modal UI
-//          Delete (sheet) via proper confirm modal
-//          Works on mobile and desktop without browser dialogs
+// Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
+// Rev 6.7  Removed table-layout:fixed that broke House Data layout
+// Rev 6.9  Anonymous Firebase auth + authReadyPromise gates all DB reads
+// Rev 7.0  Clean stable release — auth + hdLoaded fix confirmed working
 // ============================================================
 
 </script>
