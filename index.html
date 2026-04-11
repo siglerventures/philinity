@@ -1191,7 +1191,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.0</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.1</span>
       </div>
     </div>
 
@@ -3177,6 +3177,8 @@ function hdRenderTable(rows) {
   });
 
   var priority = ['img','photo','item','name','brand','qty','price','cost','extended','extended_price','total_price','variant','notes','notes_details'];
+  // Force img/photo always first
+  ['photo','img'].forEach(function(pk) { var pi = allKeys.indexOf(pk); if (pi > 0) { allKeys.splice(pi,1); allKeys.unshift(pk); } });
   allKeys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -3219,7 +3221,8 @@ function hdRenderTable(rows) {
   allKeys.forEach(function(k) {
     var th = document.createElement('th');
     if (k === 'img' || k === 'photo') {
-      th.style.cssText = 'padding:8px 12px;width:60px;border-bottom:1px solid var(--border)';
+      th.textContent = 'Pic';
+      th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left';
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
       var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
@@ -3578,51 +3581,70 @@ function hdOpenEditRow(rowIdx, sheetKey) {
   var body = document.getElementById('hd-edit-row-body');
   body.innerHTML = '';
 
-  // Photo field
+  // Gallery photo section
   var photoVal = row.img || row.photo || '';
+  hdEditingPhotos = row.photos ? row.photos.slice() : (photoVal ? [photoVal] : []);
+  // Ensure main is in photos array
+  if (photoVal && hdEditingPhotos.indexOf(photoVal) === -1) hdEditingPhotos.unshift(photoVal);
+
   var photoDiv = document.createElement('div');
   photoDiv.className = 'form-group';
   photoDiv.style.marginBottom = '12px';
+
   var photoLabel = document.createElement('label');
   photoLabel.className = 'form-label';
-  photoLabel.textContent = 'PHOTO';
+  photoLabel.textContent = 'PHOTOS — Click to Set Main · ★ = Main';
   photoDiv.appendChild(photoLabel);
-  var photoRow = document.createElement('div');
-  photoRow.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
-  if (photoVal) {
-    var thumb = document.createElement('img');
-    thumb.id = 'hd-edit-thumb';
-    thumb.src = photoVal;
-    thumb.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0';
-    photoRow.appendChild(thumb);
-  }
-  var photoCtrl = document.createElement('div');
-  photoCtrl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:6px';
-  var imgInput = document.createElement('input');
-  imgInput.className = 'form-input';
-  imgInput.id = 'hd-edit-img-url';
-  imgInput.placeholder = 'Image URL or paste screenshot (Ctrl+V)';
-  imgInput.value = photoVal;
-  imgInput.oninput = function() { var t = document.getElementById('hd-edit-thumb'); if (t) t.src = this.value; };
-  photoCtrl.appendChild(imgInput);
+
+  // Hidden fields to track main url
+  var mainInput = document.createElement('input');
+  mainInput.type = 'hidden'; mainInput.id = 'hd-gallery-main'; mainInput.value = photoVal;
+  photoDiv.appendChild(mainInput);
+  var imgUrlInput = document.createElement('input');
+  imgUrlInput.type = 'hidden'; imgUrlInput.id = 'hd-edit-img-url'; imgUrlInput.value = photoVal;
+  photoDiv.appendChild(imgUrlInput);
+
+  // Gallery grid
+  var galleryGrid = document.createElement('div');
+  galleryGrid.id = 'hd-gallery-grid';
+  galleryGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px 0;min-height:40px';
+  photoDiv.appendChild(galleryGrid);
+
+  // Upload button row
+  var uploadRow = document.createElement('div');
+  uploadRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+
   var fileInput = document.createElement('input');
   fileInput.type = 'file'; fileInput.id = 'hd-edit-file';
-  fileInput.accept = 'image/*'; fileInput.style.display = 'none';
-  fileInput.onchange = function(e) {
-    var file = e.target.files[0]; if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev) { hdLoadImgPreviewAndUpload(ev.target.result, 'edit'); };
-    reader.readAsDataURL(file);
+  fileInput.accept = 'image/*'; fileInput.multiple = true; fileInput.style.display = 'none';
+  fileInput.onchange = function(e) { hdGalleryUpload(e.target.files, 'hd-gallery-grid'); };
+  uploadRow.appendChild(fileInput);
+
+  var uploadBtn = document.createElement('button');
+  uploadBtn.textContent = '📷 Add Photos';
+  uploadBtn.style.cssText = 'border:1px solid var(--border-bright);background:var(--surface2);color:var(--text-dim);border-radius:8px;padding:7px 14px;font-size:0.78rem;cursor:pointer;font-family:Outfit,sans-serif';
+  uploadBtn.onclick = function() { document.getElementById('hd-edit-file').click(); };
+  uploadRow.appendChild(uploadBtn);
+
+  var urlInput = document.createElement('input');
+  urlInput.className = 'form-input';
+  urlInput.placeholder = 'Or paste image URL + Enter';
+  urlInput.style.cssText = 'flex:1;min-width:180px;font-size:0.78rem;padding:7px 12px';
+  urlInput.onkeydown = function(e) {
+    if (e.key === 'Enter' && this.value.trim()) {
+      hdEditingPhotos.push(this.value.trim());
+      if (hdEditingPhotos.length === 1) hdGallerySetMain(0);
+      else hdGalleryRender('hd-gallery-grid', document.getElementById('hd-gallery-main').value);
+      this.value = '';
+    }
   };
-  photoCtrl.appendChild(fileInput);
-  var photoBtn = document.createElement('button');
-  photoBtn.textContent = 'Choose / Take Photo';
-  photoBtn.style.cssText = 'border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);border-radius:6px;padding:5px 10px;font-size:0.75rem;cursor:pointer;width:fit-content';
-  photoBtn.onclick = function() { document.getElementById('hd-edit-file').click(); };
-  photoCtrl.appendChild(photoBtn);
-  photoRow.appendChild(photoCtrl);
-  photoDiv.appendChild(photoRow);
+  uploadRow.appendChild(urlInput);
+
+  photoDiv.appendChild(uploadRow);
   body.appendChild(photoDiv);
+
+  // Render gallery
+  hdGalleryRender('hd-gallery-grid', photoVal);
 
   // All other fields
   hdEditRowKeys.forEach(function(k) {
@@ -3682,8 +3704,13 @@ async function hdSaveEditRow() {
     if (el) row[k] = el.value.trim();
   });
 
+  // Save gallery: main photo + all photos array
+  var mainImgEl = document.getElementById('hd-gallery-main');
   var imgUrlEl = document.getElementById('hd-edit-img-url');
-  if (imgUrlEl && imgUrlEl.value.trim()) { row.img = imgUrlEl.value.trim(); delete row.photo; }
+  var mainUrl = (mainImgEl && mainImgEl.value.trim()) || (imgUrlEl && imgUrlEl.value.trim()) || '';
+  if (mainUrl) { row.img = mainUrl; delete row.photo; }
+  if (hdEditingPhotos.length > 0) { row.photos = hdEditingPhotos.slice(); }
+  else { delete row.photos; }
 
   // Save tags
   var selectedTags = hdGetSelectedTags();
@@ -3913,14 +3940,20 @@ function hdInitClipboardPaste() {
     var addOpen = modal && modal.classList.contains('open');
     var editOpen = editModal && editModal.classList.contains('open');
     if (!addOpen && !editOpen) return;
+    // Also handle gallery paste in edit modal
     var items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
     for (var i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         var file = items[i].getAsFile();
-        var reader = new FileReader();
-        reader.onload = function(ev) { hdLoadImgPreviewAndUpload(ev.target.result, addOpen ? 'add' : 'edit'); };
-        reader.readAsDataURL(file);
+        if (editOpen) {
+          // Paste into gallery
+          hdGalleryUpload([file], 'hd-gallery-grid');
+        } else {
+          var reader = new FileReader();
+          reader.onload = function(ev) { hdLoadImgPreviewAndUpload(ev.target.result, 'add'); };
+          reader.readAsDataURL(file);
+        }
         e.preventDefault();
         break;
       }
@@ -5319,6 +5352,102 @@ function hdBackupDatabase() {
   });
 }
 
+
+// ══════════ HD GALLERY (multi-photo) ══════════
+var hdEditingPhotos = [];
+
+function hdGalleryRender(containerId, mainSrc) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  if (hdEditingPhotos.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:0.75rem;padding:8px 0">No photos yet. Upload below or paste a URL.</div>';
+    return;
+  }
+  hdEditingPhotos.forEach(function(url, i) {
+    var isMain = url === mainSrc;
+    var item = document.createElement('div');
+    item.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;width:90px;height:90px;background:var(--surface2);border:2px solid ' + (isMain ? 'var(--gold)' : 'var(--border)') + ';flex-shrink:0';
+    var img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;cursor:pointer';
+    img.onclick = function() { hdGallerySetMain(i); };
+    item.appendChild(img);
+    if (isMain) {
+      var badge = document.createElement('div');
+      badge.textContent = 'MAIN';
+      badge.style.cssText = 'position:absolute;bottom:4px;left:4px;background:var(--gold);color:var(--bg);font-size:9px;padding:2px 5px;border-radius:5px;font-weight:700;font-family:DM Mono,monospace;pointer-events:none';
+      item.appendChild(badge);
+    } else {
+      var setBtn = document.createElement('button');
+      setBtn.textContent = '★ Main';
+      setBtn.style.cssText = 'position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.75);color:var(--gold);border:none;border-radius:5px;font-size:9px;padding:2px 5px;cursor:pointer;font-family:DM Mono,monospace';
+      setBtn.onclick = function(e) { e.stopPropagation(); hdGallerySetMain(i); };
+      item.appendChild(setBtn);
+    }
+    var delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.75);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center';
+    delBtn.onclick = function(e) { e.stopPropagation(); hdGalleryRemove(i); };
+    item.appendChild(delBtn);
+    container.appendChild(item);
+  });
+}
+
+function hdGallerySetMain(index) {
+  if (index >= hdEditingPhotos.length) return;
+  var url = hdEditingPhotos[index];
+  var mainInput = document.getElementById('hd-gallery-main');
+  var imgInput = document.getElementById('hd-edit-img-url');
+  if (mainInput) mainInput.value = url;
+  if (imgInput) imgInput.value = url;
+  hdGalleryRender('hd-gallery-grid', url);
+}
+
+function hdGalleryRemove(index) {
+  var mainInput = document.getElementById('hd-gallery-main');
+  var currentMain = mainInput ? mainInput.value : '';
+  var removed = hdEditingPhotos[index];
+  hdEditingPhotos.splice(index, 1);
+  if (removed === currentMain) {
+    if (hdEditingPhotos.length > 0) { hdGallerySetMain(0); }
+    else { if (mainInput) mainInput.value = ''; hdGalleryRender('hd-gallery-grid', ''); }
+  } else {
+    hdGalleryRender('hd-gallery-grid', currentMain);
+  }
+}
+
+async function hdGalleryUpload(files, containerId) {
+  var mainInput = document.getElementById('hd-gallery-main');
+  var currentMain = mainInput ? mainInput.value : '';
+  showToast('Uploading ' + files.length + ' photo' + (files.length > 1 ? 's' : '') + '...');
+  for (var i = 0; i < files.length; i++) {
+    await new Promise(function(resolve) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var imgEl = new Image();
+        imgEl.onload = async function() {
+          var canvas = document.createElement('canvas');
+          var MAX = 800, w = imgEl.width, h = imgEl.height;
+          if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+          else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+          var compressed = canvas.toDataURL('image/jpeg', 0.75);
+          var url = await hdUploadImageToStorage(compressed, hdGenerateFilename());
+          hdEditingPhotos.push(url);
+          if (!currentMain) { currentMain = url; hdGallerySetMain(hdEditingPhotos.length - 1); }
+          else { hdGalleryRender(containerId, currentMain); }
+          resolve();
+        };
+        imgEl.src = e.target.result;
+      };
+      reader.readAsDataURL(files[i]);
+    });
+  }
+  showToast('✅ ' + files.length + ' photo' + (files.length > 1 ? 's' : '') + ' uploaded!');
+}
+
 // Init Firebase then load KB
 async function appInit() {
   await authReadyPromise;  // wait for anonymous auth before any Firebase reads
@@ -5338,7 +5467,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 7.0
+// Philinity Command Center © Rev 7.1
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5374,6 +5503,7 @@ if (document.readyState === 'loading') {
 // Rev 6.7  Removed table-layout:fixed that broke House Data layout
 // Rev 6.9  Anonymous Firebase auth + authReadyPromise gates all DB reads
 // Rev 7.0  Clean stable release — auth + hdLoaded fix confirmed working
+// Rev 7.1  Multi-photo gallery in House Data: Pic column always first, upload multiple, click to set Main
 // ============================================================
 
 </script>
