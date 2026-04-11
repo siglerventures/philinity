@@ -2374,7 +2374,18 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
 const auth = firebase.auth();
-auth.signInAnonymously();
+
+// Wait for anonymous auth before any Firebase reads
+let authReady = false;
+const authReadyPromise = new Promise(function(resolve) {
+  auth.onAuthStateChanged(function(user) {
+    if (!authReady) {
+      authReady = true;
+      resolve(user);
+    }
+  });
+});
+auth.signInAnonymously().catch(function(e) { console.warn('Auth error:', e.message); });
 
 let ANTHROPIC_KEY = '';
 
@@ -5309,6 +5320,7 @@ function hdBackupDatabase() {
 
 // Init Firebase then load KB
 async function appInit() {
+  await authReadyPromise;  // wait for anonymous auth before any Firebase reads
   await initFirebase();
   await navEditorInit(); // loads nav structure
   await loadAIProjects(); // loads AI project bubbles
@@ -5325,7 +5337,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 6.7
+// Philinity Command Center © Rev 6.8
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5359,7 +5371,7 @@ if (document.readyState === 'loading') {
 //          Column rename via prompt()
 // Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
 // Rev 6.7  Removed table-layout:fixed that broke House Data layout
-// Rev 6.8  Anonymous Firebase auth — closes raw DB URL exposure (auth != null rules)
+// Rev 6.8  Anonymous Firebase auth + authReadyPromise gates all DB reads behind confirmed auth
 // ============================================================
 
 </script>
