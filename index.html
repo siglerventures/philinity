@@ -1191,7 +1191,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.1</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.2</span>
       </div>
     </div>
 
@@ -3177,8 +3177,6 @@ function hdRenderTable(rows) {
   });
 
   var priority = ['img','photo','item','name','brand','qty','price','cost','extended','extended_price','total_price','variant','notes','notes_details'];
-  // Force img/photo always first
-  ['photo','img'].forEach(function(pk) { var pi = allKeys.indexOf(pk); if (pi > 0) { allKeys.splice(pi,1); allKeys.unshift(pk); } });
   allKeys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -3222,7 +3220,14 @@ function hdRenderTable(rows) {
     var th = document.createElement('th');
     if (k === 'img' || k === 'photo') {
       th.textContent = 'Pic';
-      th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left';
+      th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left;cursor:pointer;user-select:none';
+      th.title = 'Right-click to rename/reorder';
+      th.onmouseover = function() { this.style.color = 'var(--text)'; };
+      th.onmouseout = function() { this.style.color = 'var(--gold)'; };
+      (function(colKey, sk) {
+        th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
+        th.ontouchstart = function(e) { hdHandleColTap(e, colKey, sk); };
+      })(k, hdCurrentSheet);
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
       var displayName = hdCurrentSheet ? hdGetColDisplayName(hdCurrentSheet, k) : hdCapitalize(k);
@@ -4391,9 +4396,15 @@ function hdGetOrderedKeys(sheetKey, allKeys) {
   var cfg = hdColConfig[sheetKey];
   if (!cfg) return allKeys;
   if (!cfg.col_order || cfg.col_order.length === 0) {
-    cfg.col_order = allKeys.slice();
+    // Default: put img/photo first
+    var defaultOrder = allKeys.slice();
+    ['photo','img'].forEach(function(pk) {
+      var pi = defaultOrder.indexOf(pk);
+      if (pi > 0) { defaultOrder.splice(pi,1); defaultOrder.unshift(pk); }
+    });
+    cfg.col_order = defaultOrder;
     hdSaveColConfig(sheetKey);
-    return allKeys;
+    return defaultOrder;
   }
   var ordered = cfg.col_order.filter(function(k) { return allKeys.indexOf(k) > -1; });
   allKeys.forEach(function(k) { if (ordered.indexOf(k) === -1) ordered.push(k); });
@@ -5467,7 +5478,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 7.1
+// Philinity Command Center © Rev 7.2
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5504,6 +5515,7 @@ if (document.readyState === 'loading') {
 // Rev 6.9  Anonymous Firebase auth + authReadyPromise gates all DB reads
 // Rev 7.0  Clean stable release — auth + hdLoaded fix confirmed working
 // Rev 7.1  Multi-photo gallery in House Data: Pic column always first, upload multiple, click to set Main
+// Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // ============================================================
 
 </script>
