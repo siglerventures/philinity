@@ -1191,7 +1191,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.2</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.3</span>
       </div>
     </div>
 
@@ -2392,7 +2392,7 @@ let ANTHROPIC_KEY = '';
 
 async function initFirebase() {
   try {
-    const snap = await db.ref('config/Philinity-CC').get();
+    const snap = await db.ref('config/anthropic_key').get();
     if (snap.exists()) {
       ANTHROPIC_KEY = snap.val();
       console.log('✓ API key loaded');
@@ -4705,14 +4705,14 @@ function applyNavStructure() {
     labelDiv.className = 'nav-label nav-collapsible';
     labelDiv.setAttribute('data-group', gid);
     labelDiv.onclick = function() { toggleNavGroup(gid); };
-    labelDiv.innerHTML = '<span>' + (group.label || 'Group') + '</span><span class="nav-caret" id="caret-' + gid + '">›</span>';
+    labelDiv.innerHTML = '<span>' + (group.label || 'Group') + '</span><span class="nav-caret open" id="caret-' + gid + '">›</span>';
     fragment.appendChild(labelDiv);
 
     // Group container
     var groupDiv = document.createElement('div');
     groupDiv.className = 'nav-group';
     groupDiv.id = 'group-' + gid;
-    groupDiv.style.display = 'none';
+    groupDiv.style.display = 'block';
 
     (group.items || []).forEach(function(item) {
       var itemDiv = document.createElement('div');
@@ -5478,7 +5478,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================
-// Philinity Command Center © Rev 7.2
+// Philinity Command Center © Rev 7.3
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5516,6 +5516,7 @@ if (document.readyState === 'loading') {
 // Rev 7.0  Clean stable release — auth + hdLoaded fix confirmed working
 // Rev 7.1  Multi-photo gallery in House Data: Pic column always first, upload multiple, click to set Main
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
+// Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // ============================================================
 
 </script>
