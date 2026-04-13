@@ -1027,7 +1027,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.0</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.2</div>
   <input type="password" id="pw-input" placeholder="Enter password" 
     style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
     onkeydown="if(event.key==='Enter') checkPW()">
@@ -1192,7 +1192,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.0</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.2</span>
       </div>
     </div>
 
@@ -2308,6 +2308,45 @@ function checkPW() {
       </div>
     </div>
   </div>
+
+  <!-- Data Exporter Modal -->
+  <div class="modal-overlay" id="data-exporter-modal">
+    <div class="modal-box" style="max-width:500px">
+      <div class="modal-title">📤 Export Data</div>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:20px;line-height:1.6">Download your Philinity data as a file you can save, share, or restore from later.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+
+        <div style="background:linear-gradient(135deg,rgba(201,169,110,0.1),rgba(201,169,110,0.05));border:1px solid rgba(201,169,110,0.3);border-radius:10px;padding:16px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--gold);margin-bottom:3px">📦 Full Backup (JSON)</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px">All house data sheets, sheet order, AI projects, and column config — use to restore later</div>
+          <button onclick="exportFullBackup()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--gold);color:var(--bg);font-family:Outfit,sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer">⬇️ Download Backup</button>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">📊 Export Sheet as CSV</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">Download any single sheet as a .csv file — open in Excel or Google Sheets</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="export-sheet-select" class="form-input" style="flex:1;min-width:180px;font-size:0.8rem;padding:7px 10px">
+              <option value="">-- Select a sheet --</option>
+            </select>
+            <button onclick="exportSheetCSV()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--gold);color:var(--bg);font-family:Outfit,sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;white-space:nowrap">⬇️ Download CSV</button>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">📋 Export All Sheets as CSV</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px">Downloads a zip-style combined CSV with all sheets separated by headers</div>
+          <button onclick="exportAllCSV()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--gold);color:var(--bg);font-family:Outfit,sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer">⬇️ Download All CSV</button>
+        </div>
+
+      </div>
+      <div id="exporter-status" style="margin-top:14px;font-family:DM Mono,monospace;font-size:0.7rem;color:var(--text-muted);line-height:1.8"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-cancel" onclick="document.getElementById('data-exporter-modal').classList.remove('open')">Close</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- AI Projects Edit Modal -->
   <div class="modal-overlay" id="ai-proj-modal">
@@ -4541,6 +4580,7 @@ var DEFAULT_NAV = [
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
       { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
       { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' },
+      { emoji: '📤', label: 'Export Data', type: 'internal', page: 'export' },
       { emoji: '💾', label: 'Backup Database', type: 'internal', page: 'backup' }
     ]
   }
@@ -4551,15 +4591,28 @@ async function navEditorInit() {
     var snap = await db.ref(NAV_EDITOR_PATH).get();
     if (snap.exists()) {
       navStructure = snap.val();
-      // Ensure Data Importer is always in Apps group
+      // Ensure Apps group always has Backup Database and Data Importer
       var appsGroup = navStructure.find(function(g) { return g.id === 'apps-group'; });
       if (appsGroup) {
-        var hasImporter = (appsGroup.items || []).some(function(i) { return i.page === 'importer'; });
+        var items = appsGroup.items || [];
+        var needsSave = false;
+        var hasImporter = items.some(function(i) { return i.page === 'importer'; });
+        var hasExport   = items.some(function(i) { return i.page === 'export'; });
+        var hasBackup   = items.some(function(i) { return i.page === 'backup'; });
         if (!hasImporter) {
-          appsGroup.items = appsGroup.items || [];
-          appsGroup.items.splice(appsGroup.items.length - 1, 0, { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' });
-          await db.ref(NAV_EDITOR_PATH).set(navStructure);
+          items.push({ emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' });
+          needsSave = true;
         }
+        if (!hasExport) {
+          items.push({ emoji: '📤', label: 'Export Data', type: 'internal', page: 'export' });
+          needsSave = true;
+        }
+        if (!hasBackup) {
+          items.push({ emoji: '💾', label: 'Backup Database', type: 'internal', page: 'backup' });
+          needsSave = true;
+        }
+        appsGroup.items = items;
+        if (needsSave) await db.ref(NAV_EDITOR_PATH).set(navStructure);
       }
     } else {
       navStructure = DEFAULT_NAV.map(function(g) { return JSON.parse(JSON.stringify(g)); });
@@ -4784,6 +4837,8 @@ function applyNavStructure() {
         itemDiv.onclick = function() { hdBackupDatabase(); closeMobileNav(); };
       } else if (item.page === 'importer') {
         itemDiv.onclick = function() { openDataImporter(); closeMobileNav(); };
+      } else if (item.page === 'export') {
+        itemDiv.onclick = function() { openDataExporter(); closeMobileNav(); };
       } else {
         itemDiv.setAttribute('data-page', item.page || '');
         (function(el, pg) { el.onclick = function() { navigateTo(pg, el); closeMobileNav(); }; })(itemDiv, item.page);
@@ -5539,6 +5594,123 @@ if (document.readyState === 'loading') {
 }
 
 
+// ══════════ DATA EXPORTER ══════════
+function openDataExporter() {
+  // Populate sheet select
+  var sel = document.getElementById('export-sheet-select');
+  if (sel) {
+    sel.innerHTML = '<option value="">-- Select a sheet --</option>';
+    hdSheetOrder.forEach(function(key) {
+      var name = (hdAllSheets[key] && hdAllSheets[key].sheet_name) || key;
+      var opt = document.createElement('option');
+      opt.value = key; opt.textContent = name;
+      if (hdCurrentSheet && key === hdCurrentSheet) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById('exporter-status').innerHTML = '';
+  document.getElementById('data-exporter-modal').classList.add('open');
+}
+
+function exportFullBackup() {
+  var status = document.getElementById('exporter-status');
+  status.innerHTML = '<span style="color:var(--text-muted)">⏳ Building backup...</span>';
+  db.ref('philinity').get().then(function(snap) {
+    if (!snap.exists()) { status.innerHTML = '<span style="color:var(--red)">❌ No data found</span>'; return; }
+    var data = JSON.stringify(snap.val(), null, 2);
+    var blob = new Blob([data], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var date = new Date().toISOString().slice(0, 10);
+    a.download = 'philinity-backup-' + date + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    status.innerHTML = '<span style="color:var(--green)">✅ Backup saved: philinity-backup-' + date + '.json</span>';
+  }).catch(function(e) {
+    status.innerHTML = '<span style="color:var(--red)">❌ Error: ' + e.message + '</span>';
+  });
+}
+
+function rowsToCSV(rows) {
+  if (!rows || !rows.length) return '';
+  // Collect all keys across all rows
+  var keys = [];
+  rows.forEach(function(row) {
+    Object.keys(row).forEach(function(k) {
+      if (keys.indexOf(k) === -1) keys.push(k);
+    });
+  });
+  var lines = [keys.map(function(k) { return csvEscape(k); }).join(',')];
+  rows.forEach(function(row) {
+    lines.push(keys.map(function(k) { return csvEscape(row[k] || ''); }).join(','));
+  });
+  return lines.join('\n');
+}
+
+function csvEscape(val) {
+  var s = String(val);
+  if (s.indexOf(',') > -1 || s.indexOf('"') > -1 || s.indexOf('\n') > -1) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function exportSheetCSV() {
+  var sel = document.getElementById('export-sheet-select');
+  var status = document.getElementById('exporter-status');
+  var key = sel ? sel.value : '';
+  if (!key) { showToast('Select a sheet first'); return; }
+  var sheet = hdAllSheets[key];
+  if (!sheet || !sheet.rows || !sheet.rows.length) {
+    status.innerHTML = '<span style="color:var(--red)">❌ Sheet is empty</span>'; return;
+  }
+  var csv = rowsToCSV(sheet.rows);
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var name = (sheet.sheet_name || key).replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  a.download = 'philinity-' + name + '-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  status.innerHTML = '<span style="color:var(--green)">✅ Downloaded: ' + a.download + ' (' + sheet.rows.length + ' rows)</span>';
+}
+
+function exportAllCSV() {
+  var status = document.getElementById('exporter-status');
+  if (!hdSheetOrder.length) { status.innerHTML = '<span style="color:var(--red)">❌ No sheets loaded</span>'; return; }
+  var parts = [];
+  var totalRows = 0;
+  hdSheetOrder.forEach(function(key) {
+    var sheet = hdAllSheets[key];
+    if (!sheet || !sheet.rows || !sheet.rows.length) return;
+    parts.push('### ' + (sheet.sheet_name || key) + ' ###');
+    parts.push(rowsToCSV(sheet.rows));
+    parts.push('');
+    totalRows += sheet.rows.length;
+  });
+  if (!parts.length) { status.innerHTML = '<span style="color:var(--red)">❌ No data to export</span>'; return; }
+  var blob = new Blob([parts.join('\n')], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var date = new Date().toISOString().slice(0,10);
+  a.download = 'philinity-all-sheets-' + date + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  status.innerHTML = '<span style="color:var(--green)">✅ Downloaded ' + hdSheetOrder.length + ' sheets · ' + totalRows + ' total rows</span>';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var m = document.getElementById('data-exporter-modal');
+  if (m) m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+});
+
+
 // ══════════ CSV IMPORT ══════════
 var csvParsedRows = [];
 var csvParsedHeaders = [];
@@ -5764,7 +5936,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.0
+// Philinity Command Center © Rev 8.2
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5804,7 +5976,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.0  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 8.2  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
