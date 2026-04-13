@@ -1027,7 +1027,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 7.4</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 7.5</div>
   <input type="password" id="pw-input" placeholder="Enter password" 
     style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
     onkeydown="if(event.key==='Enter') checkPW()">
@@ -1192,7 +1192,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.4</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 7.5</span>
       </div>
     </div>
 
@@ -4498,6 +4498,7 @@ var DEFAULT_NAV = [
     id: 'apps-group', label: '🚀 Apps', items: [
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
       { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
+      { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' },
       { emoji: '💾', label: 'Backup Database', type: 'internal', page: 'backup' }
     ]
   }
@@ -4508,6 +4509,16 @@ async function navEditorInit() {
     var snap = await db.ref(NAV_EDITOR_PATH).get();
     if (snap.exists()) {
       navStructure = snap.val();
+      // Ensure Data Importer is always in Apps group
+      var appsGroup = navStructure.find(function(g) { return g.id === 'apps-group'; });
+      if (appsGroup) {
+        var hasImporter = (appsGroup.items || []).some(function(i) { return i.page === 'importer'; });
+        if (!hasImporter) {
+          appsGroup.items = appsGroup.items || [];
+          appsGroup.items.splice(appsGroup.items.length - 1, 0, { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' });
+          await db.ref(NAV_EDITOR_PATH).set(navStructure);
+        }
+      }
     } else {
       navStructure = DEFAULT_NAV.map(function(g) { return JSON.parse(JSON.stringify(g)); });
     }
@@ -5537,7 +5548,7 @@ async function importFullBackup() {
 
 
 // ============================================================
-// Philinity Command Center © Rev 7.4
+// Philinity Command Center © Rev 7.5
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5575,7 +5586,9 @@ async function importFullBackup() {
 // Rev 7.0  Clean stable release — auth + hdLoaded fix confirmed working
 // Rev 7.1  Multi-photo gallery in House Data: Pic column always first, upload multiple, click to set Main
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
-// Rev 7.4  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
+// Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
+// Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
+// Rev 7.5  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
