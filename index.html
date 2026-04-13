@@ -1027,7 +1027,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.2</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.3</div>
   <input type="password" id="pw-input" placeholder="Enter password" 
     style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
     onkeydown="if(event.key==='Enter') checkPW()">
@@ -1192,7 +1192,7 @@ function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.2</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.3</span>
       </div>
     </div>
 
@@ -5595,7 +5595,17 @@ if (document.readyState === 'loading') {
 
 
 // ══════════ DATA EXPORTER ══════════
-function openDataExporter() {
+async function openDataExporter() {
+  document.getElementById('exporter-status').innerHTML = '';
+  document.getElementById('data-exporter-modal').classList.add('open');
+
+  // Load house data if not yet loaded
+  if (!hdLoaded || !Object.keys(hdAllSheets).length) {
+    document.getElementById('exporter-status').innerHTML = '<span style="color:var(--text-muted)">⏳ Loading sheets...</span>';
+    await hdInit();
+    document.getElementById('exporter-status').innerHTML = '';
+  }
+
   // Populate sheet select
   var sel = document.getElementById('export-sheet-select');
   if (sel) {
@@ -5608,8 +5618,6 @@ function openDataExporter() {
       sel.appendChild(opt);
     });
   }
-  document.getElementById('exporter-status').innerHTML = '';
-  document.getElementById('data-exporter-modal').classList.add('open');
 }
 
 function exportFullBackup() {
@@ -5936,7 +5944,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.2
+// Philinity Command Center © Rev 8.3
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5976,7 +5984,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.2  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 8.3  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
