@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://api.anthropic.com; img-src 'self' data: blob: https:; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://api.anthropic.com; img-src 'self' data: blob: https:; frame-src https://*.firebaseio.com https://*.firebaseapp.com; object-src 'none';">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <title>Philinity — Sigler Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1036,15 +1036,27 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Incorrect password</div>
 </div>
 <script>
+const CC_AUTH_KEY = 'philinity_cc_auth';
+const CC_AUTH_EXPIRY_DAYS = 30;
+
+function isCCAuthValid() {
+  try {
+    var stored = localStorage.getItem(CC_AUTH_KEY);
+    if (!stored) return false;
+    var data = JSON.parse(stored);
+    return (Date.now() - data.ts) < (CC_AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  } catch(e) { return false; }
+}
+
 (function() {
-  var ok = sessionStorage.getItem('philinity_auth') === 'ok';
-  if (!ok) {
+  if (!isCCAuthValid()) {
     document.getElementById('auth-gate').style.display = 'flex';
     document.body.style.overflow = 'hidden';
   } else {
     document.getElementById('auth-gate').style.display = 'none';
   }
 })();
+
 async function checkPW() {
   var v = document.getElementById('pw-input').value;
   if (!v) return;
@@ -1055,7 +1067,7 @@ async function checkPW() {
     if (snap.exists()) correctPW = snap.val();
   } catch(e) { console.warn('Using default password'); }
   if (v === correctPW) {
-    sessionStorage.setItem('philinity_auth', 'ok');
+    localStorage.setItem(CC_AUTH_KEY, JSON.stringify({ ts: Date.now() }));
     document.getElementById('auth-gate').style.display = 'none';
     document.body.style.overflow = '';
   } else {
@@ -6006,6 +6018,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
+// Rev 8.5  CSP fix: firebaseio.com added to script-src and frame-src; localStorage 30-day auth
 // Rev 8.4  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
