@@ -1028,17 +1028,18 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.4</div>
-  <input type="password" id="pw-input" placeholder="Enter password" 
-    style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
-    onkeydown="if(event.key==='Enter') checkPW()">
-  <button onclick="checkPW()" style="background:#d4860a;color:#0f0c08;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.6</div>
+  <form onsubmit="event.preventDefault();checkPW()" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <input type="text" name="username" autocomplete="username" style="display:none;">
+    <input type="password" id="pw-input" placeholder="Enter password" autocomplete="current-password"
+      style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center">
+    <button type="submit" style="background:#d4860a;color:#0f0c08;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
+  </form>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Incorrect password</div>
 </div>
 <script>
 const CC_AUTH_KEY = 'philinity_cc_auth';
 const CC_AUTH_EXPIRY_DAYS = 30;
-
 function isCCAuthValid() {
   try {
     var stored = localStorage.getItem(CC_AUTH_KEY);
@@ -1047,7 +1048,6 @@ function isCCAuthValid() {
     return (Date.now() - data.ts) < (CC_AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   } catch(e) { return false; }
 }
-
 (function() {
   if (!isCCAuthValid()) {
     document.getElementById('auth-gate').style.display = 'flex';
@@ -1056,11 +1056,10 @@ function isCCAuthValid() {
     document.getElementById('auth-gate').style.display = 'none';
   }
 })();
-
 async function checkPW() {
   var v = document.getElementById('pw-input').value;
   if (!v) return;
-  var correctPW = 'Synergy1002!';
+  var correctPW = '';
   try {
     await firebase.auth().signInAnonymously();
     var snap = await firebase.database().ref('config/cc_password').get();
@@ -1211,7 +1210,7 @@ async function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.4</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.6</span>
       </div>
     </div>
 
@@ -5978,7 +5977,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.4
+// Philinity Command Center © Rev 8.6
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6018,8 +6017,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.5  CSP fix: firebaseio.com added to script-src and frame-src; localStorage 30-day auth
-// Rev 8.4  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 8.6  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
