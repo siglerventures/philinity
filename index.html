@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://api.anthropic.com; img-src 'self' data: blob: https:; frame-src https://*.firebaseio.com https://*.firebaseapp.com; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://api.anthropic.com; img-src 'self' data: blob: https:; frame-src 'none'; object-src 'none';">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <title>Philinity — Sigler Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1028,28 +1028,17 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.6</div>
-  <form onsubmit="event.preventDefault();checkPW()" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-    <input type="text" name="username" autocomplete="username" style="display:none;">
-    <input type="password" id="pw-input" placeholder="Enter password" autocomplete="current-password"
-      style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center">
-    <button type="submit" style="background:#d4860a;color:#0f0c08;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
-  </form>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.7</div>
+  <input type="password" id="pw-input" placeholder="Enter password" 
+    style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
+    onkeydown="if(event.key==='Enter') checkPW()">
+  <button onclick="checkPW()" style="background:#d4860a;color:#0f0c08;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Incorrect password</div>
 </div>
 <script>
-const CC_AUTH_KEY = 'philinity_cc_auth';
-const CC_AUTH_EXPIRY_DAYS = 30;
-function isCCAuthValid() {
-  try {
-    var stored = localStorage.getItem(CC_AUTH_KEY);
-    if (!stored) return false;
-    var data = JSON.parse(stored);
-    return (Date.now() - data.ts) < (CC_AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-  } catch(e) { return false; }
-}
 (function() {
-  if (!isCCAuthValid()) {
+  var ok = sessionStorage.getItem('philinity_auth') === 'ok';
+  if (!ok) {
     document.getElementById('auth-gate').style.display = 'flex';
     document.body.style.overflow = 'hidden';
   } else {
@@ -1059,14 +1048,14 @@ function isCCAuthValid() {
 async function checkPW() {
   var v = document.getElementById('pw-input').value;
   if (!v) return;
-  var correctPW = '';
+  var correctPW = 'Synergy1002!';
   try {
     await firebase.auth().signInAnonymously();
     var snap = await firebase.database().ref('config/cc_password').get();
     if (snap.exists()) correctPW = snap.val();
   } catch(e) { console.warn('Using default password'); }
   if (v === correctPW) {
-    localStorage.setItem(CC_AUTH_KEY, JSON.stringify({ ts: Date.now() }));
+    sessionStorage.setItem('philinity_auth', 'ok');
     document.getElementById('auth-gate').style.display = 'none';
     document.body.style.overflow = '';
   } else {
@@ -1210,7 +1199,7 @@ async function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.6</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.7</span>
       </div>
     </div>
 
@@ -2274,7 +2263,7 @@ async function checkPW() {
         <!-- Restore from JSON backup -->
         <div style="background:linear-gradient(135deg,rgba(201,169,110,0.1),rgba(201,169,110,0.05));border:1px solid rgba(201,169,110,0.3);border-radius:10px;padding:16px">
           <div style="font-size:0.88rem;font-weight:500;color:var(--gold);margin-bottom:3px">📦 Restore from Backup</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">Select any philinity-backup-*.json file to restore all sheets</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">Select any cc-backup-*.json file to restore all sheets</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <label style="padding:8px 16px;border-radius:8px;border:none;background:var(--gold);color:var(--bg);font-family:Outfit,sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;white-space:nowrap">
               📂 Choose Backup File
@@ -2848,7 +2837,7 @@ async function aiSaveToHouseData(itemJson) {
     if (!hdAllSheets[sheetKey]) {
       hdAllSheets[sheetKey] = { sheet_name: sheetName, rows: [], row_count: 0, exported_at: new Date().toISOString() };
       if (hdSheetOrder.indexOf(sheetKey) === -1) hdSheetOrder.push(sheetKey);
-      await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
+      await db.ref('command_center/house_sheet_order').set(hdSheetOrder);
     }
     if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
     var imgVal = item.img || item.pic || item.pics || item.photo || item.image || '';
@@ -2863,7 +2852,7 @@ async function aiSaveToHouseData(itemJson) {
     if (item.notes)   row.notes   = item.notes;
     hdAllSheets[sheetKey].rows.push(row);
     hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
-    await db.ref('philinity/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
+    await db.ref('command_center/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
     return { success: true, sheet: sheetName, item: row.item };
   } catch(e) { return { success: false, error: e.message }; }
 }
@@ -3002,7 +2991,7 @@ document.getElementById('chat-input').addEventListener('keydown', function(e) {
 
 
 // ══════════ HOUSE DATA ══════════
-var HD_PATH = 'philinity/house_data';
+var HD_PATH = 'command_center/house_data';
 var hdAllSheets = {};
 var hdCurrentSheet = null;
 var hdCurrentRows = [];
@@ -3070,7 +3059,7 @@ async function hdInit() {
     }
     hdAllSheets = snap.val();
     // Load or init sheet order
-    var orderSnap = await db.ref('philinity/house_sheet_order').get();
+    var orderSnap = await db.ref('command_center/house_sheet_order').get();
     if (orderSnap.exists()) {
       hdSheetOrder = orderSnap.val().filter(function(k) { return hdAllSheets[k]; });
       // Add any new sheets not in order
@@ -3090,7 +3079,7 @@ async function hdInit() {
 }
 
 async function hdSaveSheetOrder() {
-  await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
+  await db.ref('command_center/house_sheet_order').set(hdSheetOrder);
 }
 
 // ── Sheet List ──
@@ -4471,7 +4460,7 @@ function hdHandleColTap(e, colKey, sheetKey) {
 
 
 // ══════════ COLUMN CONFIG CORE ══════════
-var HD_COL_CONFIG_PATH = 'philinity/house_col_config';
+var HD_COL_CONFIG_PATH = 'command_center/house_col_config';
 var hdColConfig = {};
 
 function hdColConfigKey(k) {
@@ -4574,7 +4563,7 @@ function hdSaveColWidth(sheetKey,colKey,width){var w=hdGetColWidths();if(!w[shee
 function hdResetColWidths(sheetKey){var w=hdGetColWidths();delete w[sheetKey];localStorage.setItem(HD_COL_WIDTHS_KEY,JSON.stringify(w));hdSelectSheet(hdCurrentSheet);showToast('Column widths reset');}
 
 // ══════════ NAV EDITOR ══════════
-const NAV_EDITOR_PATH = 'philinity/nav_structure';
+const NAV_EDITOR_PATH = 'command_center/nav_structure';
 
 var navStructure = [];
 var navItemDragSrc = null;
@@ -4909,7 +4898,7 @@ function showToast(msg) {
 // ── Collapsible Nav handled in inline script above ──// ── Collapsible Nav handled in inline script above ──
 
 // ══════════ AI PROJECT BUBBLES ══════════
-const AI_PROJ_PATH = 'philinity/ai_projects';
+const AI_PROJ_PATH = 'command_center/ai_projects';
 var aiProjects = [];
 
 var DEFAULT_AI_PROJECTS = [
@@ -5023,7 +5012,7 @@ document.getElementById('ai-proj-modal').addEventListener('click', function(e) {
 });
 
 // ══════════ CONTACTS ══════════
-var CONTACTS_PATH = 'philinity/contacts';
+var CONTACTS_PATH = 'command_center/contacts';
 var allContacts = [];
 var editingContactId = null;
 var contactImgData = '';
@@ -5468,14 +5457,14 @@ async function importHouseBuildCosts() {
       exported_at: new Date().toISOString(),
       rows: rows
     };
-    await db.ref('philinity/house_data/house-build-costs').set(sheetData);
+    await db.ref('command_center/house_data/house-build-costs').set(sheetData);
     status.innerHTML += '<span style="color:var(--green)">✅ Sheet written: house-build-costs (' + rows.length + ' rows)</span><br>';
 
-    var orderSnap = await db.ref('philinity/house_sheet_order').get();
+    var orderSnap = await db.ref('command_center/house_sheet_order').get();
     var order = orderSnap.exists() ? orderSnap.val() : [];
     if (order.indexOf('house-build-costs') === -1) {
       order.unshift('house-build-costs');
-      await db.ref('philinity/house_sheet_order').set(order);
+      await db.ref('command_center/house_sheet_order').set(order);
       if (!hdAllSheets) hdAllSheets = {};
       hdAllSheets['house-build-costs'] = sheetData;
       hdSheetOrder = order;
@@ -5494,19 +5483,19 @@ async function importHouseBuildCosts() {
 // ── Database Backup ──
 function hdBackupDatabase() {
   showToast('📦 Preparing backup...');
-  db.ref('philinity').get().then(function(snap) {
+  db.ref('command_center').get().then(function(snap) {
     if (!snap.exists()) { showToast('No data to backup'); return; }
     var data = JSON.stringify(snap.val(), null, 2);
     var blob = new Blob([data], {type: 'application/json'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     var date = new Date().toISOString().slice(0,10);
-    a.download = 'philinity-backup-' + date + '.json';
+    a.download = 'cc-backup-' + date + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    showToast('✅ Backup saved: philinity-backup-' + date + '.json');
+    showToast('✅ Backup saved: cc-backup-' + date + '.json');
   }).catch(function(e) {
     showToast('Backup failed: ' + e.message);
   });
@@ -5656,19 +5645,19 @@ async function openDataExporter() {
 function exportFullBackup() {
   var status = document.getElementById('exporter-status');
   status.innerHTML = '<span style="color:var(--text-muted)">⏳ Building backup...</span>';
-  db.ref('philinity').get().then(function(snap) {
+  db.ref('command_center').get().then(function(snap) {
     if (!snap.exists()) { status.innerHTML = '<span style="color:var(--red)">❌ No data found</span>'; return; }
     var data = JSON.stringify(snap.val(), null, 2);
     var blob = new Blob([data], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     var date = new Date().toISOString().slice(0, 10);
-    a.download = 'philinity-backup-' + date + '.json';
+    a.download = 'cc-backup-' + date + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    status.innerHTML = '<span style="color:var(--green)">✅ Backup saved: philinity-backup-' + date + '.json</span>';
+    status.innerHTML = '<span style="color:var(--green)">✅ Backup saved: cc-backup-' + date + '.json</span>';
   }).catch(function(e) {
     status.innerHTML = '<span style="color:var(--red)">❌ Error: ' + e.message + '</span>';
   });
@@ -5865,7 +5854,7 @@ async function confirmCSVImport() {
       hdAllSheets[targetKey] = { sheet_name: targetName, rows: [], row_count: 0, exported_at: new Date().toISOString() };
       if (hdSheetOrder.indexOf(targetKey) === -1) {
         hdSheetOrder.unshift(targetKey);
-        await db.ref('philinity/house_sheet_order').set(hdSheetOrder);
+        await db.ref('command_center/house_sheet_order').set(hdSheetOrder);
       }
     }
 
@@ -5874,7 +5863,7 @@ async function confirmCSVImport() {
     hdAllSheets[targetKey].row_count = allRows.length;
     hdAllSheets[targetKey].sheet_name = targetName;
 
-    await db.ref('philinity/house_data/' + targetKey).set(hdAllSheets[targetKey]);
+    await db.ref('command_center/house_data/' + targetKey).set(hdAllSheets[targetKey]);
 
     status.innerHTML = '<span style="color:var(--green)">✅ ' + dated.length + ' rows imported into "' + targetName + '"!</span>';
     status.innerHTML += '<br><span style="color:var(--gold)">🎉 Go to House Data and select "' + targetName + '" to view.</span>';
@@ -5916,7 +5905,7 @@ async function importFullBackup(event) {
 
       // Validate it looks like a Philinity backup
       if (!data.house_data && !data.house_sheet_order) {
-        status.innerHTML = '<span style="color:var(--red)">❌ Invalid backup file — must be a philinity-backup-*.json file</span>';
+        status.innerHTML = '<span style="color:var(--red)">❌ Invalid backup file — must be a cc-backup-*.json file</span>';
         return;
       }
 
@@ -5939,7 +5928,7 @@ async function importFullBackup(event) {
         var batch = keys.slice(i, i + 10);
         var updates = {};
         batch.forEach(function(k) {
-          updates['philinity/house_data/' + k] = houseData[k];
+          updates['command_center/house_data/' + k] = houseData[k];
         });
         await db.ref('/').update(updates);
         done += batch.length;
@@ -5947,14 +5936,14 @@ async function importFullBackup(event) {
       }
 
       // Write sheet order
-      await db.ref('philinity/house_sheet_order').set(sheetOrder);
+      await db.ref('command_center/house_sheet_order').set(sheetOrder);
 
       // Also restore ai_projects and house_col_config if present
       if (data.ai_projects) {
-        await db.ref('philinity/ai_projects').set(data.ai_projects);
+        await db.ref('command_center/ai_projects').set(data.ai_projects);
       }
       if (data.house_col_config) {
-        await db.ref('philinity/house_col_config').set(data.house_col_config);
+        await db.ref('command_center/house_col_config').set(data.house_col_config);
       }
 
       status.innerHTML = '<span style="color:var(--green)">✅ ' + totalSheets + ' sheets restored from ' + file.name + '</span>';
@@ -5977,7 +5966,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.6
+// Philinity Command Center © Rev 8.7
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6017,7 +6006,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.6  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 8.7  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
