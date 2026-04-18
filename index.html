@@ -1028,7 +1028,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.8</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.9</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1194,7 +1194,7 @@ async function googleSignIn() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.8</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.9</span>
       </div>
     </div>
 
@@ -2490,15 +2490,7 @@ const authReadyPromise = new Promise(function(resolve) {
 
 
 async function initFirebase() {
-  try {
-    const snap = await db.ref('config/Philinity-CC').get();
-    if (snap.exists()) {
-      ANTHROPIC_KEY = snap.val();
-      console.log('✓ API key loaded');
-    }
-  } catch(e) {
-    console.warn('Firebase load error:', e.message);
-  }
+  // API key handled server-side by Cloud Function — nothing to load
 }
 
 // ── Clock & Greeting ──
@@ -2872,13 +2864,6 @@ window.sendMessage = async function() {
   setLoading(true);
 
   try {
-    if (!ANTHROPIC_KEY) {
-      // Key missing — retry load from Firebase before giving up
-      try {
-        const retrySnap = await db.ref('config/Philinity-CC').get();
-        if (retrySnap.exists()) ANTHROPIC_KEY = retrySnap.val();
-      } catch(retryErr) { /* ignore */ }
-    }
     const user = firebase.auth().currentUser;
     if (!user) {
       addMessage('ai', 'Not signed in. Please refresh and sign in.');
@@ -5960,7 +5945,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.8
+// Philinity Command Center © Rev 8.9
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6000,7 +5985,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.8  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 8.9  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
