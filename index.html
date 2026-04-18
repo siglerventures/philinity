@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://api.anthropic.com; img-src 'self' data: blob: https:; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://us-central1-philinity-893d2.cloudfunctions.net; img-src 'self' data: blob: https:; frame-src https://*.firebaseio.com https://*.firebaseapp.com https://philinity-893d2.firebaseapp.com https://accounts.google.com; object-src 'none';">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <title>Philinity — Sigler Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1028,39 +1028,34 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.7</div>
-  <input type="password" id="pw-input" placeholder="Enter password" 
-    style="background:#1a1510;border:1px solid #4a3510;color:#f0e6d0;padding:12px 20px;border-radius:8px;font-size:16px;outline:none;width:260px;text-align:center"
-    onkeydown="if(event.key==='Enter') checkPW()">
-  <button onclick="checkPW()" style="background:#d4860a;color:#0f0c08;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
-  <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Incorrect password</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.8</div>
+  <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
+  <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
 <script>
+// Google Sign-In handles auth — always show gate on load
 (function() {
-  var ok = sessionStorage.getItem('philinity_auth') === 'ok';
-  if (!ok) {
-    document.getElementById('auth-gate').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.getElementById('auth-gate').style.display = 'none';
-  }
+  document.getElementById('auth-gate').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 })();
-async function checkPW() {
-  var v = document.getElementById('pw-input').value;
-  if (!v) return;
-  var correctPW = 'Synergy1002!';
+const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
+
+async function googleSignIn() {
   try {
-    await firebase.auth().signInAnonymously();
-    var snap = await firebase.database().ref('config/cc_password').get();
-    if (snap.exists()) correctPW = snap.val();
-  } catch(e) { console.warn('Using default password'); }
-  if (v === correctPW) {
-    sessionStorage.setItem('philinity_auth', 'ok');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await firebase.auth().signInWithPopup(provider);
+    if (!ALLOWED_UIDS.includes(result.user.uid)) {
+      await firebase.auth().signOut();
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-error').textContent = 'This Google account is not authorized.';
+      return;
+    }
     document.getElementById('auth-gate').style.display = 'none';
     document.body.style.overflow = '';
-  } else {
+  } catch(e) {
+    console.error('Sign-in failed:', e);
     document.getElementById('pw-error').style.display = 'block';
-    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-error').textContent = 'Sign-in failed. Please try again.';
   }
 }
 </script>
@@ -1199,7 +1194,7 @@ async function checkPW() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.7</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.8</span>
       </div>
     </div>
 
@@ -2490,9 +2485,9 @@ const authReadyPromise = new Promise(function(resolve) {
     }
   });
 });
-auth.signInAnonymously().catch(function(e) { console.warn('Auth error:', e.message); });
+// Auth handled by Google Sign-In via googleSignIn() function
 
-let ANTHROPIC_KEY = '';
+
 
 async function initFirebase() {
   try {
@@ -2884,23 +2879,22 @@ window.sendMessage = async function() {
         if (retrySnap.exists()) ANTHROPIC_KEY = retrySnap.val();
       } catch(retryErr) { /* ignore */ }
     }
-    if (!ANTHROPIC_KEY) {
-      addMessage('ai', '⚠️ API key not loaded from Firebase. Make sure your Anthropic key is saved at `config/Philinity-CC` in the philinity-893d2 Realtime Database.');
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      addMessage('ai', 'Not signed in. Please refresh and sign in.');
       setLoading(false);
       return;
     }
+    const idToken = await user.getIdToken();
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://us-central1-philinity-893d2.cloudfunctions.net/askAI', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Authorization': 'Bearer ' + idToken
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        app: 'cc',
         system: SYSTEM_PROMPT,
         messages: messages
       })
@@ -5966,7 +5960,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.7
+// Philinity Command Center © Rev 8.8
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6006,7 +6000,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.7  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 8.8  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
