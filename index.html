@@ -1022,29 +1022,107 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   /* Hero banner stack on mobile */
   #page-ai > div:first-child > div:first-child { flex-direction: column; }
 }
+
+/* ── GLOBAL SEARCH ── */
+.global-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+}
+.global-search-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 16px 7px 36px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.global-search-input:focus { border-color: var(--gold); }
+.global-search-input::placeholder { color: var(--text-muted); }
+.global-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.global-search-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border2, rgba(255,255,255,0.13));
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 9999;
+  max-height: 480px;
+  overflow-y: auto;
+  animation: fadeInDown 0.15s ease;
+}
+.global-search-dropdown.open { display: block; }
+@keyframes fadeInDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+.gs-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 10px 16px 4px;
+  border-top: 1px solid var(--border);
+}
+.gs-section-label:first-child { border-top: none; }
+.gs-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-radius: 0;
+}
+.gs-result:hover { background: var(--surface2); }
+.gs-result-icon { font-size: 0.85rem; flex-shrink: 0; margin-top: 2px; }
+.gs-result-main { flex: 1; min-width: 0; }
+.gs-result-title { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-result-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-result-badge { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text-muted); flex-shrink: 0; }
+mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radius: 2px; padding: 0 1px; }
+.gs-empty { padding: 20px 16px; font-size: 0.78rem; color: var(--text-muted); text-align: center; font-style: italic; }
+
 </style>
 </head>
 <body>
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 8.9</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.0</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
 <script>
-// Google Sign-In handles auth — always show gate on load
+// ALLOWED_UIDS must be declared before onAuthStateChanged references it
+const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
+
 // Show gate initially — onAuthStateChanged auto-hides if already signed in
 document.getElementById('auth-gate').style.display = 'flex';
 document.body.style.overflow = 'hidden';
 
+// Auto-restore existing Firebase session so user doesn't have to re-login
 firebase.auth().onAuthStateChanged(function(user) {
   if (user && ALLOWED_UIDS.includes(user.uid)) {
     document.getElementById('auth-gate').style.display = 'none';
     document.body.style.overflow = '';
   }
 });
-const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
 
 async function googleSignIn() {
   try {
@@ -1075,6 +1153,11 @@ async function googleSignIn() {
     <span></span><span></span><span></span>
   </button>
   <div class="logo" onclick="window.location.href='https://siglerventures.github.io/philinity/'" style="cursor:pointer">Philinity<span> ◆ Command Center</span></div>
+  <div class="global-search-wrap">
+    <span class="global-search-icon">🔍</span>
+    <input type="text" class="global-search-input" id="global-search" placeholder="Search contacts, house data, chat…" autocomplete="off" oninput="globalSearchInput(this.value)" onkeydown="globalSearchKeydown(event)">
+    <div class="global-search-dropdown" id="global-search-dropdown"></div>
+  </div>
   <div class="header-meta">
     <div class="header-time" id="clock">—</div>
     <div class="status-dot"></div>
@@ -1200,7 +1283,7 @@ async function googleSignIn() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 8.9</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 9.0</span>
       </div>
     </div>
 
@@ -5582,6 +5665,221 @@ async function hdGalleryUpload(files, containerId) {
   showToast('✅ ' + files.length + ' photo' + (files.length > 1 ? 's' : '') + ' uploaded!');
 }
 
+
+// ══════════ GLOBAL SEARCH ══════════
+var gsDebounce = null;
+var gsSelectedIdx = -1;
+var gsResults = [];
+
+function globalSearchInput(q) {
+  clearTimeout(gsDebounce);
+  if (!q || q.trim().length < 2) {
+    closeGlobalSearch();
+    return;
+  }
+  gsDebounce = setTimeout(function() { runGlobalSearch(q.trim()); }, 150);
+}
+
+function globalSearchKeydown(e) {
+  var dd = document.getElementById('global-search-dropdown');
+  var items = dd ? dd.querySelectorAll('.gs-result') : [];
+  if (e.key === 'Escape') { closeGlobalSearch(); return; }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    gsSelectedIdx = Math.min(gsSelectedIdx + 1, items.length - 1);
+    highlightGsResult(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    gsSelectedIdx = Math.max(gsSelectedIdx - 1, 0);
+    highlightGsResult(items);
+  } else if (e.key === 'Enter' && gsSelectedIdx >= 0 && items[gsSelectedIdx]) {
+    items[gsSelectedIdx].click();
+  }
+}
+
+function highlightGsResult(items) {
+  items.forEach(function(el, i) {
+    el.style.background = i === gsSelectedIdx ? 'var(--surface2)' : '';
+  });
+}
+
+function closeGlobalSearch() {
+  var dd = document.getElementById('global-search-dropdown');
+  var inp = document.getElementById('global-search');
+  if (dd) { dd.classList.remove('open'); dd.innerHTML = ''; }
+  if (inp) inp.value = '';
+  gsSelectedIdx = -1;
+  gsResults = [];
+}
+
+function gsHighlight(text, q) {
+  if (!q || !text) return String(text || '');
+  var safe = String(text);
+  var lower = safe.toLowerCase();
+  var needle = q.toLowerCase();
+  var out = '';
+  var i = 0;
+  while (i < safe.length) {
+    var idx = lower.indexOf(needle, i);
+    if (idx === -1) { out += safe.substring(i); break; }
+    out += safe.substring(i, idx) + '<mark class="gs-hit">' + safe.substring(idx, idx + needle.length) + '</mark>';
+    i = idx + needle.length;
+  }
+  return out;
+}
+
+function runGlobalSearch(q) {
+  var needle = q.toLowerCase();
+  var sections = [];
+
+  // ── CONTACTS ──
+  var contactHits = [];
+  allContacts.forEach(function(c) {
+    var fields = [c.name, c.phone, c.role, c.company, c.email, c.notes, c.category];
+    if (fields.some(function(f) { return f && String(f).toLowerCase().includes(needle); })) {
+      contactHits.push(c);
+    }
+  });
+  if (contactHits.length) {
+    sections.push({
+      label: '👥 Contacts',
+      items: contactHits.slice(0, 6).map(function(c) {
+        return {
+          icon: '👤',
+          title: c.name || 'Unknown',
+          sub: [c.role, c.company, c.phone].filter(Boolean).join(' · '),
+          badge: c.category || '',
+          action: function() {
+            closeGlobalSearch();
+            navigateTo('contacts');
+            setTimeout(function() {
+              var inp = document.getElementById('contacts-search');
+              if (inp) { inp.value = q; contactsSearch(q); }
+            }, 200);
+          }
+        };
+      })
+    });
+  }
+
+  // ── HOUSE DATA ──
+  var hdHits = [];
+  if (hdLoaded) {
+    hdSheetOrder.forEach(function(key) {
+      var sheet = hdAllSheets[key];
+      if (!sheet || !sheet.rows) return;
+      var sheetName = sheet.sheet_name || key;
+      sheet.rows.forEach(function(row, rowIdx) {
+        var vals = Object.values(row).filter(function(v) { return v && typeof v === 'string'; });
+        if (vals.some(function(v) { return v.toLowerCase().includes(needle); })) {
+          var title = row.item || row.name || row.category || row.appliances || ('Row ' + (rowIdx + 1));
+          var sub = [row.brand, row.notes, row.price].filter(Boolean).join(' · ').substring(0, 80);
+          hdHits.push({ key: key, sheetName: sheetName, title: title, sub: sub, row: row });
+        }
+      });
+    });
+  }
+  if (hdHits.length) {
+    sections.push({
+      label: '🏠 House Data',
+      items: hdHits.slice(0, 6).map(function(h) {
+        return {
+          icon: '📋',
+          title: h.title,
+          sub: h.sub,
+          badge: h.sheetName,
+          action: (function(hh) { return function() {
+            closeGlobalSearch();
+            navigateTo('housedata');
+            setTimeout(function() {
+              hdSelectSheet(hh.key);
+              setTimeout(function() {
+                var rowSearch = document.getElementById('hd-row-search');
+                if (rowSearch) { rowSearch.value = q; hdFilterRows(q); }
+              }, 300);
+            }, 200);
+          }; })(h)
+        };
+      })
+    });
+  }
+
+  // ── AI CHAT (current session) ──
+  var chatHits = [];
+  var container = document.getElementById('chat-messages');
+  if (container) {
+    var bubbles = container.querySelectorAll('.msg-bubble');
+    bubbles.forEach(function(b, i) {
+      var text = b.textContent || '';
+      if (text.toLowerCase().includes(needle)) {
+        var preview = text.substring(0, 80).trim();
+        chatHits.push({ preview: preview, el: b });
+      }
+    });
+  }
+  if (chatHits.length) {
+    sections.push({
+      label: '✦ AI Chat',
+      items: chatHits.slice(0, 4).map(function(h) {
+        return {
+          icon: '💬',
+          title: h.preview,
+          sub: 'Current session',
+          badge: '',
+          action: (function(hh) { return function() {
+            closeGlobalSearch();
+            navigateTo('ai');
+            setTimeout(function() { hh.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200);
+          }; })(h)
+        };
+      })
+    });
+  }
+
+  // ── Render dropdown ──
+  var dd = document.getElementById('global-search-dropdown');
+  if (!dd) return;
+  gsSelectedIdx = -1;
+
+  if (!sections.length) {
+    dd.innerHTML = '<div class="gs-empty">No results for "' + stripHTML(q) + '"</div>';
+    dd.classList.add('open');
+    return;
+  }
+
+  var html = '';
+  sections.forEach(function(sec) {
+    html += '<div class="gs-section-label">' + sec.label + '</div>';
+    sec.items.forEach(function(item, i) {
+      html += '<div class="gs-result" data-gs-idx="' + i + '">' +
+        '<span class="gs-result-icon">' + item.icon + '</span>' +
+        '<div class="gs-result-main">' +
+          '<div class="gs-result-title">' + gsHighlight(item.title, q) + '</div>' +
+          (item.sub ? '<div class="gs-result-sub">' + stripHTML(item.sub) + '</div>' : '') +
+        '</div>' +
+        (item.badge ? '<span class="gs-result-badge">' + stripHTML(item.badge) + '</span>' : '') +
+        '</div>';
+    });
+  });
+
+  dd.innerHTML = html;
+  dd.classList.add('open');
+
+  // Wire up click handlers
+  var allItems = [];
+  sections.forEach(function(sec) { sec.items.forEach(function(it) { allItems.push(it); }); });
+  dd.querySelectorAll('.gs-result').forEach(function(el, i) {
+    el.addEventListener('click', function() { if (allItems[i]) allItems[i].action(); });
+  });
+}
+
+// Close on outside click
+document.addEventListener('click', function(e) {
+  var wrap = document.querySelector('.global-search-wrap');
+  if (wrap && !wrap.contains(e.target)) closeGlobalSearch();
+});
+
+
 // Init Firebase then load KB
 async function appInit() {
   await authReadyPromise;  // wait for anonymous auth before any Firebase reads
@@ -5951,7 +6249,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 8.9
+// Philinity Command Center © Rev 9.0
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -5991,7 +6289,7 @@ async function importFullBackup(event) {
 // Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 8.9  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 9.0  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
 // ============================================================
 
 </script>
