@@ -947,6 +947,7 @@ main {
 /* Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern, palette mapped to CC gold/dark) */
 footer.cc-footer {
   grid-column: 1 / -1;
+  grid-row: 3; /* Rev 9.4.1: explicit row placement so mobile auto-flow can't push the footer below the viewport */
   padding: 14px 20px;
   text-align: center;
   color: var(--text-muted);
@@ -1158,7 +1159,13 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 .nav-overlay.open { display: block; }
 
 @media (max-width: 768px) {
-  .shell { grid-template-columns: 1fr; }
+  /* Rev 9.4.1: explicitly restate grid-template-rows on mobile. The desktop rule
+     defines auto 1fr auto; without this restate, certain mobile browsers were
+     reflowing the footer below the visible viewport. */
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
   
   nav {
     display: flex !important;
@@ -1175,9 +1182,17 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   }
   nav.open { left: 0; }
 
+  /* Rev 9.4.1: bump nav-item contrast on mobile only. Desktop stays subtle
+     (--text-dim, Phil prefers it that way). On mobile against --surface, the
+     0.5-alpha was unreadable. --text is what desktop hover already uses. */
+  .nav-item { color: var(--text); }
+
   .hamburger { display: flex; }
 
-  main { padding: 16px; }
+  /* Rev 9.4.1: min-height: 0 on grid-row:2 main prevents content overflow from
+     expanding the row beyond its 1fr share, which would push the auto footer row
+     off-screen on mobile. Standard fix for grid + flex-column + overflow stacks. */
+  main { padding: 16px; min-height: 0; }
   .cards.wide, .cards.tri { grid-template-columns: 1fr; }
   /* Rev 9.4: extra ~48px reserved for the footer that wraps to two lines on mobile */
   .chat-wrapper { height: calc(100vh - 168px); }
@@ -1275,7 +1290,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.1</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2679,7 +2694,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.4</span>
+  <span class="ftr-rev">Philinity© Rev v9.4.1</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6700,7 +6715,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.4
+// Philinity Command Center © Rev 9.4.1
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6784,6 +6799,22 @@ async function importFullBackup(event) {
 //            closeCcDataModal, ccBackupJSON, ccRestoreJSON, forceRTDBReconnect, signOutNow
 //          - No header changes, no data model changes, no RTDB schema changes,
 //            no Cloud Function changes (Rev 9.5 will land header chrome next)
+// Rev 9.4.1 Mobile-only fixes (no desktop changes, no other behavior touched)
+//          - Issue 1: footer not visible on mobile. Fixes:
+//            (a) explicit grid-row: 3 on footer.cc-footer (removes auto-flow ambiguity)
+//            (b) restate grid-template-rows: auto 1fr auto inside @media (max-width:768px)
+//                so the rows declaration is unambiguous on mobile
+//            (c) main { min-height: 0 } in mobile media query — standard fix for the
+//                grid-cell + flex-column + overflow stack that can push auto rows
+//                off-screen when content overflows
+//          - Issue 2: sidebar nav text unreadable on mobile (pre-existing, not from 9.4):
+//            .nav-item { color: var(--text) } inside the mobile media query bumps
+//            contrast from --text-dim (rgba 0.5 alpha) to --text (full alpha #e8e4dc).
+//            Same color desktop hover already uses, so no new color introduced.
+//            Desktop stays unchanged (--text-dim) per Phil's preference.
+//          - Diff scope: 4 CSS rules touched. Zero JS, zero markup, zero handler,
+//            zero data model. Per Pattern 6.3.17, both fixes are mobile-CSS-only and
+//            scoped to exactly the two reported issues.
 // ============================================================
 
 </script>
