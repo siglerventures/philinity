@@ -184,7 +184,7 @@ body::after {
 .shell {
   display: grid;
   grid-template-columns: 220px 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto; /* Rev 9.4: third row reserved for footer */
   height: 100vh;
   overflow: hidden;
   position: relative;
@@ -944,6 +944,57 @@ main {
 }
 .kb-back-btn:hover { color: var(--gold); }
 
+/* Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern, palette mapped to CC gold/dark) */
+footer.cc-footer {
+  grid-column: 1 / -1;
+  padding: 14px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  background: rgba(10,10,12,0.85);
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+footer.cc-footer .ftr-rev {
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.05em;
+}
+footer.cc-footer .ftr-link {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  user-select: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+footer.cc-footer .ftr-link:hover { color: var(--gold); }
+footer.cc-footer .ftr-sep {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin: 0 2px;
+  user-select: none;
+}
+footer.cc-footer .ftr-user {
+  /* Hardcoded admin label (no People system in CC yet — see Rev 9.4 / backlog #39). */
+  color: var(--text-muted);
+  font-size: 11px;
+  user-select: none;
+  padding: 2px 4px;
+}
+footer.cc-footer .ftr-user .star {
+  color: var(--gold);
+  margin-left: 2px;
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed; inset: 0;
@@ -1128,8 +1179,16 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 
   main { padding: 16px; }
   .cards.wide, .cards.tri { grid-template-columns: 1fr; }
-  .chat-wrapper { height: calc(100vh - 120px); }
-  
+  /* Rev 9.4: extra ~48px reserved for the footer that wraps to two lines on mobile */
+  .chat-wrapper { height: calc(100vh - 168px); }
+
+  /* Rev 9.4: footer wraps and tightens on mobile (matches AutoFlag pattern) */
+  footer.cc-footer {
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    padding: 10px 12px;
+  }
+
   /* Hero banner stack on mobile */
   #page-ai > div:first-child > div:first-child { flex-direction: column; }
 }
@@ -1216,7 +1275,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.3</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1412,10 +1471,7 @@ async function googleSignIn() {
       <!-- AI Project Bubbles — centered -->
       <div id="ai-project-bubbles" style="display:flex;flex-direction:row;gap:10px;justify-content:center;flex-wrap:wrap"></div>
 
-      <!-- Rev pill bottom right -->
-      <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 9.3</span>
-      </div>
+      <!-- Rev 9.4: in-page rev pill removed; canonical rev label now lives in global footer -->
     </div>
 
     <!-- Chat -->
@@ -2584,7 +2640,56 @@ async function googleSignIn() {
     </div>
   </div>
 
+  <!-- Rev 9.4 — Data Manager modal (matches AutoFlag Rev 1.76 pattern, palette mapped to CC).
+       Targets /command_center/ RTDB subtree only. Reuses existing CC backup/restore logic. -->
+  <div class="modal-overlay" id="cc-data-modal">
+    <div class="modal-box" style="max-width:520px">
+      <div class="modal-title">📦 Data Manager</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px">Backup · Export · Restore</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:linear-gradient(135deg,var(--gold-dim),rgba(201,169,110,0.05));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--gold);margin-bottom:3px">📦 Full Backup (JSON)</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Download all of <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">/command_center</code> — house data, contacts, AI projects, nav, column config</div>
+          <button onclick="ccBackupJSON()" style="background:var(--gold);color:#0d0d0f;border:none;padding:9px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">⬇️ Download Backup</button>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">♻️ Restore from Backup <span style="color:var(--red);font-size:0.7rem;margin-left:6px">⚠ destructive</span></div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Select a <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">cc-backup-*.json</code> file. <strong>Overwrites existing house data, ai_projects, and house_col_config.</strong></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label style="cursor:pointer;background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:9px 16px;border-radius:8px;font-size:0.82rem;font-family:'Outfit',sans-serif">
+              📂 Choose Backup File
+              <input type="file" accept=".json" style="display:none" onchange="ccRestoreJSON(event)">
+            </label>
+            <span id="cc-data-modal-filename" style="font-size:0.7rem;color:var(--text-muted);font-family:'DM Mono',monospace">No file selected</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="cc-data-modal-status" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);font-family:'DM Mono',monospace;min-height:16px"></div>
+
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-cancel" onclick="closeCcDataModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
 </main>
+
+<!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
+<footer class="cc-footer">
+  <span class="ftr-rev">Philinity© Rev v9.4</span>
+  <span class="ftr-sep">·</span>
+  <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
+  <span class="ftr-sep">·</span>
+  <span class="ftr-link" onclick="forceRTDBReconnect('manual')" title="Re-fetch live data from Firebase">🔄 Reconnect</span>
+  <span class="ftr-sep">·</span>
+  <span class="ftr-user" title="Hardcoded admin label — People system rollout pending">👥📋 Phil Sigler<span class="star">★</span></span>
+  <span class="ftr-sep">·</span>
+  <span class="ftr-link" onclick="signOutNow()" title="Sign out of Philinity">🚪 Sign Out</span>
+</footer>
+
 </div>
 
 <!-- Collapsible Nav — must be plain script, not module, for onclick to work -->
@@ -5115,6 +5220,200 @@ function showToast(msg) {
   setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
+// ══════════════════════════════════════════════════════════════
+// Rev 9.4 — Footer chrome handlers
+// (Matches AutoFlag Rev 1.76 footer pattern. Targets /command_center
+// RTDB subtree only — does NOT touch /autoflag, /eats, /veritas, etc.)
+// ══════════════════════════════════════════════════════════════
+
+// ── Data Manager modal ──
+function openCcDataModal() {
+  var m = document.getElementById('cc-data-modal');
+  if (!m) return;
+  // Reset transient UI on open
+  var st = document.getElementById('cc-data-modal-status');
+  if (st) st.textContent = '';
+  var fn = document.getElementById('cc-data-modal-filename');
+  if (fn) fn.textContent = 'No file selected';
+  m.classList.add('open');
+}
+function closeCcDataModal() {
+  var m = document.getElementById('cc-data-modal');
+  if (m) m.classList.remove('open');
+}
+function _ccSetStatus(html) {
+  var st = document.getElementById('cc-data-modal-status');
+  if (st) st.innerHTML = html;
+}
+
+// Backup — downloads /command_center as JSON.
+// Reuses the same shape as the existing hdBackupDatabase() but writes status
+// into the modal rather than the toast.
+async function ccBackupJSON() {
+  _ccSetStatus('<span style="color:var(--text-muted)">⏳ Preparing backup…</span>');
+  try {
+    var snap = await db.ref('command_center').get();
+    if (!snap.exists()) {
+      _ccSetStatus('<span style="color:var(--red)">❌ No data found at /command_center</span>');
+      return;
+    }
+    var data = JSON.stringify(snap.val(), null, 2);
+    var blob = new Blob([data], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var date = new Date().toISOString().slice(0, 10);
+    a.download = 'cc-backup-' + date + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    _ccSetStatus('<span style="color:var(--green)">✅ Saved cc-backup-' + date + '.json</span>');
+  } catch (e) {
+    _ccSetStatus('<span style="color:var(--red)">❌ Backup failed: ' + (e && e.message ? e.message : 'unknown') + '</span>');
+  }
+}
+
+// Restore — modal-targeted variant of importFullBackup (keeps that one untouched).
+// Validates structure, writes house_data in batches of 10, then sheet order +
+// optional ai_projects / house_col_config / nav_structure.
+async function ccRestoreJSON(ev) {
+  var file = ev && ev.target && ev.target.files && ev.target.files[0];
+  if (!file) return;
+  var fnEl = document.getElementById('cc-data-modal-filename');
+  if (fnEl) fnEl.textContent = file.name;
+  _ccSetStatus('<span style="color:var(--text-muted)">⏳ Reading file…</span>');
+
+  var reader = new FileReader();
+  reader.onload = async function (e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data.house_data && !data.house_sheet_order && !data.contacts && !data.ai_projects && !data.nav_structure) {
+        _ccSetStatus('<span style="color:var(--red)">❌ Not a Philinity backup — expected at least one of: house_data, house_sheet_order, contacts, ai_projects, nav_structure</span>');
+        return;
+      }
+      var totalSheets = data.house_data ? Object.keys(data.house_data).length : 0;
+      var msg = 'Restore from "' + file.name + '"?';
+      if (totalSheets) msg += '\n\n' + totalSheets + ' house data sheets will be written.';
+      msg += '\n\nThis OVERWRITES any matching nodes under /command_center.';
+      if (!confirm(msg)) {
+        _ccSetStatus('');
+        if (fnEl) fnEl.textContent = 'No file selected';
+        return;
+      }
+
+      // Write house_data in batches of 10
+      if (data.house_data) {
+        var keys = Object.keys(data.house_data);
+        var done = 0;
+        for (var i = 0; i < keys.length; i += 10) {
+          var batch = keys.slice(i, i + 10);
+          var updates = {};
+          batch.forEach(function (k) {
+            updates['command_center/house_data/' + k] = data.house_data[k];
+          });
+          await db.ref('/').update(updates);
+          done += batch.length;
+          _ccSetStatus('<span style="color:var(--gold)">⏳ Writing sheets… ' + done + ' / ' + keys.length + '</span>');
+        }
+      }
+      if (data.house_sheet_order) {
+        await db.ref('command_center/house_sheet_order').set(data.house_sheet_order);
+      }
+      if (data.ai_projects) {
+        await db.ref('command_center/ai_projects').set(data.ai_projects);
+      }
+      if (data.house_col_config) {
+        await db.ref('command_center/house_col_config').set(data.house_col_config);
+      }
+      if (data.contacts) {
+        await db.ref('command_center/contacts').set(data.contacts);
+      }
+      if (data.nav_structure) {
+        await db.ref('command_center/nav_structure').set(data.nav_structure);
+      }
+
+      _ccSetStatus('<span style="color:var(--green)">✅ Restored from ' + file.name + '</span><br><span style="color:var(--gold)">Reload the page to see all changes.</span>');
+
+      // Best-effort in-memory refresh — page reload still recommended for full effect.
+      if (typeof hdLoaded !== 'undefined') { hdLoaded = false; }
+      if (typeof hdAllSheets !== 'undefined') { hdAllSheets = {}; }
+      if (typeof hdSheetOrder !== 'undefined') { hdSheetOrder = []; }
+    } catch (err) {
+      _ccSetStatus('<span style="color:var(--red)">❌ Error: ' + (err && err.message ? err.message : 'unknown') + '</span>');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── Soft Reconnect (manual data refresh) ──
+// Lighter version of AutoFlag's forceRTDBReconnect(). AutoFlag pairs this with
+// the REST-fallback data layer (Pattern 6.3.16) which CC has NOT ported. If CC
+// ever reproduces the SDK-hang fingerprint (.info/connected hangs while REST
+// fetch returns 200 fast), porting that pattern becomes its own future rev.
+// Today this just refreshes the auth token and re-runs CC's existing loaders.
+async function forceRTDBReconnect(reason) {
+  console.log('[CC RTDB] manual reconnect →', reason);
+  showToast('🔄 Refreshing data…');
+  try {
+    if (auth && auth.currentUser) {
+      try { await auth.currentUser.getIdToken(true); } catch (_) { /* token refresh best-effort */ }
+    }
+    // Re-run the loaders that have stable function names in CC.
+    // Each is wrapped in its own try so one bad path doesn't block the others.
+    if (typeof loadAIProjects === 'function') {
+      try { await loadAIProjects(); } catch (e) { console.warn('[CC RTDB] loadAIProjects failed:', e && e.message); }
+    }
+    // Nav structure: read from Firebase directly and re-render the sidebar.
+    // (CC's full navEditorInit() touches a UI status element that only exists
+    // on the Nav Editor page, so we inline a side-effect-free reload here.)
+    try {
+      if (typeof NAV_EDITOR_PATH !== 'undefined' && typeof applyNavStructure === 'function') {
+        var navSnap = await db.ref(NAV_EDITOR_PATH).get();
+        if (navSnap && navSnap.exists()) {
+          navStructure = navSnap.val();
+          applyNavStructure();
+        }
+      }
+    } catch (e) { console.warn('[CC RTDB] nav reload failed:', e && e.message); }
+    if (typeof loadContacts === 'function') {
+      try { await loadContacts(); } catch (e) { console.warn('[CC RTDB] loadContacts failed:', e && e.message); }
+    }
+    if (typeof hdInit === 'function' && typeof hdLoaded !== 'undefined') {
+      // Only re-init house data if the page is currently showing it.
+      var pageHd = document.getElementById('page-housedata');
+      if (pageHd && pageHd.classList.contains('active')) {
+        hdLoaded = false;
+        try { await hdInit(); } catch (e) { console.warn('[CC RTDB] hdInit failed:', e && e.message); }
+      }
+    }
+    showToast('✅ Data refreshed');
+  } catch (e) {
+    console.error('[CC RTDB] forceRTDBReconnect failed:', e && e.message);
+    showToast('⚠️ Refresh failed: ' + (e && e.message ? e.message : 'unknown'));
+  }
+}
+
+// ── Sign Out ──
+async function signOutNow() {
+  try {
+    if (auth && typeof auth.signOut === 'function') {
+      await auth.signOut();
+    }
+  } catch (e) {
+    console.warn('[CC] signOut error (continuing to reload):', e && e.message);
+  }
+  // Hard reload so the auth gate re-renders cleanly.
+  location.reload();
+}
+
+// Expose all footer handlers for inline onclick="" attributes.
+window.openCcDataModal = openCcDataModal;
+window.closeCcDataModal = closeCcDataModal;
+window.ccBackupJSON = ccBackupJSON;
+window.ccRestoreJSON = ccRestoreJSON;
+window.forceRTDBReconnect = forceRTDBReconnect;
+window.signOutNow = signOutNow;
+
 // ── Collapsible Nav handled in inline script above ──// ── Collapsible Nav handled in inline script above ──
 
 // ══════════ AI PROJECT BUBBLES ══════════
@@ -6401,7 +6700,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.3
+// Philinity Command Center © Rev 9.4
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6455,6 +6754,36 @@ async function importFullBackup(event) {
 //          - var db, storage, auth (instead of const) so they can be assigned post-init
 //          - Footer chrome and header chrome will land in Rev 9.4 / 9.5 (separate revs
 //            per Pattern 6.3.17, one logical change per rev)
+// Rev 9.4  Footer chrome ported from AutoFlag Rev 1.76 (footer only, no header changes)
+//          - New global <footer class="cc-footer"> inserted before .shell closes:
+//            Philinity© Rev v9.4 · 📦 Data · 🔄 Reconnect · 👥📋 Phil Sigler★ · 🚪 Sign Out
+//          - .shell grid-template-rows: auto 1fr -> auto 1fr auto (third row for footer)
+//          - Mobile: footer flex-wrap onto 2 lines, .chat-wrapper height calc bumped
+//            from 100vh-120px to 100vh-168px so the new footer doesn't overlap chat
+//          - Removed redundant in-page Rev pill from the AI page (canonical rev label
+//            now lives in the global footer; brings version sources to two: login + footer)
+//          - 📦 Data opens new #cc-data-modal with Backup (download /command_center as
+//            cc-backup-YYYY-MM-DD.json) and Restore from Backup (overwrites house_data,
+//            house_sheet_order, ai_projects, house_col_config, contacts, nav_structure
+//            in batches; reuses the same shape as importFullBackup but writes status to
+//            the modal rather than the nav-editor page)
+//          - 🔄 Reconnect = forceRTDBReconnect('manual'): refreshes ID token and re-runs
+//            CC's existing loaders (loadAIProjects, NAV_EDITOR_PATH read + applyNavStructure,
+//            loadContacts, hdInit if House Data is the active page). NOTE: this is the
+//            simple version — AutoFlag pairs forceRTDBReconnect with the REST-fallback
+//            data layer (Pattern 6.3.16). CC has NOT ported that pattern. If CC reproduces
+//            the SDK-hang fingerprint (.info/connected hangs while REST fetch returns 200
+//            fast on the same data path), porting Pattern 6.3.16 to CC is its own future
+//            rev — pattern is currently AutoFlag-only.
+//          - 👥📋 Phil Sigler★ is a non-clickable hardcoded admin label for now. CC has
+//            no People system yet — see backlog #39 for the coordinated rev that adds
+//            /command_center/people/{emailKey} + a cc branch in askAI's isAuthorized()
+//          - 🚪 Sign Out calls auth.signOut() then location.reload() so the auth gate
+//            re-renders cleanly. Matches AutoFlag's signOutNow pattern.
+//          - All footer handlers exposed on window for inline onclick: openCcDataModal,
+//            closeCcDataModal, ccBackupJSON, ccRestoreJSON, forceRTDBReconnect, signOutNow
+//          - No header changes, no data model changes, no RTDB schema changes,
+//            no Cloud Function changes (Rev 9.5 will land header chrome next)
 // ============================================================
 
 </script>
