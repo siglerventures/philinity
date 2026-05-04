@@ -1161,10 +1161,21 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 @media (max-width: 768px) {
   /* Rev 9.4.1: explicitly restate grid-template-rows on mobile. The desktop rule
      defines auto 1fr auto; without this restate, certain mobile browsers were
-     reflowing the footer below the visible viewport. */
+     reflowing the footer below the visible viewport.
+     Rev 9.4.3: also reset z-index to auto on mobile to dissolve .shell's stacking
+     context. The desktop rule sets position:relative + z-index:1, which creates a
+     stacking context that traps nav (z:200, child of .shell) below .nav-overlay
+     (z:199, sibling of .shell). From the root context, the entire .shell paints at
+     z:1, regardless of how high any descendant z-index goes — so the overlay's z:199
+     was always rendering above the drawer despite nav's nominally-higher 200. By
+     setting z-index: auto on mobile, .shell stops creating a stacking context, and
+     nav (200) and nav-overlay (199) compete directly in the root context where
+     200 > 199 wins. position: relative is retained in case any absolutely-positioned
+     descendant relies on it for anchoring. */
   .shell {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto;
+    z-index: auto;
   }
   
   nav {
@@ -1313,7 +1324,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.2</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.3</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2717,7 +2728,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.4.2</span>
+  <span class="ftr-rev">Philinity© Rev v9.4.3</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6738,7 +6749,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.4.2
+// Philinity Command Center © Rev 9.4.3
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6884,6 +6895,73 @@ async function importFullBackup(event) {
 //            grid descendants in the URL-bar overlap region. position: fixed; bottom: 0
 //            is the only reliable escape; 100dvh is cleaner but has Safari support
 //            quirks. Document if this gets ported to other Philinity apps.
+// Rev 9.4.3 Mobile nav drawer renders dimmed when hamburger menu is open. Phil's
+//          screenshot showed the entire drawer (active "Philinity AI" item, nav
+//          labels, edit-navigation button) at very low contrast, looking like the
+//          .nav-overlay backdrop is covering it instead of being beneath it.
+//          - Phil's z-index hypotheses (3 options) all addressed symptoms but missed
+//            the root cause. Bumping nav z-index to 1001 wouldn't have worked either,
+//            and here's why:
+//          - Root cause: STACKING CONTEXT, not z-index numerics.
+//            .shell { position: relative; z-index: 1 } creates a stacking context.
+//            All children of .shell (including <nav>) are stacked WITHIN that context.
+//            From the parent's perspective, the entire .shell paints at z:1.
+//            .nav-overlay is a SIBLING of .shell (DOM order: .nav-overlay, .shell)
+//            and lives in the root stacking context at z:199.
+//            199 > 1, so .nav-overlay paints above the entire .shell subtree —
+//            INCLUDING <nav> with its z:200, because that 200 only applies inside
+//            .shell's local stacking context. From outside, nav is "z:1 but high in
+//            the local order", which still loses to the sibling overlay's z:199.
+//          - Verified by inspection: lines 184-192 desktop .shell rule has
+//            position:relative + z-index:1 (both required to create a stacking
+//            context). Line 1375 .nav-overlay is OUTSIDE .shell in the DOM
+//            (sibling, not descendant). Line 1396 <nav> is a CHILD of .shell.
+//            On desktop the overlay never renders (no .open class), so the bug
+//            is invisible. On mobile the overlay renders and the bug is obvious.
+//          - This bug existed since whenever .shell got z-index:1 (pre-Rev 9.0,
+//            before Phil's rev history starts). It surfaced now because Rev 9.4.x
+//            mobile chrome made the hamburger usable for the first time on mobile.
+//          - Real fix: dissolve .shell's stacking context on mobile by overriding
+//            z-index: auto inside @media (max-width: 768px). position: relative is
+//            retained (cheap to keep, defensive against any descendant absolute
+//            positioning that might rely on it). Without z-index:1, .shell stops
+//            creating a stacking context, and nav (z:200) and nav-overlay (z:199)
+//            both compete in the root context where 200 > 199 wins cleanly.
+//          - Why this doesn't break desktop: desktop never opens .nav-overlay
+//            (the .open class is mobile-only behavior) and the desktop .shell rule
+//            with z-index:1 is untouched. The override is scoped to the mobile
+//            media query.
+//          - Verified safe: ran grep for position:absolute children of .shell —
+//            all matches are anchored to nearer-ancestor relative/absolute parents
+//            (drop-preview, contact-row badges, etc.), not to .shell. Removing
+//            .shell's stacking context (while keeping position:relative) doesn't
+//            disturb any layout.
+//          - 9.4.2 footer fix (position: fixed; bottom: 0; z-index: 100) still
+//            works correctly under the new stacking model: footer is now in the
+//            root context too at z:100, below overlay (199) and nav (200) but
+//            above body::before/::after (z:0). Open hamburger → overlay dims
+//            footer area → nav drawer covers everything from the left. Close
+//            hamburger → overlay hidden → footer visible at bottom. Correct.
+//          - The 9.4.1 contrast fix (.nav-item color !important) is RETAINED.
+//            In hindsight Phil's "unreadable nav text" report was likely the same
+//            symptom as the dimmed-drawer report — overlay covering everything.
+//            But the !important contrast rule does no harm and is defensive against
+//            future low-contrast regressions. Per Pattern 6.3.17, leaving it alone
+//            keeps this rev's diff scoped to exactly the new symptom.
+//          - Diff scope: 1 CSS line added (z-index: auto) to the existing mobile
+//            .shell block. Zero JS, zero markup, zero DOM order changes, zero
+//            other CSS rules touched.
+//          - Pattern 6.3.21 candidate flagged for Bot 2: 'z-index numeric ladders
+//            don't escape stacking contexts.' When element A's z-index needs to
+//            beat element B's z-index, BOTH must be in the same stacking context.
+//            If A is a descendant of an ancestor with position:relative + z-index,
+//            no number assigned to A can lift it above an outside-the-context
+//            sibling. The fix is to dissolve the intermediate stacking context
+//            (z-index: auto on the wrapper) or move the elements into the same
+//            context. CC's hamburger-drawer-dimmed-by-overlay bug is the worked
+//            example. Document — this is exactly the kind of trap that becomes
+//            invisible on desktop and surfaces only on mobile when overlays
+//            actually render.
 // ============================================================
 
 </script>
