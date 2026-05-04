@@ -1034,10 +1034,16 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 </div>
 <script>
 // Google Sign-In handles auth — always show gate on load
-(function() {
-  document.getElementById('auth-gate').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-})();
+// Show gate initially — onAuthStateChanged auto-hides if already signed in
+document.getElementById('auth-gate').style.display = 'flex';
+document.body.style.overflow = 'hidden';
+
+firebase.auth().onAuthStateChanged(function(user) {
+  if (user && ALLOWED_UIDS.includes(user.uid)) {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+});
 const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
 
 async function googleSignIn() {
