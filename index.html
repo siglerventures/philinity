@@ -1182,23 +1182,46 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   }
   nav.open { left: 0; }
 
-  /* Rev 9.4.1: bump nav-item contrast on mobile only. Desktop stays subtle
-     (--text-dim, Phil prefers it that way). On mobile against --surface, the
-     0.5-alpha was unreadable. --text is what desktop hover already uses. */
-  .nav-item { color: var(--text); }
+  /* Rev 9.4.2: bumped to !important after 9.4.1 ship didn't take effect on
+     production Android Chrome. Specificity safety on a hard-requirement contrast
+     fix. Desktop still uses --text-dim from line 287 (this mobile rule doesn't
+     apply outside the media query). */
+  .nav-item { color: var(--text) !important; }
+  /* Active item still gold — keep the .nav-item.active win path explicit. */
+  .nav-item.active { color: var(--gold) !important; }
 
   .hamburger { display: flex; }
 
   /* Rev 9.4.1: min-height: 0 on grid-row:2 main prevents content overflow from
      expanding the row beyond its 1fr share, which would push the auto footer row
-     off-screen on mobile. Standard fix for grid + flex-column + overflow stacks. */
-  main { padding: 16px; min-height: 0; }
+     off-screen on mobile. Standard fix for grid + flex-column + overflow stacks.
+     Rev 9.4.2: padding-bottom: 60px reserves space at the foot of main so that
+     the now-fixed-positioned footer never overlaps content (footer height is
+     ~50px wrapped on mobile + 10px breathing room). */
+  main { padding: 16px 16px 60px; min-height: 0; }
   .cards.wide, .cards.tri { grid-template-columns: 1fr; }
   /* Rev 9.4: extra ~48px reserved for the footer that wraps to two lines on mobile */
   .chat-wrapper { height: calc(100vh - 168px); }
 
-  /* Rev 9.4: footer wraps and tightens on mobile (matches AutoFlag pattern) */
+  /* Rev 9.4.2: pin the footer to the visual viewport on mobile.
+     The 9.4 / 9.4.1 grid-based approach failed in production on Android Chrome:
+     body { height: 100vh; overflow: hidden } + .shell { height: 100vh; overflow: hidden }
+     locks the layout to a 100vh box that includes the area underneath Android
+     Chrome's collapsing URL bar. The grid math (auto 1fr auto) is correct, but
+     the bottom auto row gets clipped beneath the URL bar overlay region. Solution:
+     remove the footer from grid flow on mobile and anchor it to the visual viewport
+     via position: fixed. main { padding-bottom: 60px } above prevents content
+     overlap. Footer remains in grid flow on desktop where the math works. */
   footer.cc-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Override desktop grid-row: 3 since position: fixed removes the element
+       from grid layout entirely; explicit re-zero so older browsers don't get
+       confused by an unused grid-row declaration on a fixed-positioned element. */
+    grid-row: auto;
+    z-index: 100;
     flex-wrap: wrap;
     gap: 4px 6px;
     padding: 10px 12px;
@@ -1290,7 +1313,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.1</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.2</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2694,7 +2717,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.4.1</span>
+  <span class="ftr-rev">Philinity© Rev v9.4.2</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6715,7 +6738,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.4.1
+// Philinity Command Center © Rev 9.4.2
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6815,6 +6838,52 @@ async function importFullBackup(event) {
 //          - Diff scope: 4 CSS rules touched. Zero JS, zero markup, zero handler,
 //            zero data model. Per Pattern 6.3.17, both fixes are mobile-CSS-only and
 //            scoped to exactly the two reported issues.
+// Rev 9.4.2 9.4.1 fixes did NOT take effect in production on Android Chrome despite
+//          being verified present in the deployed file (curl-fetched and confirmed all
+//          4 CSS rules at the right line numbers). The grid-based fix could not work
+//          for the actual root cause:
+//          - Root cause for Issue 1 (Phil's diagnosis, confirmed by inspection):
+//            body { height: 100vh; overflow: hidden } + .shell { height: 100vh;
+//            overflow: hidden } + Android Chrome's URL bar geometry. 100vh on Android
+//            Chrome reports the LARGER viewport (URL bar collapsed). Layout sizes a
+//            box for ~640px but the actually-visible area is ~600px while the URL bar
+//            is up. The grid math (auto 1fr auto) is correct, but the third row lands
+//            in the bottom ~40px which is exactly the URL-bar-overlap region; the
+//            outer overflow: hidden then clips it. The 9.4.1 grid-row: 3 +
+//            grid-template-rows restate + min-height: 0 are all valid grid-layout
+//            improvements but none of them moves the third row out of the clipped
+//            zone. They're keeping the footer findable in DevTools but rendered off
+//            the visual viewport on real Android Chrome.
+//          - Real fix for Issue 1: position: fixed; bottom: 0 on the footer in the
+//            mobile media query. position: fixed pins to the visual viewport on
+//            Android Chrome (it correctly excludes the URL bar overlap region) and
+//            removes the footer from grid flow entirely. Added padding-bottom: 60px
+//            on main inside the same mobile media query so content doesn't slide
+//            under the now-fixed footer (10px breathing room on top of ~50px wrapped
+//            footer height). Desktop grid behavior unchanged — footer stays in grid
+//            row 3 on desktop where the grid math works fine.
+//          - The 9.4.1 grid fixes are RETAINED for desktop and as belt-and-suspenders
+//            on mobile (in case position: fixed is ever removed). Cost is 0; benefit
+//            is the bug can't recur from any of the four mobile-CSS quirks now.
+//          - Real fix for Issue 2 (per Phil's instruction): bumped to !important.
+//            Mobile contrast is a hard requirement; specificity safety wins over
+//            stylistic purism here. .nav-item { color: var(--text) !important; }
+//            plus matching .nav-item.active { color: var(--gold) !important; } so
+//            the active item still wins (gold over text). Why 9.4.1 didn't take is
+//            unclear — both rules had the same 0,1,0 specificity, mobile rule
+//            cascaded later, should have won. Either Android Chrome was miscascading
+//            the media query, or some rendering edge case kicked in. !important
+//            removes the ambiguity.
+//          - Diff scope: 4 CSS edits in the same media query. Zero JS, zero markup,
+//            zero data model, zero handler. Per Pattern 6.3.17, scope is exactly
+//            'fix what 9.4.1 didn't fix' and nothing else.
+//          - Pattern candidate flagged for Bot 2: 'Mobile viewport unit traps with
+//            locked-overflow ancestors' — when body and a wrapper both have
+//            height: 100vh + overflow: hidden, dynamic-viewport quirks on mobile
+//            browsers (Android Chrome URL bar, iOS Safari toolbar) clip auto-placed
+//            grid descendants in the URL-bar overlap region. position: fixed; bottom: 0
+//            is the only reliable escape; 100dvh is cleaner but has Safari support
+//            quirks. Document if this gets ported to other Philinity apps.
 // ============================================================
 
 </script>
