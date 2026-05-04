@@ -8,10 +8,121 @@
 <title>Philinity — Sigler Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<!--
+  Rev 9.3 — Firebase modular v10 SDK with a small compat-shaped shim.
+  All call sites in the rest of this file use the compat-style surface
+  (db.ref(path).set/get/update/remove, auth.currentUser, etc.) which is
+  reproduced by the shim below so the migration is API-surface-preserving.
+-->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import {
+    getDatabase, ref as dbRef,
+    get as dbGet, set as dbSet, update as dbUpdate, remove as dbRemove,
+    onValue, off, child as dbChild, push as dbPush
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import {
+    getStorage, ref as stRef, uploadBytes, uploadString, getDownloadURL, deleteObject
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut,
+    onAuthStateChanged, setPersistence, browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
+    authDomain: "philinity-893d2.firebaseapp.com",
+    databaseURL: "https://philinity-893d2-default-rtdb.firebaseio.com",
+    projectId: "philinity-893d2",
+    storageBucket: "philinity-893d2.firebasestorage.app",
+    messagingSenderId: "443020781676",
+    appId: "1:443020781676:web:614ec91c9ba33076eb9049"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const _db = getDatabase(app);
+  const _storage = getStorage(app);
+  const _auth = getAuth(app);
+
+  // ── db.ref(path) shim — returns object with .get/.set/.update/.remove/.on/.push ──
+  function makeDbRef(path) {
+    const r = dbRef(_db, path);
+    return {
+      _v10ref: r,
+      path,
+      async get() { return await dbGet(r); },
+      async set(v) { return await dbSet(r, v); },
+      async update(v) { return await dbUpdate(r, v); },
+      async remove() { return await dbRemove(r); },
+      async push(v) { const p = dbPush(r); if (v !== undefined) await dbSet(p, v); return { key: p.key }; },
+      on(event, cb) {
+        if (event === "value") return onValue(r, cb);
+        // Other event types not currently used by CC.
+      },
+      off() { off(r); },
+      child(sub) { return makeDbRef(path + "/" + sub); }
+    };
+  }
+  window.db = {
+    ref(path) {
+      // db.ref() with no arg = root
+      return makeDbRef(path == null ? "" : path);
+    }
+  };
+
+  // ── storage.ref(path) shim ──
+  window.storage = {
+    ref(path) {
+      const r = stRef(_storage, path);
+      return {
+        _v10ref: r,
+        path,
+        async put(blob) {
+          const snap = await uploadBytes(r, blob);
+          return { ref: { getDownloadURL: () => getDownloadURL(snap.ref) } };
+        },
+        async putString(data, format) {
+          // Compat-style format strings: 'raw' | 'base64' | 'base64url' | 'data_url'
+          // v10 modular uses the same strings.
+          const snap = await uploadString(r, data, format || "raw");
+          return { ref: { getDownloadURL: () => getDownloadURL(snap.ref) } };
+        },
+        async getDownloadURL() { return await getDownloadURL(r); },
+        async delete() { return await deleteObject(r); }
+      };
+    }
+  };
+
+  // ── auth shim — preserves firebase.auth() and firebase.auth.GoogleAuthProvider ──
+  const authShim = {
+    _v10auth: _auth,
+    get currentUser() { return _auth.currentUser; },
+    onAuthStateChanged(cb) { return onAuthStateChanged(_auth, cb); },
+    async signInWithPopup(provider) {
+      return await signInWithPopup(_auth, provider._v10provider || provider);
+    },
+    async signOut() { return await fbSignOut(_auth); },
+    setPersistence(_persistence) { return setPersistence(_auth, browserLocalPersistence); }
+  };
+  // firebase.auth() callable AND firebase.auth.GoogleAuthProvider class-style access
+  function authFn() { return authShim; }
+  authFn.GoogleAuthProvider = function() {
+    this._v10provider = new GoogleAuthProvider();
+  };
+  authFn.Auth = { Persistence: { LOCAL: "local" } };
+
+  window.auth = authShim;
+  window.firebase = {
+    auth: authFn,
+    database: () => window.db,
+    storage: () => window.storage,
+    initializeApp: () => app  // no-op (already initialized)
+  };
+
+  // Signal: shim is ready. The classic scripts below await window.__firebaseReady.
+  window.__firebaseReady = true;
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
 
 
 <style>
@@ -1105,7 +1216,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.2</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.3</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1117,22 +1228,30 @@ const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqaw
 document.getElementById('auth-gate').style.display = 'flex';
 document.body.style.overflow = 'hidden';
 
-// Set LOCAL persistence so session survives hard refresh (Ctrl+Shift+R)
-firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function() {
-  // Auto-restore existing Firebase session
-  firebase.auth().onAuthStateChanged(function(user) {
-    if (user && ALLOWED_UIDS.includes(user.uid)) {
-      document.getElementById('auth-gate').style.display = 'none';
-      document.body.style.overflow = '';
-    }
-  });
-}).catch(function(e) {
-  // Fallback if setPersistence fails — still wire up onAuthStateChanged
-  firebase.auth().onAuthStateChanged(function(user) {
-    if (user && ALLOWED_UIDS.includes(user.uid)) {
-      document.getElementById('auth-gate').style.display = 'none';
-      document.body.style.overflow = '';
-    }
+// Wait for v10 modular SDK shim to finish initializing before any firebase.* call.
+function _whenFirebaseReady(fn) {
+  if (window.__firebaseReady) return fn();
+  window.addEventListener("firebase-ready", fn, { once: true });
+}
+
+_whenFirebaseReady(function() {
+  // Set LOCAL persistence so session survives hard refresh (Ctrl+Shift+R)
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function() {
+    // Auto-restore existing Firebase session
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user && ALLOWED_UIDS.includes(user.uid)) {
+        document.getElementById('auth-gate').style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
+  }).catch(function(e) {
+    // Fallback if setPersistence fails — still wire up onAuthStateChanged
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user && ALLOWED_UIDS.includes(user.uid)) {
+        document.getElementById('auth-gate').style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
   });
 });
 
@@ -1295,7 +1414,7 @@ async function googleSignIn() {
 
       <!-- Rev pill bottom right -->
       <div style="text-align:right;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 9.2</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:rgba(232,228,220,0.25);letter-spacing:0.1em">Philinity Command Center ©️ Rev 9.3</span>
       </div>
     </div>
 
@@ -2563,10 +2682,21 @@ const firebaseConfig = {
   appId: "1:443020781676:web:614ec91c9ba33076eb9049"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const storage = firebase.storage();
-const auth = firebase.auth();
+// Rev 9.3 — Firebase v10 modular SDK is initialized in the <script type="module"> block at top
+// of file. The shim there exposes window.firebase, window.db, window.storage, window.auth with
+// the same surface the rest of this file already used. The var declarations below are bound
+// from window once the module signals firebase-ready, so existing `db.ref(...)`,
+// `storage.ref(...)`, `auth.currentUser` call sites work unchanged.
+var db, storage, auth;
+function _whenFirebaseReadyMain(fn) {
+  if (window.__firebaseReady) return fn();
+  window.addEventListener("firebase-ready", fn, { once: true });
+}
+_whenFirebaseReadyMain(function() {
+  db = window.db;
+  storage = window.storage;
+  auth = window.auth;
+});
 
 // SECURITY: Strip HTML/XSS from any string before rendering
 function stripHTML(str) {
@@ -2583,14 +2713,17 @@ function stripHTMLArray(arr) {
   return arr.map(stripHTML).filter(Boolean);
 }
 
-// Wait for anonymous auth before any Firebase reads
+// Wait for Google Sign-In before any Firebase reads
+// (Rev 9.3: gated on firebase-ready since `auth` is now bound after module init.)
 let authReady = false;
 const authReadyPromise = new Promise(function(resolve) {
-  auth.onAuthStateChanged(function(user) {
-    if (!authReady) {
-      authReady = true;
-      resolve(user);
-    }
+  _whenFirebaseReadyMain(function() {
+    auth.onAuthStateChanged(function(user) {
+      if (!authReady) {
+        authReady = true;
+        resolve(user);
+      }
+    });
   });
 });
 // Auth handled by Google Sign-In via googleSignIn() function
@@ -6268,7 +6401,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.2
+// Philinity Command Center © Rev 9.3
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6309,6 +6442,19 @@ async function importFullBackup(event) {
 // Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
 // Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
 // Rev 9.2  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
+// Rev 9.3  Firebase compat SDK -> modular v10 SDK migration (no visual changes)
+//          - 4 compat <script src=> tags replaced with single <script type="module"> shim
+//          - Module imports v10 modular APIs and re-exposes a compat-shaped surface on
+//            window: db.ref(p).get/set/update/remove, storage.ref(p).put/putString/
+//            getDownloadURL/delete, auth.currentUser/onAuthStateChanged/signInWithPopup/
+//            signOut/setPersistence, firebase.auth().GoogleAuthProvider class
+//          - All ~30 db.ref(...) call sites and the single storage.ref(...) site
+//            unchanged textually — preserves the diff surface for Pattern 6.3.17 isolation
+//          - Top-level firebase.* calls in classic scripts gated on firebase-ready
+//            event so they don't fire before the deferred module finishes
+//          - var db, storage, auth (instead of const) so they can be assigned post-init
+//          - Footer chrome and header chrome will land in Rev 9.4 / 9.5 (separate revs
+//            per Pattern 6.3.17, one logical change per rev)
 // ============================================================
 
 </script>
