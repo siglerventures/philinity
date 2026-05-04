@@ -1324,7 +1324,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.3</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.4</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2690,19 +2690,48 @@ async function googleSignIn() {
   </div>
 
   <!-- Rev 9.4 — Data Manager modal (matches AutoFlag Rev 1.76 pattern, palette mapped to CC).
-       Targets /command_center/ RTDB subtree only. Reuses existing CC backup/restore logic. -->
+       Targets /command_center/ RTDB subtree only. Reuses existing CC backup/restore logic.
+       Rev 9.4.4: 4-card layout (Backup → Export → Merge → Restore) matching AutoFlag's. -->
   <div class="modal-overlay" id="cc-data-modal">
     <div class="modal-box" style="max-width:520px">
       <div class="modal-title">📦 Data Manager</div>
-      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px">Backup · Export · Restore</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px">Backup · Export · Merge · Restore</div>
 
       <div style="display:flex;flex-direction:column;gap:10px">
+        <!-- Card 1 — Backup (gold-accented, primary action) -->
         <div style="background:linear-gradient(135deg,var(--gold-dim),rgba(201,169,110,0.05));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px">
           <div style="font-size:0.88rem;font-weight:500;color:var(--gold);margin-bottom:3px">📦 Full Backup (JSON)</div>
           <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Download all of <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">/command_center</code> — house data, contacts, AI projects, nav, column config</div>
           <button onclick="ccBackupJSON()" style="background:var(--gold);color:#0d0d0f;border:none;padding:9px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">⬇️ Download Backup</button>
         </div>
 
+        <!-- Card 2 — Export Sheets as CSV (Rev 9.4.4) -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">📊 Export Sheets as CSV</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Flat sheet list — opens in Excel or Google Sheets. Pick a single sheet, or download all sheets as one combined CSV.</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <select id="cc-data-modal-sheet-select" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 12px;border-radius:8px;font-size:0.8rem;font-family:'Outfit',sans-serif;min-width:180px">
+              <option value="">-- Select a sheet --</option>
+            </select>
+            <button onclick="ccExportSheetCSV()" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-dim);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">⬇️ Sheet CSV</button>
+            <button onclick="ccExportAllCSV()" style="background:var(--gold);color:#0d0d0f;border:none;padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">⬇️ All Sheets CSV</button>
+          </div>
+        </div>
+
+        <!-- Card 3 — Merge / Import (Rev 9.4.4, non-destructive) -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">♻️ Merge / Import <span style="color:var(--green);font-size:0.7rem;margin-left:6px">✓ safe</span></div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Add new sheets/rows from a backup or seed file. Existing records (matching by item name within a sheet, or by id for AI projects/contacts) preserved unchanged. <strong>Safe — does not overwrite.</strong></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label style="cursor:pointer;background:var(--green);color:#0d0d0f;padding:9px 16px;border-radius:8px;font-size:0.82rem;font-weight:500;font-family:'Outfit',sans-serif">
+              📂 Choose Merge File
+              <input type="file" accept=".json" style="display:none" onchange="ccMergeImport(event)">
+            </label>
+            <span id="cc-data-modal-merge-filename" style="font-size:0.7rem;color:var(--text-muted);font-family:'DM Mono',monospace">No file selected</span>
+          </div>
+        </div>
+
+        <!-- Card 4 — Restore (destructive) -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
           <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">♻️ Restore from Backup <span style="color:var(--red);font-size:0.7rem;margin-left:6px">⚠ destructive</span></div>
           <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Select a <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">cc-backup-*.json</code> file. <strong>Overwrites existing house data, ai_projects, and house_col_config.</strong></div>
@@ -2728,7 +2757,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.4.3</span>
+  <span class="ftr-rev">Philinity© Rev v9.4.4</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -5284,7 +5313,37 @@ function openCcDataModal() {
   if (st) st.textContent = '';
   var fn = document.getElementById('cc-data-modal-filename');
   if (fn) fn.textContent = 'No file selected';
+  // Rev 9.4.4: also reset the merge card's filename element
+  var fnMerge = document.getElementById('cc-data-modal-merge-filename');
+  if (fnMerge) fnMerge.textContent = 'No file selected';
+  // Rev 9.4.4: populate the Export sheet selector with current sheets.
+  // Triggers an hdInit() if house data hasn't been loaded yet, so the modal
+  // works regardless of whether Phil has visited the House Data page.
+  _ccPopulateSheetSelect();
   m.classList.add('open');
+}
+async function _ccPopulateSheetSelect() {
+  var sel = document.getElementById('cc-data-modal-sheet-select');
+  if (!sel) return;
+  // Lazy-load house data if not already in memory
+  if (typeof hdLoaded !== 'undefined' && !hdLoaded && typeof hdInit === 'function') {
+    try { await hdInit(); } catch (e) { console.warn('[CC Data Manager] hdInit failed:', e && e.message); }
+  }
+  // Build options from the current sheet order (or sheet keys if order missing)
+  sel.innerHTML = '<option value="">-- Select a sheet --</option>';
+  var keys = (typeof hdSheetOrder !== 'undefined' && hdSheetOrder.length)
+    ? hdSheetOrder
+    : (typeof hdAllSheets !== 'undefined' ? Object.keys(hdAllSheets || {}) : []);
+  keys.forEach(function(k) {
+    var sheet = (typeof hdAllSheets !== 'undefined') ? hdAllSheets[k] : null;
+    if (!sheet) return;
+    var name = sheet.sheet_name || k;
+    var rows = (sheet.rows && sheet.rows.length) ? (' (' + sheet.rows.length + ')') : '';
+    var opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = name + rows;
+    sel.appendChild(opt);
+  });
 }
 function closeCcDataModal() {
   var m = document.getElementById('cc-data-modal');
@@ -5394,6 +5453,303 @@ async function ccRestoreJSON(ev) {
   reader.readAsText(file);
 }
 
+// ══════════════════════════════════════════════════════════════
+// Rev 9.4.4 — Export and Merge handlers (new Data Manager cards)
+// ══════════════════════════════════════════════════════════════
+
+// ── Export Sheet CSV (modal variant — uses cc-data-modal-status) ──
+// Parallel to the existing exportSheetCSV() which writes to exporter-status.
+// Existing handler is left untouched per Pattern 6.3.17 — that one belongs to
+// the standalone Data Exporter page (#page-export). This one is for the modal.
+function ccExportSheetCSV() {
+  var sel = document.getElementById('cc-data-modal-sheet-select');
+  var key = sel ? sel.value : '';
+  if (!key) {
+    _ccSetStatus('<span style="color:var(--red)">❌ Select a sheet first</span>');
+    return;
+  }
+  if (typeof hdAllSheets === 'undefined' || !hdAllSheets[key]) {
+    _ccSetStatus('<span style="color:var(--red)">❌ Sheet not loaded yet — try reopening the modal</span>');
+    return;
+  }
+  var sheet = hdAllSheets[key];
+  if (!sheet.rows || !sheet.rows.length) {
+    _ccSetStatus('<span style="color:var(--red)">❌ Sheet is empty</span>');
+    return;
+  }
+  if (typeof rowsToCSV !== 'function') {
+    _ccSetStatus('<span style="color:var(--red)">❌ rowsToCSV() unavailable — load the House Data page once and retry</span>');
+    return;
+  }
+  var csv = rowsToCSV(sheet.rows);
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var name = (sheet.sheet_name || key).replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  a.download = 'philinity-' + name + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  _ccSetStatus('<span style="color:var(--green)">✅ Downloaded: ' + a.download + ' (' + sheet.rows.length + ' rows)</span>');
+}
+
+// ── Export All Sheets CSV (modal variant — uses cc-data-modal-status) ──
+function ccExportAllCSV() {
+  if (typeof hdSheetOrder === 'undefined' || !hdSheetOrder.length) {
+    _ccSetStatus('<span style="color:var(--red)">❌ No sheets loaded — try reopening the modal</span>');
+    return;
+  }
+  if (typeof rowsToCSV !== 'function') {
+    _ccSetStatus('<span style="color:var(--red)">❌ rowsToCSV() unavailable — load the House Data page once and retry</span>');
+    return;
+  }
+  var parts = [];
+  var totalRows = 0;
+  hdSheetOrder.forEach(function(key) {
+    var sheet = hdAllSheets[key];
+    if (!sheet || !sheet.rows || !sheet.rows.length) return;
+    parts.push('### ' + (sheet.sheet_name || key) + ' ###');
+    parts.push(rowsToCSV(sheet.rows));
+    parts.push('');
+    totalRows += sheet.rows.length;
+  });
+  if (!parts.length) {
+    _ccSetStatus('<span style="color:var(--red)">❌ No data to export</span>');
+    return;
+  }
+  var blob = new Blob([parts.join('\n')], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var date = new Date().toISOString().slice(0, 10);
+  a.download = 'philinity-all-sheets-' + date + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  _ccSetStatus('<span style="color:var(--green)">✅ Downloaded ' + hdSheetOrder.length + ' sheets · ' + totalRows + ' total rows</span>');
+}
+
+// ── Merge / Import (non-destructive) ──
+// Adds new sheets/rows without overwriting existing data.
+//
+// Match rules (CC's data shape doesn't have unique row IDs, so we approximate):
+//   - house_data: per-sheet, match rows by title field (item || name || appliances).
+//                 If the incoming sheet doesn't exist yet, add the whole sheet.
+//                 If it exists, walk its rows and append only those whose title
+//                 doesn't already appear in the current sheet.
+//   - house_sheet_order: append new keys after existing order; preserve current order.
+//   - ai_projects: match by .id field, skip if exists.
+//   - contacts: match by .id field, skip if exists.
+//   - house_col_config: skip any sheet key that already has config (per-sheet level).
+//   - nav_structure: NOT merged. Conservative call — nav is small and Phil edits
+//                    it via the Nav Editor; merging would risk malformed state.
+//
+// Known limitation: rows are matched by title field. Two different rows in the
+// same sheet with the same item name would be considered "the same row" and
+// only the first would be kept. Acceptable for CC's data (Phil rarely has
+// duplicate item names within a sheet).
+async function ccMergeImport(ev) {
+  var file = ev && ev.target && ev.target.files && ev.target.files[0];
+  if (!file) return;
+  var fnEl = document.getElementById('cc-data-modal-merge-filename');
+  if (fnEl) fnEl.textContent = file.name;
+  _ccSetStatus('<span style="color:var(--text-muted)">⏳ Reading file…</span>');
+
+  var reader = new FileReader();
+  reader.onload = async function (e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data.house_data && !data.ai_projects && !data.contacts && !data.house_col_config) {
+        _ccSetStatus('<span style="color:var(--red)">❌ Not a Philinity backup — expected at least one of: house_data, ai_projects, contacts, house_col_config</span>');
+        return;
+      }
+
+      // Load current state from RTDB (don't trust in-memory caches alone)
+      _ccSetStatus('<span style="color:var(--gold)">⏳ Reading current state…</span>');
+      var curSnap = await db.ref('command_center').get();
+      var cur = (curSnap && curSnap.exists()) ? (curSnap.val() || {}) : {};
+
+      // Tally everything we'll do BEFORE writing, so we can confirm with the user.
+      var plan = { sheetsAdded: 0, rowsAdded: 0, projectsAdded: 0, contactsAdded: 0, colConfigsAdded: 0, sheetOrderAdded: 0, skipped: { sheets: 0, rows: 0, projects: 0, contacts: 0, colConfigs: 0 } };
+
+      // ── house_data + house_sheet_order ─────────────────────────────
+      var curHouseData = cur.house_data || {};
+      var newHouseData = data.house_data || {};
+      var sheetUpdates = {}; // batched RTDB writes
+      var rowTitleOf = function(row) {
+        if (!row || typeof row !== 'object') return '';
+        return String(row.item || row.name || row.appliances || row.category || '').trim().toLowerCase();
+      };
+      Object.keys(newHouseData).forEach(function(sheetKey) {
+        var incoming = newHouseData[sheetKey];
+        var existing = curHouseData[sheetKey];
+        if (!existing) {
+          // Sheet doesn't exist → add it whole
+          sheetUpdates['command_center/house_data/' + sheetKey] = incoming;
+          plan.sheetsAdded++;
+          plan.rowsAdded += (incoming && incoming.rows ? incoming.rows.length : 0);
+        } else {
+          // Sheet exists → row-level merge by title
+          var existingTitles = {};
+          (existing.rows || []).forEach(function(r) {
+            var t = rowTitleOf(r);
+            if (t) existingTitles[t] = true;
+          });
+          var rowsToAppend = [];
+          (incoming.rows || []).forEach(function(r) {
+            var t = rowTitleOf(r);
+            if (t && existingTitles[t]) { plan.skipped.rows++; return; }
+            rowsToAppend.push(r);
+          });
+          if (rowsToAppend.length) {
+            var mergedRows = (existing.rows || []).concat(rowsToAppend);
+            // Write the merged sheet wholesale (CC's data shape persists row arrays as
+            // a single value, not per-row; can't multi-path-update individual rows).
+            sheetUpdates['command_center/house_data/' + sheetKey] = Object.assign({}, existing, {
+              rows: mergedRows,
+              row_count: mergedRows.length
+            });
+            plan.rowsAdded += rowsToAppend.length;
+          } else {
+            plan.skipped.sheets++;
+          }
+        }
+      });
+
+      // ── house_sheet_order: append new keys after existing ──────────
+      var newSheetOrderAppend = [];
+      var curOrder = Array.isArray(cur.house_sheet_order) ? cur.house_sheet_order : [];
+      var curOrderSet = {};
+      curOrder.forEach(function(k) { curOrderSet[k] = true; });
+      var incomingOrder = Array.isArray(data.house_sheet_order) ? data.house_sheet_order : Object.keys(newHouseData);
+      incomingOrder.forEach(function(k) {
+        if (!curOrderSet[k]) { newSheetOrderAppend.push(k); curOrderSet[k] = true; }
+      });
+      plan.sheetOrderAdded = newSheetOrderAppend.length;
+
+      // ── ai_projects: match by .id, skip if exists ──────────────────
+      var newProjectsToAdd = [];
+      if (data.ai_projects) {
+        var curProjects = Array.isArray(cur.ai_projects) ? cur.ai_projects : (cur.ai_projects ? Object.values(cur.ai_projects) : []);
+        var curProjectIds = {};
+        curProjects.forEach(function(p) { if (p && p.id) curProjectIds[p.id] = true; });
+        var incomingProjects = Array.isArray(data.ai_projects) ? data.ai_projects : Object.values(data.ai_projects);
+        incomingProjects.forEach(function(p) {
+          if (!p) return;
+          if (p.id && curProjectIds[p.id]) { plan.skipped.projects++; return; }
+          newProjectsToAdd.push(p);
+        });
+        plan.projectsAdded = newProjectsToAdd.length;
+      }
+
+      // ── contacts: match by .id, skip if exists ─────────────────────
+      var newContactsToAdd = [];
+      if (data.contacts) {
+        var curContacts = cur.contacts || {};
+        var curContactIds = {};
+        if (Array.isArray(curContacts)) {
+          curContacts.forEach(function(c) { if (c && c.id) curContactIds[c.id] = true; });
+        } else {
+          Object.keys(curContacts).forEach(function(k) {
+            var c = curContacts[k];
+            if (c && c.id) curContactIds[c.id] = true;
+            else curContactIds[k] = true; // key-as-id fallback
+          });
+        }
+        var incomingContacts = Array.isArray(data.contacts) ? data.contacts : Object.values(data.contacts);
+        incomingContacts.forEach(function(c) {
+          if (!c || !c.id) return;
+          if (curContactIds[c.id]) { plan.skipped.contacts++; return; }
+          newContactsToAdd.push(c);
+        });
+        plan.contactsAdded = newContactsToAdd.length;
+      }
+
+      // ── house_col_config: skip per-sheet key if exists ─────────────
+      var newColConfigUpdates = {};
+      if (data.house_col_config) {
+        var curColConfig = cur.house_col_config || {};
+        Object.keys(data.house_col_config).forEach(function(sheetKey) {
+          if (curColConfig[sheetKey] !== undefined) { plan.skipped.colConfigs++; return; }
+          newColConfigUpdates['command_center/house_col_config/' + sheetKey] = data.house_col_config[sheetKey];
+          plan.colConfigsAdded++;
+        });
+      }
+
+      // Confirm with the user — show what will be added vs skipped
+      var summary =
+        'Merge "' + file.name + '"?\n\n' +
+        'WILL ADD:\n' +
+        '  • ' + plan.sheetsAdded + ' new sheets\n' +
+        '  • ' + plan.rowsAdded + ' new rows (in existing sheets)\n' +
+        '  • ' + plan.sheetOrderAdded + ' new sheet-order entries\n' +
+        '  • ' + plan.projectsAdded + ' new AI projects\n' +
+        '  • ' + plan.contactsAdded + ' new contacts\n' +
+        '  • ' + plan.colConfigsAdded + ' new column configs\n\n' +
+        'WILL SKIP (already exists):\n' +
+        '  • ' + plan.skipped.rows + ' rows\n' +
+        '  • ' + plan.skipped.sheets + ' sheets with no new rows\n' +
+        '  • ' + plan.skipped.projects + ' projects\n' +
+        '  • ' + plan.skipped.contacts + ' contacts\n' +
+        '  • ' + plan.skipped.colConfigs + ' column configs\n\n' +
+        'Existing data will not be overwritten.';
+      var totalAdds = plan.sheetsAdded + plan.rowsAdded + plan.projectsAdded + plan.contactsAdded + plan.colConfigsAdded;
+      if (totalAdds === 0) {
+        _ccSetStatus('<span style="color:var(--text-muted)">ℹ Nothing to merge — all incoming data already exists. (Skipped: ' + plan.skipped.rows + ' rows, ' + plan.skipped.projects + ' projects, ' + plan.skipped.contacts + ' contacts.)</span>');
+        return;
+      }
+      if (!confirm(summary)) {
+        _ccSetStatus('');
+        if (fnEl) fnEl.textContent = 'No file selected';
+        return;
+      }
+
+      // Write house_data + house_col_config additions in batches of 10 paths
+      _ccSetStatus('<span style="color:var(--gold)">⏳ Writing additions…</span>');
+      var allUpdates = Object.assign({}, sheetUpdates, newColConfigUpdates);
+      var pathKeys = Object.keys(allUpdates);
+      for (var i = 0; i < pathKeys.length; i += 10) {
+        var batch = {};
+        pathKeys.slice(i, i + 10).forEach(function(p) { batch[p] = allUpdates[p]; });
+        await db.ref('/').update(batch);
+      }
+
+      // Append-only sheet order
+      if (newSheetOrderAppend.length) {
+        var newOrder = curOrder.concat(newSheetOrderAppend);
+        await db.ref('command_center/house_sheet_order').set(newOrder);
+      }
+
+      // Append-only ai_projects (write the merged array back)
+      if (newProjectsToAdd.length) {
+        var mergedProjects = (Array.isArray(cur.ai_projects) ? cur.ai_projects : (cur.ai_projects ? Object.values(cur.ai_projects) : [])).concat(newProjectsToAdd);
+        await db.ref('command_center/ai_projects').set(mergedProjects);
+      }
+
+      // Append-only contacts (per-record writes — matches existing CC pattern at line 5755)
+      for (var j = 0; j < newContactsToAdd.length; j++) {
+        var c = newContactsToAdd[j];
+        await db.ref('command_center/contacts/' + c.id).set(c);
+      }
+
+      _ccSetStatus(
+        '<span style="color:var(--green)">✅ Merged from ' + file.name + '</span><br>' +
+        '<span style="color:var(--text-muted)">Added: ' + plan.sheetsAdded + ' sheets, ' + plan.rowsAdded + ' rows, ' + plan.projectsAdded + ' projects, ' + plan.contactsAdded + ' contacts, ' + plan.colConfigsAdded + ' col configs.</span><br>' +
+        '<span style="color:var(--gold)">Reload the page to see all changes.</span>'
+      );
+
+      // Best-effort in-memory invalidation
+      if (typeof hdLoaded !== 'undefined') { hdLoaded = false; }
+      if (typeof hdAllSheets !== 'undefined') { hdAllSheets = {}; }
+      if (typeof hdSheetOrder !== 'undefined') { hdSheetOrder = []; }
+    } catch (err) {
+      _ccSetStatus('<span style="color:var(--red)">❌ Error: ' + (err && err.message ? err.message : 'unknown') + '</span>');
+    }
+  };
+  reader.readAsText(file);
+}
+
 // ── Soft Reconnect (manual data refresh) ──
 // Lighter version of AutoFlag's forceRTDBReconnect(). AutoFlag pairs this with
 // the REST-fallback data layer (Pattern 6.3.16) which CC has NOT ported. If CC
@@ -5460,6 +5816,10 @@ window.openCcDataModal = openCcDataModal;
 window.closeCcDataModal = closeCcDataModal;
 window.ccBackupJSON = ccBackupJSON;
 window.ccRestoreJSON = ccRestoreJSON;
+// Rev 9.4.4: new Export and Merge handlers (4-card Data Manager)
+window.ccExportSheetCSV = ccExportSheetCSV;
+window.ccExportAllCSV = ccExportAllCSV;
+window.ccMergeImport = ccMergeImport;
 window.forceRTDBReconnect = forceRTDBReconnect;
 window.signOutNow = signOutNow;
 
@@ -6749,7 +7109,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.4.3
+// Philinity Command Center © Rev 9.4.4
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -6962,6 +7322,61 @@ async function importFullBackup(event) {
 //            example. Document — this is exactly the kind of trap that becomes
 //            invisible on desktop and surfaces only on mobile when overlays
 //            actually render.
+// Rev 9.4.4 Data Manager modal upgraded from 2-card to 4-card layout matching
+//          AutoFlag Rev 1.76. New cards inserted between existing Backup and
+//          Restore: Export Sheets as CSV, then Merge / Import.
+//          - Card order in modal: Backup → Export → Merge → Restore
+//          - Export card: dropdown of all sheets (auto-populated when modal opens
+//            via _ccPopulateSheetSelect, which lazy-runs hdInit() if House Data
+//            hasn't loaded yet) plus two buttons. ⬇️ Sheet CSV downloads the
+//            selected sheet as philinity-{sheet}-{date}.csv. ⬇️ All Sheets CSV
+//            downloads a combined file with each sheet separated by a
+//            ### {sheet_name} ### header. Both reuse the existing rowsToCSV()
+//            helper. The standalone Data Exporter page (#page-export) is
+//            untouched and still works independently.
+//          - Merge card: green-themed safe import. Picks a cc-backup-*.json file
+//            and adds new sheets/rows without overwriting existing data. Match
+//            rules:
+//              house_data: per-sheet, match rows by title field (item || name ||
+//                appliances || category). Sheet doesn't exist → add whole sheet.
+//                Sheet exists → walk incoming rows, append only those whose title
+//                doesn't already appear. Known limitation: rows with duplicate
+//                titles within a sheet are deduped to one. Acceptable for CC's
+//                data shape — Phil rarely has duplicate item names in a sheet.
+//              house_sheet_order: append new keys after existing order.
+//              ai_projects: match by .id, skip if exists, otherwise append.
+//              contacts: match by .id, skip if exists, otherwise append per-record
+//                (matches existing CC pattern — see line ~5755).
+//              house_col_config: skip per-sheet key if exists.
+//              nav_structure: NOT merged. Conservative call — nav is small and
+//                Phil edits it directly via the Nav Editor; merging would risk
+//                creating malformed nav state.
+//          - Merge presents a confirm() dialog showing the full plan before
+//            writing: how many sheets/rows/projects/contacts/configs will be
+//            added vs how many will be skipped (because they already exist).
+//            User can review and cancel without any writes happening. If the
+//            plan totals zero adds, an info message is shown and nothing is
+//            written even on confirm.
+//          - Restore card UNCHANGED — same handler (ccRestoreJSON), same
+//            destructive ⚠ warning, same DOM ID for the filename element. The
+//            new Merge card uses its own filename element (cc-data-modal-merge-
+//            filename) so the two pickers don't share state.
+//          - openCcDataModal extended to (a) reset the new merge filename
+//            element, (b) call _ccPopulateSheetSelect() which lazy-loads house
+//            data if needed and fills the Export dropdown.
+//          - Three new handlers exposed on window: ccExportSheetCSV,
+//            ccExportAllCSV, ccMergeImport.
+//          - Pattern 6.3.19 audit: Data Manager has 4 vertically-stacked cards
+//            (flex-direction: column, gap: 10px). Card count is fixed (not data-
+//            driven), no horizontal flex, no chip-density risk. Safe.
+//          - Pattern 6.3.17 scope: modal markup + 3 new handlers + tiny additive
+//            extension to openCcDataModal. Existing Backup / Restore / Reconnect /
+//            SignOut handlers untouched. Existing standalone Data Importer
+//            (#page-importer), Data Exporter (#page-export), Backup pages
+//            untouched. Existing exportSheetCSV() / exportAllCSV() /
+//            importFullBackup() / importCSVToSheet() handlers (which target
+//            exporter-status / importer-status DOM IDs) untouched — the modal
+//            uses parallel cc* functions targeting cc-data-modal-status.
 // ============================================================
 
 </script>
