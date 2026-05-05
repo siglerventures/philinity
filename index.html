@@ -1403,7 +1403,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.14</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.15</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2880,7 +2880,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.14</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.15</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3154,8 +3154,13 @@ Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% h
 ## HOUSE DATA — SAVING ITEMS
 When the user asks you to add, save, or log any item to House Data, respond naturally then emit one %%SAVE_TO_HOUSE_DATA:...%% block per distinct item at the END of your reply.
 Format (single line, valid JSON): %%SAVE_TO_HOUSE_DATA:{"sheet_key":"office-furniture","sheet_name":"Office Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
-sheet_key: lowercase-hyphenated (furniture, appliances, office-furniture, blinds, lighting, electronics, etc.)
+Fields: sheet_key (lowercase-hyphenated), sheet_name, item, brand, qty, price, url (product page), notes, img (URL of primary photo — provided in [System note:] when user attaches photos; never invent).
+sheet_key examples: furniture, appliances, office-furniture, blinds, lighting, electronics, etc.
 Never fabricate prices or quantities not stated by the user. Multiple items = multiple blocks.
+
+When the user attaches photos to a save request, the frontend uploads them to Firebase Storage and provides URLs in a [System note:] block at the end of the user message. Use the FIRST URL as the "img" field value in your %%SAVE_TO_HOUSE_DATA%% block. Do not invent or guess URLs — only use URLs from the system note.
+
+Example with photo attached: %%SAVE_TO_HOUSE_DATA:{"sheet_key":"outdoor-furniture","sheet_name":"Outdoor Furniture","item":"Moonstone 10-Piece Wicker Patio Set","brand":"Moonstone","qty":"1","price":"1439","url":"https://www.homedepot.com/p/example","img":"https://firebasestorage.googleapis.com/.../command_center%2Fai_images%2F1234-abc.jpg?alt=media&token=...","notes":"Gray cushions, fire pit table included"}%%
 
 ## POOL CHEMICALS
 - EASYTEST 7-Way Pool Test Strips
@@ -4019,24 +4024,58 @@ window.askAI = async function() {
   if (typeof addMessage === 'function') {
     addMessage('user', text + '  📸 ' + photos.length);
   }
+
+  if (typeof setLoading === 'function') setLoading(true);
+
+  // Rev 9.5.15: await Storage uploads with a 10s timeout so a hung upload
+  // doesn't block the AI response forever. If uploads complete in time, URLs
+  // are injected into the user's text content as a [System note: ...]
+  // addendum so the AI can use them in %%SAVE_TO_HOUSE_DATA%% blocks. If the
+  // timeout fires (network blip, Firebase outage), the AI still gets the
+  // photos via base64 vision — just no Storage URLs to use as `img` field.
+  var uploads = photos.map(function(p) { return ccAiUploadToStorage(p.dataUrl); });
+  var TIMEOUT_MS = 10000;
+  var urls = await Promise.race([
+    Promise.all(uploads),
+    new Promise(function(resolve) { setTimeout(function() { resolve(null); }, TIMEOUT_MS); })
+  ]);
+  var validUrls = (Array.isArray(urls) ? urls : []).filter(function(u) { return typeof u === 'string' && u; });
+  console.log('[CC askAI] photo upload result:', urls === null ? 'TIMED OUT' : (validUrls.length + '/' + photos.length + ' URLs received'));
+
+  if (urls === null) {
+    // Timeout — uploads still running in the background; the AI just won't
+    // know about them. Toast informs the user that any save block written by
+    // the AI will not include an img URL.
+    if (typeof showToast === 'function') {
+      showToast('⏱ Photo upload slow — image saved to House Data may not include the photo.');
+    }
+  }
+
+  // Build the text content block. If we got URLs, append a [System note: ...]
+  // block with explicit instructions for the AI on how to use them.
+  var textWithNote = text;
+  if (validUrls.length > 0) {
+    var noteLines = ['', '[System note: The ' + photos.length + ' photo' + (photos.length === 1 ? '' : 's') +
+                     ' attached above ' + (photos.length === 1 ? 'was' : 'were') + ' uploaded to Firebase Storage at ' +
+                     (validUrls.length === 1 ? 'this URL:' : 'these URLs, in order:')];
+    if (validUrls.length === 1) {
+      noteLines.push(validUrls[0]);
+    } else {
+      validUrls.forEach(function(u, i) { noteLines.push((i + 1) + '. ' + u); });
+    }
+    noteLines.push('When saving to House Data, use the FIRST URL as the "img" field value. Do not invent or guess URLs — only use URLs from this system note.]');
+    textWithNote = text + '\n' + noteLines.join('\n');
+    console.log('[CC askAI] injected', validUrls.length, 'Storage URL(s) into user message via [System note:]');
+  }
+
+  // Build messages array entry: [image blocks..., text-with-note].
   if (typeof messages !== 'undefined' && Array.isArray(messages)) {
     var content = photos.map(function(p) {
       return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: p.base64 } };
     });
-    content.push({ type: 'text', text: text });
+    content.push({ type: 'text', text: textWithNote });
     messages.push({ role: 'user', content: content });
   }
-
-  if (typeof setLoading === 'function') setLoading(true);
-
-  // Background Storage uploads — not awaited.
-  photos.forEach(function(p) {
-    ccAiUploadToStorage(p.dataUrl).then(function(url) {
-      if (url) console.log('[CC AI photo] persisted to Storage:', url);
-    }).catch(function(e) {
-      console.warn('[CC AI photo] Storage upload failed:', e && e.message);
-    });
-  });
 
   try {
     var user = firebase.auth().currentUser;
@@ -4046,10 +4085,6 @@ window.askAI = async function() {
       return;
     }
     var idToken = await user.getIdToken();
-    // Diagnostic log: confirm the request body actually contains the image
-    // content block. Helps verify Issue 4 from the spec — that the Cloud
-    // Function receives base64 and forwards to Anthropic. Keep through 9.5.2
-    // shakeout; can remove in a future cleanup rev once verified.
     console.log('[CC askAI] sending', messages.length, 'messages; last has', Array.isArray(messages[messages.length-1].content) ? messages[messages.length-1].content.length + ' content blocks' : 'string content');
     var response = await fetch('https://us-central1-philinity-893d2.cloudfunctions.net/askAI', {
       method: 'POST',
@@ -8227,7 +8262,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.14
+// Philinity Command Center © Rev 9.5.15
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
