@@ -244,6 +244,10 @@ header {
   font-size: 13px;
 }
 .header-search:focus { border-color: var(--gold-dim); outline: none; }
+/* Rev 9.5.1: .user-pill markup removed from header to match AutoFlag Rev 1.76
+   exactly (AutoFlag has no user pill). CSS class retained as dead code in case
+   the People system rev (backlog #39) wants to reuse the visual treatment.
+   Safe to delete in a future cleanup rev — no current consumers. */
 .user-pill {
   display: flex;
   align-items: center;
@@ -294,6 +298,56 @@ header {
   cursor: pointer;
 }
 .ai-icon-btn:hover { background: var(--gold-dim); color: #fff; }
+
+/* Rev 9.5.1 — Photo attach badge + preview chip.
+   .ai-photo-badge ported verbatim from AutoFlag Rev 1.76 line 368, palette mapped:
+   --amber → --gold, color #1a1208 → #0d0d0f (CC's dark text-on-gold contrast).
+   .ai-photo-preview-chip is CC-specific (AutoFlag uses a separate panel; CC uses
+   an inline chip in the header for a more compact pattern). */
+.ai-photo-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--gold);
+  color: #0d0d0f;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 50%;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  padding: 0 3px;
+  pointer-events: none;
+}
+.ai-photo-preview-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 3px;
+  background: var(--surface2);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.ai-photo-preview-chip img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+.ai-photo-preview-chip .clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.ai-photo-preview-chip .clear-btn:hover { color: var(--red); }
 
 /* Rev 9.5: clock + status-dot elements removed from header. updateClock()
    becomes a harmless no-op (its `if (el) el.textContent` guard skips the missing
@@ -1307,10 +1361,14 @@ textarea.form-input { resize: vertical; min-height: 80px; }
      250-274 of AutoFlag's CSS). Hide AI elements in header on mobile (too
      much chrome for a 380px phone screen — quick AI is still accessible via
      the chat page); bump tap-target sizes; 16px font on inputs prevents
-     iOS zoom-on-focus. */
+     iOS zoom-on-focus.
+     Rev 9.5.1: also hide .ai-photo-preview-chip on mobile (the 📸 button is
+     desktop-only via the existing header .ai-icon-btn rule, so the preview
+     chip should never render on mobile either). */
   header .ai-bar-label,
   header #cc-header-ai-input,
-  header .ai-icon-btn { display: none; }
+  header .ai-icon-btn,
+  header .ai-photo-preview-chip { display: none; }
   .header-search { min-height: 40px; font-size: 16px; }
   .ai-bar-input { min-height: 44px; font-size: 16px; }
   .ai-icon-btn { min-width: 44px; min-height: 44px; }
@@ -1402,7 +1460,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.1</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1484,11 +1542,23 @@ async function googleSignIn() {
   </div>
   <div class="header-spacer"></div>
   <div class="ai-bar-label">🤖 Ask AI</div>
-  <input type="text" id="cc-header-ai-input" class="ai-bar-input" style="max-width:280px" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')ccHeaderAskAI()">
+  <!-- Rev 9.5.1: width 280px (fixed) matches AutoFlag Rev 1.76 line 433 exactly.
+       Pre-9.5.1 used max-width which let the input collapse below 280px when
+       siblings competed for flex space. -->
+  <input type="text" id="cc-header-ai-input" class="ai-bar-input" style="width:280px" placeholder="Ask anything, or attach a photo…" onkeydown="if(event.key==='Enter')ccHeaderAskAI()">
   <button class="ai-icon-btn" onclick="ccHeaderAskAI()" title="Ask AI">🤖</button>
-  <div class="user-pill" title="Hardcoded admin label — People system rollout pending (backlog #39)">
-    <span>Phil Sigler</span><span style="color:var(--gold);margin-left:2px">★</span>
-  </div>
+  <!-- Rev 9.5.1: 📸 attach photo button. Markup pattern cloned from AutoFlag
+       Rev 1.76 lines 435-438; behavior is base64-vision (Phil's spec deviates
+       from AutoFlag, which uses text-URL — see rev history block at end of file).
+       Hidden on mobile by the existing header .ai-icon-btn { display: none }
+       rule from Rev 9.5; matches AutoFlag's mobile behavior exactly. -->
+  <button class="ai-icon-btn" id="cc-ai-photo-btn" onclick="document.getElementById('cc-ai-photo-input').click()" title="Attach a photo to your AI question">
+    📸
+    <span id="cc-ai-photo-badge" class="ai-photo-badge" style="display:none">0</span>
+  </button>
+  <input type="file" id="cc-ai-photo-input" accept="image/*" capture="environment" style="display:none" onchange="ccAiAttachPhoto(event)">
+  <!-- Rev 9.5.1: preview chip — appears only when a photo is attached. -->
+  <div id="cc-ai-photo-preview" class="ai-photo-preview-chip" style="display:none"></div>
 </header>
 
 <!-- SIDEBAR -->
@@ -2845,7 +2915,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.1</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3358,26 +3428,229 @@ async function aiSaveToHouseData(itemJson) {
 
 // Rev 9.5: tiny shim that routes header-bar AI input through CC's existing
 // sendMessage(). The header bar (#cc-header-ai-input) is a quick-ask surface
-// added by the AutoFlag-pattern header chrome. It does NOT introduce any new
-// AI functionality — just plumbing into the existing handler. Reads the header
-// input, copies its text into the chat-page #chat-input (which sendMessage()
-// reads), then calls sendMessage() which switches to the AI page and runs the
-// normal flow. Header input is cleared on submit so it visibly empties.
-window.ccHeaderAskAI = function() {
+// added by the AutoFlag-pattern header chrome.
+//
+// Rev 9.5.1: extended to support photo attachment (📸 button). When no photo
+// is attached, the function still delegates to sendMessage() (text-only path,
+// unchanged). When a photo IS attached, the function builds a multimodal
+// message with a base64 image content block and submits directly to askAI —
+// bypassing sendMessage() rather than modifying it (per Pattern 6.3.17, don't
+// touch existing handlers; the duplication of the fetch flow is acceptable
+// to keep sendMessage()'s text-only path completely unchanged).
+//
+// AutoFlag's 📸 button uses text-URL: uploads to Storage, appends the URL as
+// plain text to the user message. The model receives the URL as decorative
+// text (askAI fast-mode has no web tools, so the model can't fetch it). CC's
+// implementation deliberately departs from AutoFlag's pattern by sending a
+// proper Anthropic vision content block (base64 source) so the model actually
+// SEES the image content. Storage upload still happens for persistence /
+// discoverability per Phil's spec. CC is more capable than AutoFlag in this
+// dimension; when AutoFlag eventually upgrades to true vision, this is the
+// reference pattern.
+window.ccHeaderAskAI = async function() {
   var src = document.getElementById('cc-header-ai-input');
   if (!src) return;
   var text = (src.value || '').trim();
-  if (!text) return;
-  var dst = document.getElementById('chat-input');
-  if (!dst) return;
-  dst.value = text;
-  src.value = '';
-  if (typeof sendMessage === 'function') {
-    try { sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
-  } else if (typeof window.sendMessage === 'function') {
-    try { window.sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+  var hasPhoto = !!ccAiPendingPhoto;
+
+  if (!text && !hasPhoto) return;
+  if (!text) text = '(image attached)'; // ensure non-empty user message
+
+  // No photo? Use the existing sendMessage() path unchanged.
+  if (!hasPhoto) {
+    var dst = document.getElementById('chat-input');
+    if (!dst) return;
+    dst.value = text;
+    src.value = '';
+    if (typeof sendMessage === 'function') {
+      try { sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+    } else if (typeof window.sendMessage === 'function') {
+      try { window.sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+    }
+    return;
   }
+
+  // Photo attached — build a multimodal request inline.
+  // Capture the photo locally and clear pending state immediately so a fast
+  // double-click can't double-submit.
+  var photo = ccAiPendingPhoto;
+  ccAiClearPhoto();
+  src.value = '';
+
+  // Switch to AI page (matches sendMessage's page-switch behavior)
+  try {
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('[data-page="ai"]').classList.add('active');
+    document.getElementById('page-ai').classList.add('active');
+  } catch (_) { /* best-effort */ }
+
+  // Render the user bubble (text + tiny thumb indicator) and append to history.
+  if (typeof addMessage === 'function') {
+    addMessage('user', text + '  📸');
+  }
+  if (typeof messages !== 'undefined' && Array.isArray(messages)) {
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photo.base64 } },
+        { type: 'text', text: text }
+      ]
+    });
+  }
+
+  if (typeof setLoading === 'function') setLoading(true);
+
+  // Background: upload to Storage for persistence/discoverability.
+  // Not awaited — failure here doesn't block the AI response.
+  ccAiUploadToStorage(photo.dataUrl).then(function(url) {
+    if (url) console.log('[CC AI photo] persisted to Storage:', url);
+  }).catch(function(e) {
+    console.warn('[CC AI photo] Storage upload failed:', e && e.message);
+  });
+
+  try {
+    var user = firebase.auth().currentUser;
+    if (!user) {
+      if (typeof addMessage === 'function') addMessage('ai', 'Not signed in. Please refresh and sign in.');
+      if (typeof setLoading === 'function') setLoading(false);
+      return;
+    }
+    var idToken = await user.getIdToken();
+    var response = await fetch('https://us-central1-philinity-893d2.cloudfunctions.net/askAI', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + idToken
+      },
+      body: JSON.stringify({
+        app: 'cc',
+        system: (typeof SYSTEM_PROMPT !== 'undefined') ? SYSTEM_PROMPT : 'You are a helpful assistant.',
+        messages: messages
+      })
+    });
+    var data = await response.json();
+    if (data.error) {
+      if (typeof addMessage === 'function') addMessage('ai', 'Error: ' + (data.error.message || 'unknown'));
+    } else {
+      var reply = (data.content && data.content[0] && data.content[0].text) || 'No response received.';
+      if (typeof addMessage === 'function') addMessage('ai', reply);
+      if (typeof messages !== 'undefined' && Array.isArray(messages)) {
+        messages.push({ role: 'assistant', content: reply });
+        if (messages.length > 40) messages = messages.slice(-40);
+      }
+    }
+  } catch (e) {
+    if (typeof addMessage === 'function') addMessage('ai', 'Network error: ' + (e && e.message ? e.message : 'unknown'));
+  }
+  if (typeof setLoading === 'function') setLoading(false);
 };
+
+// ── Rev 9.5.1 — Photo attach state & helpers ─────────────────────────
+// ccAiPendingPhoto is a single-photo holder (not an array — header chrome
+// supports one photo at a time, AutoFlag supports up to 4 in its panel).
+var ccAiPendingPhoto = null; // shape: { dataUrl, base64, fileName }
+
+window.ccAiAttachPhoto = function(ev) {
+  var file = ev && ev.target && ev.target.files && ev.target.files[0];
+  if (!file) return;
+  ev.target.value = ''; // allow re-selecting the same file later
+
+  if (!file.type.startsWith('image/')) {
+    showToast('Only image files are supported');
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function() {
+    // Compress to 800px max / 0.75 JPEG quality (matches existing
+    // hdLoadImgPreviewAndUpload pattern at line ~4496 — same compression
+    // approach, separate function to avoid touching existing handler per
+    // Pattern 6.3.17).
+    ccCompressImage(reader.result, function(compressedDataUrl) {
+      // Strip the data URL prefix to get raw base64 for the Anthropic vision
+      // content block. data: URL format is "data:image/jpeg;base64,XXXX".
+      var base64 = compressedDataUrl.split(',')[1] || '';
+      ccAiPendingPhoto = {
+        dataUrl: compressedDataUrl,
+        base64: base64,
+        fileName: file.name
+      };
+      ccAiRenderPhotoPreview();
+    });
+  };
+  reader.onerror = function() {
+    showToast('Failed to read image');
+  };
+  reader.readAsDataURL(file);
+};
+
+// Compress image via canvas. Mirrors the inline logic in
+// hdLoadImgPreviewAndUpload at line ~4496-4506. Extracted as a separate
+// helper rather than refactoring hdLoadImgPreviewAndUpload (Pattern 6.3.17 —
+// don't touch existing working code). Slight duplication accepted for
+// regression safety.
+function ccCompressImage(dataUrl, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    var MAX = 800, w = img.width, h = img.height;
+    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+    else       { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    var compressed = canvas.toDataURL('image/jpeg', 0.75);
+    callback(compressed);
+  };
+  img.onerror = function() {
+    showToast('Image processing failed');
+  };
+  img.src = dataUrl;
+}
+
+// Background upload to Firebase Storage at command_center/ai_images/{ts}-{rand}.jpg
+// for persistence + discoverability per Phil's spec. NOT awaited by the AI flow —
+// the multimodal request is sent inline as base64, so AI response works even if
+// Storage write is slow or fails. Returns the download URL on success, null on
+// failure.
+async function ccAiUploadToStorage(dataUrl) {
+  try {
+    var ts = Date.now();
+    var rand = Math.random().toString(36).slice(2, 8);
+    var path = 'command_center/ai_images/' + ts + '-' + rand + '.jpg';
+    var storageRef = storage.ref(path);
+    var snapshot = await storageRef.putString(dataUrl, 'data_url');
+    return await snapshot.ref.getDownloadURL();
+  } catch (e) {
+    console.warn('[CC AI photo] Storage upload failed:', e && e.message);
+    return null;
+  }
+}
+
+window.ccAiClearPhoto = function() {
+  ccAiPendingPhoto = null;
+  ccAiRenderPhotoPreview();
+};
+
+function ccAiRenderPhotoPreview() {
+  var preview = document.getElementById('cc-ai-photo-preview');
+  var badge = document.getElementById('cc-ai-photo-badge');
+  if (!preview || !badge) return;
+  if (!ccAiPendingPhoto) {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    badge.style.display = 'none';
+    return;
+  }
+  preview.innerHTML =
+    '<img src="' + ccAiPendingPhoto.dataUrl + '" alt="Attached" />' +
+    '<span title="' + (ccAiPendingPhoto.fileName || 'photo') + '">📎</span>' +
+    '<button class="clear-btn" onclick="ccAiClearPhoto()" title="Remove photo">✕</button>';
+  preview.style.display = 'inline-flex';
+  badge.textContent = '1';
+  badge.style.display = '';
+}
 
 window.sendMessage = async function() {
   if (isLoading) return;
@@ -7220,7 +7493,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5
+// Philinity Command Center © Rev 9.5.1
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -7560,6 +7833,145 @@ async function importFullBackup(event) {
 //            stacking-context fix (Rev 9.4.3), nav contrast (Rev 9.4.1+),
 //            position-fixed footer (Rev 9.4.2), Firebase SDK shim (Rev 9.3),
 //            data model, RTDB schema, Cloud Function, auth, footer handlers.
+// Rev 9.5.1  Header polish — three changes scoped to the header chrome only.
+//          Both production sources curl-fetched and verified before any code
+//          changes (Pattern 6.3.18). CC v9.5 confirmed at line count and rev
+//          label match; AutoFlag v1.76 confirmed at line 490 of /tmp/af_prod.html.
+//          Change 1 — AI input width:
+//          - max-width: 280px → width: 280px (AutoFlag Rev 1.76 line 433 inline
+//            style is "width:280px" — fixed, not max-width). Pre-9.5.1's
+//            max-width allowed the input to collapse below 280px when flex
+//            siblings competed for space. Phil's reported "shorter input"
+//            symptom was correct. Single-character fix in the inline style.
+//          Change 2 — User pill removed:
+//          - "Phil Sigler★" markup at end of header removed. Matches AutoFlag's
+//            chrome exactly (AutoFlag has no user pill in its header). The
+//            People system rev (backlog #39) will reintroduce some kind of
+//            user identification at the right time.
+//          - .user-pill CSS class retained as dead code with a deprecation
+//            comment — safe to delete in a future cleanup rev. No current
+//            consumers; keeps this rev's diff scoped to chrome behavior, not
+//            CSS spring-cleaning.
+//          Change 3 — 📸 attach photo button:
+//          - Markup pattern cloned from AutoFlag Rev 1.76 lines 435-438:
+//            <button class="ai-icon-btn" id="cc-ai-photo-btn"> 📸 +
+//            <span class="ai-photo-badge"> ... </button>. Hidden file <input>
+//            sibling triggered by the button via .click(). Inline preview chip
+//            (.ai-photo-preview-chip) renders thumbnail + ✕ when a photo is
+//            attached.
+//          - Hidden on mobile via the existing Rev 9.5 mobile rule
+//            "header .ai-icon-btn { display: none }" plus a new rule
+//            "header .ai-photo-preview-chip { display: none }" that mirrors
+//            AutoFlag's mobile behavior (📸 is desktop-only in AutoFlag too,
+//            line 252 of AutoFlag CSS).
+//          - .ai-photo-badge CSS ported verbatim from AutoFlag line 368,
+//            palette-mapped: --amber → --gold, color #1a1208 → #0d0d0f.
+//          - .ai-photo-preview-chip CSS is CC-specific (AutoFlag uses a
+//            separate panel via toggleAIPhotoPanel; CC uses an inline chip
+//            in the header for a more compact pattern that doesn't cross
+//            chip-density thresholds when collapsed).
+//          BEHAVIORAL DEVIATION FROM AUTOFLAG (deliberate):
+//          - AutoFlag's askAI() at lines 3618-3742 is text-URL: it uploads
+//            photos to Firebase Storage at autoflag/installs/_ai_uploads/...,
+//            gets the download URLs, then APPENDS THE URLS AS PLAIN TEXT to
+//            the user message string. The model receives URLs as decorative
+//            text — askAI fast-mode has no web tools, so the model can't
+//            actually fetch and "see" the image content. AutoFlag's 📸 is
+//            essentially a URL-attachment, not vision.
+//          - CC implements TRUE VISION: messages[].content is built as
+//            [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg',
+//            data: <base64> } }, { type: 'text', text: <prompt> }]. The model
+//            actually analyzes the image content. This makes CC more capable
+//            than AutoFlag in this dimension. When AutoFlag eventually upgrades
+//            to true vision, CC's pattern at this rev is the reference.
+//          - Storage upload still happens at command_center/ai_images/{ts}-{rand}.jpg
+//            for persistence/discoverability per Phil's spec — but it runs in
+//            background (NOT awaited) so a slow or failed Storage write doesn't
+//            block the AI response. The AI gets the image inline as base64.
+//          - askAI Cloud Function audit (per v4.10 doc Section 3.7): function
+//            destructures `messages` from req.body and passes it unchanged to
+//            client.messages.create({ messages, ... }). It's a transparent
+//            proxy. Vision content blocks pass through without code changes.
+//            ZERO Cloud Function modifications required.
+//          - Anthropic Sonnet 4.6 supports vision via base64 source per docs.
+//            Image format: JPEG, max 800px long edge, ~50KB compressed.
+//            Base64 payload ~67KB inline in the request. Negligible vs the
+//            12000-char system prompt cap.
+//          - askAI app config for 'cc' uses claude-sonnet-4-6 fast mode
+//            (1000 max_tokens, no tools). Vision works in fast mode (no tools
+//            required). No model swap needed.
+//          New JS surface (all window-exposed for inline onclick):
+//          - ccHeaderAskAI (rewritten, async): no-photo path delegates to
+//            sendMessage() unchanged; photo path builds multimodal request
+//            inline and submits directly to askAI. sendMessage() text-only
+//            path is COMPLETELY UNTOUCHED per Pattern 6.3.17.
+//          - ccAiAttachPhoto(ev): file picker change handler. Reads the file,
+//            compresses via ccCompressImage, stores in ccAiPendingPhoto.
+//          - ccCompressImage(dataUrl, callback): mirrors the inline canvas
+//            compression in hdLoadImgPreviewAndUpload at line ~4496 (800px max,
+//            0.75 JPEG quality). Extracted as separate helper rather than
+//            refactoring hdLoadImgPreviewAndUpload — Pattern 6.3.17 says don't
+//            touch existing handlers, slight code duplication accepted for
+//            regression safety.
+//          - ccAiUploadToStorage(dataUrl): background upload to
+//            command_center/ai_images/{ts}-{rand}.jpg via storage.ref().putString.
+//            Called fire-and-forget by ccHeaderAskAI; failures logged not toasted.
+//          - ccAiClearPhoto(): clears pending photo + repaints preview chip.
+//          - ccAiRenderPhotoPreview(): updates the preview chip + badge based on
+//            current ccAiPendingPhoto state.
+//          - ccAiPendingPhoto: module-level state holder (single photo, not array
+//            — AutoFlag supports up to 4; CC's header-chip pattern supports 1).
+//          Pattern 6.3.20 audit:
+//          - .ai-icon-btn already has position: relative (Rev 9.5 ported from
+//            AutoFlag for badge positioning). The new 📸 button uses the same
+//            class so it has the same stacking context. The badge uses
+//            position: absolute and stays inside the button's local context —
+//            badge always paints above the button face. From outside the
+//            button, the entire button paints at header's z:100 — same as
+//            existing 🤖 button. No new stacking-context trap.
+//          - .ai-photo-preview-chip is position: static (default), participates
+//            normally in header flex flow. No new stacking context.
+//          Pattern 6.3.19 audit:
+//          - Header element count: pre-9.5.1 desktop was 8 (hamburger, logo,
+//            search-wrap, spacer, ai-bar-label, ai-bar-input, 🤖 btn, user-pill).
+//            Post-9.5.1 desktop is 9 with photo attached (added 📸 btn + hidden
+//            input + preview chip), 8 without (preview chip display:none).
+//          - Mobile: pre-9.5.1 was 5 (hamburger, logo, search, spacer, user-pill).
+//            Post-9.5.1 is 4 (user-pill removed; AI bar elements still hidden;
+//            preview chip explicitly hidden via the new mobile rule).
+//          - Net change: +1 desktop element when photo attached, -1 mobile
+//            element. The hidden file input doesn't participate in layout
+//            (display: none). Header has plenty of room on desktop (>1024px).
+//            No chip-density risk.
+//          Diff scope: header markup + 4 new CSS rule blocks (.ai-photo-badge,
+//          .ai-photo-preview-chip + 3 children) + ccHeaderAskAI rewrite +
+//          5 new helper functions (ccAiAttachPhoto, ccCompressImage,
+//          ccAiUploadToStorage, ccAiClearPhoto, ccAiRenderPhotoPreview). One
+//          existing CSS rule deprecated-but-retained (.user-pill).
+//          NOT changed: footer chrome, Data Manager modal, House Data page,
+//          Contacts page, nav structure, Cloud Function, Firebase Storage rules,
+//          RTDB schema, sendMessage() body (text-only path stays exactly as
+//          shipped in Rev 9.5), hdLoadImgPreviewAndUpload, hdUploadImageToStorage.
+//          Storage path verification: CC already writes to Firebase Storage
+//          successfully today via hdUploadImageToStorage at house_data/{filename}
+//          (line ~4483) — proves the deployed Storage rules allow authenticated
+//          writes from CC. New path command_center/ai_images/{ts}-{rand}.jpg
+//          uses the same auth-required rule pattern. If the rules are unexpectedly
+//          path-scoped to /house_data/ only, the upload returns null silently and
+//          the AI request continues without the persisted URL — graceful
+//          degradation. Phil to verify on first photo submit; rules update is a
+//          separate deploy if needed.
+//          Pattern note for Bot 2 (v4.11 candidate): when a feature port from
+//          one Philinity app to another reveals the source app has an inert
+//          implementation (AutoFlag's text-URL "vision" doesn't actually use
+//          vision content blocks because askAI fast-mode has no web tools),
+//          the right move is to upgrade the dest app to the standard pattern,
+//          not to clone the inert implementation. Pattern 6.3.18 audit (verify
+//          before assuming) found this gap; Pattern 6.3.17 (one logical change
+//          per rev) was held by deviating from spec only after explicit Phil
+//          confirmation. Surfacing the discovery to Phil before shipping
+//          prevented a wasted rev that would have shipped a feature with no
+//          actual capability.
 // ============================================================
 
 </script>
