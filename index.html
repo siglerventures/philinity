@@ -236,6 +236,22 @@ header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid v
 .ai-photo-panel{position:relative;margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--amber-dim);border-radius:var(--radius);max-width:1400px;margin-left:auto;margin-right:auto}
 .ai-photo-panel-close{position:absolute;top:6px;right:8px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;line-height:1;border-radius:4px;transition:color 0.12s,background 0.12s}
 .ai-photo-panel-close:hover{color:var(--text);background:rgba(255,255,255,0.05)}
+/* Rev 9.5.13: history dropdown — anchored top-right of viewport via fixed
+   positioning so it sits below the ⌛ button. position:fixed avoids any
+   stacking-context traps from .ai-bar's position:absolute parent. */
+.ai-history-dropdown{position:fixed;top:55px;right:14px;width:340px;max-height:60vh;background:var(--surface);border:1px solid var(--gold-dim);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);z-index:9999;overflow-y:auto;animation:fadeInDown 0.15s ease}
+.ai-history-header{padding:12px 14px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.ai-history-header-label{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);flex:1}
+.ai-history-header-close{background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 6px;line-height:1;border-radius:4px}
+.ai-history-header-close:hover{color:var(--text);background:rgba(255,255,255,0.05)}
+.ai-history-empty{padding:20px 16px;font-size:0.78rem;color:var(--text-muted);text-align:center;font-style:italic}
+.ai-history-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;cursor:pointer;border-top:1px solid var(--border);transition:background 0.12s}
+.ai-history-row:first-of-type{border-top:none}
+.ai-history-row:hover{background:var(--surface2)}
+.ai-history-row.active{background:var(--gold-dim)}
+.ai-history-row-main{flex:1;min-width:0}
+.ai-history-row-title{font-size:0.82rem;color:var(--text);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.ai-history-row-meta{font-size:0.68rem;color:var(--text-muted);margin-top:2px}
 .ai-photo-panel-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
 .ai-photo-panel-label{font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:1px;font-weight:500}
 .ai-photo-tip{font-size:11px;color:var(--amber);margin-bottom:8px}
@@ -1387,7 +1403,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.12</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.13</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1485,9 +1501,11 @@ async function googleSignIn() {
       📸
       <span id="aiPhotoBadge" class="ai-photo-badge" style="display:none">0</span>
     </button>
-    <!-- Rev 9.5.12: ✨ New chat button. Slot in header reserved here. Rev 9.6
-         will slide a 📚 History button in next to this without UI rework. -->
-    <button class="ai-icon-btn" id="aiNewChat" onclick="aiNewChat()" title="Clear conversation and start fresh">✨</button>
+    <!-- Rev 9.5.13: ⌛ History dropdown — localStorage-backed, this-device-only.
+         9.6 will migrate to Firebase persistence. -->
+    <button class="ai-icon-btn" id="aiHistoryToggle" onclick="toggleAIHistoryDropdown()" title="Conversation history (this device only)" style="position:relative">⌛</button>
+    <!-- Rev 9.5.12: ✨ New chat button. Auto-saves current to history (Rev 9.5.13). -->
+    <button class="ai-icon-btn" id="aiNewChat" onclick="aiNewChat()" title="Save current and start a new chat">✨</button>
   </header>
 
   <!-- AutoFlag Rev 1.76 photo panel + thinking + chat thread, byte-for-byte
@@ -1522,6 +1540,10 @@ async function googleSignIn() {
       <div class="ai-photo-tip">💡 Tip: <strong>Ctrl+V</strong> while this panel is open to paste a screenshot</div>
       <div id="aiPhotoPreview" style="display:flex;gap:8px;flex-wrap:wrap"></div>
     </div>
+    <!-- Rev 9.5.13: history dropdown anchored to the right side of the header
+         (where ⌛ button lives). position:absolute relative to .ai-bar overlay.
+         Empty by default; renderAIHistoryDropdown rebuilds the body each open. -->
+    <div id="aiHistoryDropdown" class="ai-history-dropdown" style="display:none"></div>
   </div>
 
 <!-- SIDEBAR -->
@@ -2858,7 +2880,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.12</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.13</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3415,17 +3437,18 @@ document.addEventListener('mousedown', function(ev) {
   panel.style.display = 'none';
 });
 
-// Rev 9.5.12: ✨ New chat. Clears the in-memory `messages` array and the
-// chat-messages DOM, preserving the seeded welcome bubble (first child).
-// Today there's no persistence, so confirm() before wiping. The "coming in
-// 9.6" framing tells the user why this is a one-way action right now —
-// once 9.6 ships history persistence, this confirm goes away.
+// Rev 9.5.12 / 9.5.13: ✨ New chat. Auto-saves current to localStorage history
+// (Rev 9.5.13) before wiping in-memory messages and the DOM thread. The save
+// is the undo — no confirm dialog needed. Conversation is empty (welcome only)
+// → no-op save. Resets aiActiveConversationId so the next message starts a
+// fresh history entry.
 window.aiNewChat = function() {
-  var hasContent = (typeof messages !== 'undefined' && Array.isArray(messages) && messages.length > 0);
-  if (hasContent) {
-    var ok = confirm("Clear this conversation? This can't be undone yet — conversation history is coming in Rev 9.6.");
-    if (!ok) return;
+  // Auto-save current if non-empty.
+  if (typeof messages !== 'undefined' && Array.isArray(messages) && messages.length > 0) {
+    aiHistoryAutoSave();
   }
+  // Reset active-conversation pointer so next message creates a new history row.
+  aiActiveConversationId = null;
   // Reset in-memory thread.
   if (typeof messages !== 'undefined' && Array.isArray(messages)) {
     messages.length = 0;
@@ -3444,9 +3467,245 @@ window.aiNewChat = function() {
   }
   // Hide photo panel if open.
   closeAIPhotoPanel();
+  // Close history dropdown if open.
+  closeAIHistoryDropdown();
   // Make sure we're on the AI page so the user sees the cleared state.
   if (typeof navigateTo === 'function') navigateTo('ai');
 };
+
+// ─── Rev 9.5.13: AI conversation history (localStorage) ──────────────────
+// Storage shape: cc_ai_history_v1 = [{ id, title, messages, createdAt, updatedAt }]
+// Cap at 7. Active conversation always survives prune. Image content blocks
+// stripped to "[image attached]" text placeholder before persist (per Bot 2 —
+// Storage URLs aren't reliably available at persist time because uploads are
+// fire-and-forget; 9.6 will handle proper image persistence with Firebase).
+//
+// aiActiveConversationId is per-tab in-memory. Set on first save of a session,
+// reused for subsequent saves in that session. Cleared by aiNewChat() and by
+// loading a different conversation from history.
+
+var AI_HISTORY_KEY = 'cc_ai_history_v1';
+var AI_HISTORY_CAP = 7;
+var aiActiveConversationId = null;
+
+function aiHistoryRead() {
+  try {
+    var raw = localStorage.getItem(AI_HISTORY_KEY);
+    if (!raw) return [];
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (_) { return []; }
+}
+
+function aiHistoryWrite(arr) {
+  try {
+    localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(arr));
+  } catch (e) { console.warn('[ai history] write failed:', e && e.message); }
+}
+
+// Strip image content blocks to text placeholder. Anthropic-shaped messages
+// can have either string content or array-of-blocks content (vision). Images
+// in localStorage would blow out the 5MB-ish quota fast — and Storage URLs
+// aren't reliably present at persist time (uploads are fire-and-forget). So
+// we replace image blocks with a "[image attached]" text block. The
+// conversation reads correctly when reloaded; just no images visible.
+function aiHistorySanitize(msg) {
+  if (!msg || typeof msg !== 'object') return msg;
+  // String content — already safe.
+  if (typeof msg.content === 'string') return msg;
+  // Array content — replace image blocks with text placeholders.
+  if (Array.isArray(msg.content)) {
+    var sanitized = msg.content.map(function(block) {
+      if (block && block.type === 'image') {
+        return { type: 'text', text: '[image attached]' };
+      }
+      return block;
+    });
+    return { role: msg.role, content: sanitized };
+  }
+  return msg;
+}
+
+function aiHistoryDeriveTitle(msgs) {
+  // First user message text → trimmed → ≤60 chars.
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    if (m.role !== 'user') continue;
+    var txt = '';
+    if (typeof m.content === 'string') txt = m.content;
+    else if (Array.isArray(m.content)) {
+      var textBlock = m.content.find(function(b) { return b && b.type === 'text'; });
+      if (textBlock) txt = textBlock.text || '';
+    }
+    txt = String(txt).replace(/\s+/g, ' ').trim();
+    if (txt.length > 60) txt = txt.substring(0, 60) + '…';
+    if (txt) return txt;
+  }
+  return 'Untitled conversation';
+}
+
+function aiHistoryNewId() {
+  return Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+}
+
+// Save current messages array to localStorage history. Upserts by
+// aiActiveConversationId — same session keeps the same row across saves.
+function aiHistoryAutoSave() {
+  if (typeof messages === 'undefined' || !Array.isArray(messages) || messages.length === 0) return;
+  var sanitized = messages.map(aiHistorySanitize);
+  var now = Date.now();
+  var entries = aiHistoryRead();
+  var existing = aiActiveConversationId
+    ? entries.find(function(e) { return e.id === aiActiveConversationId; })
+    : null;
+  if (existing) {
+    existing.messages = sanitized;
+    existing.title = existing.title || aiHistoryDeriveTitle(sanitized);
+    existing.updatedAt = now;
+  } else {
+    var id = aiHistoryNewId();
+    aiActiveConversationId = id;
+    entries.push({
+      id: id,
+      title: aiHistoryDeriveTitle(sanitized),
+      messages: sanitized,
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+  // Prune. Active conversation always survives even if we're at the cap.
+  if (entries.length > AI_HISTORY_CAP) {
+    var keepIds = {};
+    if (aiActiveConversationId) keepIds[aiActiveConversationId] = true;
+    var sortable = entries.slice().sort(function(a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    var keep = [];
+    for (var i = 0; i < sortable.length; i++) {
+      if (keep.length < AI_HISTORY_CAP || keepIds[sortable[i].id]) {
+        keep.push(sortable[i]);
+      }
+    }
+    // Defensive: if the active conversation wasn't in the top-N, we kept it
+    // separately above; entries length now equals AI_HISTORY_CAP or
+    // AI_HISTORY_CAP + 1 (the +1 case = active was outside top-N).
+    entries = keep;
+  }
+  aiHistoryWrite(entries);
+}
+
+// Format relative time like "2h ago", "yesterday", "3d ago".
+function aiHistoryRelTime(ms) {
+  if (!ms) return '';
+  var diff = Date.now() - ms;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  if (diff < 172800000) return 'yesterday';
+  if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+  var d = new Date(ms);
+  return (d.getMonth() + 1) + '/' + d.getDate() + '/' + String(d.getFullYear()).slice(-2);
+}
+
+// Re-render the chat-messages DOM from a messages array (used when loading
+// a saved conversation). Preserves the welcome bubble (first child) and
+// appends each message via existing addMessage.
+function aiRenderMessagesFromArray(msgs) {
+  var container = document.getElementById('chat-messages');
+  if (!container) return;
+  var welcome = container.firstElementChild;
+  container.innerHTML = '';
+  if (welcome) container.appendChild(welcome);
+  msgs.forEach(function(m) {
+    if (!m) return;
+    var role = m.role === 'assistant' ? 'ai' : 'user';
+    var text = '';
+    if (typeof m.content === 'string') text = m.content;
+    else if (Array.isArray(m.content)) {
+      var textBlock = m.content.find(function(b) { return b && b.type === 'text'; });
+      var hasImage = m.content.some(function(b) { return b && b.type === 'image'; });
+      text = (textBlock ? (textBlock.text || '') : '');
+      if (hasImage && role === 'user') text += '  📸';
+    }
+    if (typeof addMessage === 'function') addMessage(role, text);
+  });
+}
+
+// Load a saved conversation by id. Saves current first if non-empty.
+function aiHistoryLoad(id) {
+  var entries = aiHistoryRead();
+  var target = entries.find(function(e) { return e.id === id; });
+  if (!target) return;
+  // Save current before swapping.
+  if (typeof messages !== 'undefined' && Array.isArray(messages) && messages.length > 0 && id !== aiActiveConversationId) {
+    aiHistoryAutoSave();
+  }
+  // Replace in-memory thread with the loaded conversation's messages.
+  if (typeof messages !== 'undefined' && Array.isArray(messages)) {
+    messages.length = 0;
+    target.messages.forEach(function(m) { messages.push(m); });
+  }
+  aiActiveConversationId = id;
+  aiRenderMessagesFromArray(target.messages);
+  closeAIHistoryDropdown();
+  if (typeof navigateTo === 'function') navigateTo('ai');
+}
+window.aiHistoryLoad = aiHistoryLoad;
+
+window.toggleAIHistoryDropdown = function() {
+  var dd = document.getElementById('aiHistoryDropdown');
+  if (!dd) return;
+  if (dd.style.display === 'none' || !dd.style.display) {
+    renderAIHistoryDropdown();
+    dd.style.display = 'block';
+  } else {
+    dd.style.display = 'none';
+  }
+};
+
+window.closeAIHistoryDropdown = function() {
+  var dd = document.getElementById('aiHistoryDropdown');
+  if (dd) dd.style.display = 'none';
+};
+
+function renderAIHistoryDropdown() {
+  var dd = document.getElementById('aiHistoryDropdown');
+  if (!dd) return;
+  var entries = aiHistoryRead();
+  entries.sort(function(a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+  var html = '<div class="ai-history-header">' +
+             '<span class="ai-history-header-label">⌛ Recent Conversations</span>' +
+             '<button class="ai-history-header-close" onclick="closeAIHistoryDropdown()" title="Close">✕</button>' +
+             '</div>';
+  if (!entries.length) {
+    html += '<div class="ai-history-empty">No saved conversations yet. They\'ll appear here after your first AI exchange.</div>';
+  } else {
+    entries.forEach(function(e) {
+      var isActive = (e.id === aiActiveConversationId);
+      var safeId = String(e.id).replace(/'/g, '\\\'');
+      html += '<div class="ai-history-row' + (isActive ? ' active' : '') + '" onclick="aiHistoryLoad(\'' + safeId + '\')">' +
+              '<div class="ai-history-row-main">' +
+                '<div class="ai-history-row-title">' + stripHTML(e.title || 'Untitled') + '</div>' +
+                '<div class="ai-history-row-meta">' + aiHistoryRelTime(e.updatedAt) + ' · ' +
+                  (e.messages ? e.messages.length : 0) + ' message' + ((e.messages && e.messages.length === 1) ? '' : 's') +
+                  (isActive ? ' · current' : '') +
+                '</div>' +
+              '</div>' +
+              '</div>';
+    });
+  }
+  dd.innerHTML = html;
+}
+
+// Click-outside-to-close on the history dropdown. Same pattern as the photo
+// panel and global search dropdown.
+document.addEventListener('mousedown', function(ev) {
+  var dd = document.getElementById('aiHistoryDropdown');
+  if (!dd || dd.style.display === 'none' || !dd.style.display) return;
+  var toggle = document.getElementById('aiHistoryToggle');
+  var t = ev.target;
+  if (dd.contains(t)) return;
+  if (toggle && toggle.contains(t)) return;
+  dd.style.display = 'none';
+});
 
 window.handleAIPhotoUpload = function(ev) {
   var files = Array.from((ev && ev.target && ev.target.files) || []);
@@ -3674,6 +3933,8 @@ window.askAI = async function() {
         messages.push({ role: 'assistant', content: reply });
         if (messages.length > 40) messages = messages.slice(-40);
       }
+      // Rev 9.5.13: persist to localStorage history after successful response.
+      if (typeof aiHistoryAutoSave === 'function') aiHistoryAutoSave();
     }
   } catch (e) {
     if (typeof addMessage === 'function') addMessage('ai', 'Network error: ' + (e && e.message ? e.message : 'unknown'));
@@ -3751,6 +4012,8 @@ window.sendMessage = async function() {
       }
       messages.push({ role: 'assistant', content: reply });
       if (messages.length > 40) messages = messages.slice(-40);
+      // Rev 9.5.13: persist to localStorage history after successful response.
+      if (typeof aiHistoryAutoSave === 'function') aiHistoryAutoSave();
     }
   } catch(e) {
     addMessage('ai', `Network error: ${e.message}`);
@@ -7839,7 +8102,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.12
+// Philinity Command Center © Rev 9.5.13
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
