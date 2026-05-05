@@ -1359,7 +1359,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.4</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.5</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1463,7 +1463,7 @@ async function googleSignIn() {
        from lines 453-483. Inert in CC (no thinking/chat-thread DOM consumers
        below header — CC renders chat in #page-ai instead) but structurally
        identical. -->
-  <div class="ai-bar" style="background:transparent;border-bottom:none;padding:0;grid-column:1 / -1">
+  <div class="ai-bar" style="background:transparent;border-bottom:none;padding:0;position:absolute;top:53px;left:0;right:0;z-index:99">
     <div id="aiPhotoPanel" class="ai-photo-panel" style="display:none">
       <div class="ai-photo-panel-row">
         <span class="ai-photo-panel-label">📸 Attach Photos (max 4)</span>
@@ -2843,7 +2843,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.4</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.5</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6881,7 +6881,11 @@ function globalSearchInput(q) {
     closeGlobalSearch();
     return;
   }
-  gsDebounce = setTimeout(function() { runGlobalSearch(q.trim()); }, 150);
+  gsDebounce = setTimeout(function() {
+    runGlobalSearch(q.trim()).catch(function(e) {
+      console.warn('[search] runGlobalSearch failed:', e && e.message);
+    });
+  }, 150);
 }
 
 function globalSearchKeydown(e) {
@@ -6935,7 +6939,7 @@ function gsHighlight(text, q) {
   return out;
 }
 
-function runGlobalSearch(q) {
+async function runGlobalSearch(q) {
   var needle = q.toLowerCase();
   var sections = [];
 
@@ -6970,7 +6974,13 @@ function runGlobalSearch(q) {
   }
 
   // ── HOUSE DATA ──
+  // Rev 9.5.5: ensure House Data is loaded before searching. Previous behavior
+  // silently skipped House Data if user hadn't visited that page yet in the
+  // session (hdLoaded === false → entire House Data section skipped).
   var hdHits = [];
+  if (!hdLoaded && typeof hdInit === 'function') {
+    try { await hdInit(); } catch (e) { console.warn('[search] hdInit failed:', e && e.message); }
+  }
   if (hdLoaded) {
     hdSheetOrder.forEach(function(key) {
       var sheet = hdAllSheets[key];
@@ -7456,7 +7466,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.4
+// Philinity Command Center © Rev 9.5.5
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
