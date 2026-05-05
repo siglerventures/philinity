@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 <title>Philinity — Sigler Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=DM+Serif+Display&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
 <!--
   Rev 9.3 — Firebase modular v10 SDK with a small compat-shaped shim.
   All call sites in the rest of this file use the compat-style surface
@@ -148,6 +148,14 @@
      names yet so nothing pre-9.5 changes. */
   --radius-pill: 20px;
   --radius-sm: 8px;
+  /* Rev 9.5.2: aliases that let AutoFlag Rev 1.76's CSS paste byte-for-byte
+     into CC. AutoFlag uses --amber / --amber-bright / --amber-dim / --border-
+     dashed which CC doesn't natively define. Aliases resolve them to CC's
+     palette. */
+  --amber: var(--gold);
+  --amber-bright: var(--gold);
+  --amber-dim: var(--gold-dim);
+  --border-dashed: var(--border-bright);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -196,231 +204,52 @@ body::after {
   z-index: 1;
 }
 
-/* Header */
-/* Rev 9.5 — Header chrome cloned from AutoFlag Rev 1.76 (palette-mapped to CC).
-   Source: production curl of AutoFlag, lines 56-65 + 363-368 + mobile media at 250-274.
-   Palette substitutions: --amber → --gold, --amber-bright → --gold (CC has no -bright),
-   --amber-dim → --gold-dim. All other vars (--surface, --surface2, --border, --text,
-   --text-dim, --text-muted) match. AutoFlag's --radius-pill / --radius-sm now exist in
-   CC's :root (added above). header { z-index: 100 } unchanged from CC's pre-9.5 value
-   (matches AutoFlag exactly). grid-column: 1 / -1 retained for CC's grid layout (not in
-   AutoFlag because AutoFlag isn't grid-based). */
-header {
-  grid-column: 1 / -1;
-  position: sticky;
-  top: 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 100;
-}
-.logo {
-  font-family: 'DM Serif Display', 'Cormorant Garamond', Georgia, serif;
-  font-size: 20px;
-  color: var(--gold);
-  cursor: pointer;
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
-}
-.logo small {
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: normal;
-  margin-left: 4px;
-  font-family: inherit;
-}
-.header-spacer { flex: 1; }
-.header-search {
-  flex: 1;
-  max-width: 380px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  color: var(--text);
-  font-size: 13px;
-}
-.header-search:focus { border-color: var(--gold-dim); outline: none; }
-/* Rev 9.5.2: .user-pill rule removed entirely. 9.5.1 retained it as dead code,
-   but Phil's 9.5.1 spec was explicit: "remove the pill markup AND any
-   associated CSS classes". When the People system rolls out (backlog #39),
-   the new user-identification element should style itself appropriately
-   rather than inherit a pill that was tied to the removed "Phil Sigler★"
-   hardcoded label. */
-.user-pill img { width: 20px; height: 20px; border-radius: 50%; }
-.icon-btn {
-  padding: 6px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  font-size: 13px;
-  cursor: pointer;
-}
-.icon-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
-.ai-bar-label {
-  font-size: 12px;
-  color: var(--gold);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.ai-bar-input {
-  flex: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  padding: 8px 14px;
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
-}
-.ai-bar-input:focus { border-color: var(--gold-dim); }
-.ai-icon-btn {
-  padding: 7px 11px;
-  background: var(--surface2);
-  border: 1px solid var(--gold-dim);
-  border-radius: var(--radius-sm);
-  color: var(--gold);
-  font-size: 14px;
-  position: relative;
-  cursor: pointer;
-}
-.ai-icon-btn:hover { background: var(--gold-dim); color: #fff; }
+/* Rev 9.5.2 — AutoFlag Rev 1.76 header CSS, byte-for-byte (lines 56-65 +
+   363-374 of AutoFlag source). Token aliases above (--amber, --amber-bright,
+   --amber-dim, --border-dashed) make these rules resolve correctly into CC's
+   gold palette. */
 
-/* Rev 9.5.1 — Photo attach badge.
-   Ported verbatim from AutoFlag Rev 1.76 line 368, palette mapped:
-   --amber → --gold, color #1a1208 → #0d0d0f. */
-.ai-photo-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: var(--gold);
-  color: #0d0d0f;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 50%;
-  min-width: 16px;
-  height: 16px;
-  line-height: 16px;
-  padding: 0 3px;
-  pointer-events: none;
-}
+/* CC-only grid bridge: CC's <header> spans both columns of the .shell grid.
+   AutoFlag isn't grid-based so this isn't in AutoFlag's source. Applied as a
+   separate rule so AutoFlag's `header { ... }` block below stays verbatim. */
+header { grid-column: 1 / -1; }
 
-/* Rev 9.5.2 — Photo attach PANEL (replaces 9.5.1's inline chip approach).
-   Panel pattern cloned from AutoFlag Rev 1.76 lines 369-374, palette mapped.
-   AutoFlag puts it in normal flow because AutoFlag scrolls; CC's .shell is
-   height:100vh with overflow:hidden, so a position:fixed overlay is the
-   structurally-safe choice (no grid math change). z-index: 102 is below
-   modal-overlay (1000) and toast (9999) but above header (100) and footer (100)
-   on mobile (where the panel is hidden anyway via the rule below). Hidden on
-   mobile via the existing 9.5 mobile rule that hides AI bar elements plus the
-   explicit rule below. */
-.ai-photo-panel {
-  position: fixed;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 102;
-  width: calc(100% - 32px);
-  max-width: 920px;
-  padding: 12px;
-  background: var(--surface2);
-  border: 1px solid var(--gold-dim);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-}
-.ai-photo-panel-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.ai-photo-panel-label {
-  font-size: 11px;
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 500;
-}
-.ai-photo-tip {
-  font-size: 11px;
-  color: var(--gold);
-  margin-bottom: 8px;
-}
-.ai-drop-zone {
-  padding: 7px 14px;
-  background: transparent;
-  border: 1px dashed var(--border-bright);
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  font-size: 12px;
-  cursor: pointer;
-}
-.ai-drop-zone.drag-over {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: var(--gold-dim);
-}
-/* Generic action buttons used by the panel. Verified by grep that no existing
-   CC markup uses class="btn" or class="btn-secondary" — these new rules can't
-   collide with pre-existing styling. */
-.btn {
-  padding: 8px 14px;
-  background: var(--gold);
-  color: #0d0d0f;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 13px;
-  font-family: 'Outfit', sans-serif;
-  cursor: pointer;
-}
-.btn:hover { background: #d4b880; }
-.btn-secondary {
-  background: var(--surface2);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-.btn-secondary:hover { border-color: var(--gold-dim); color: var(--gold); }
-/* Photo thumbnail tile in the preview grid. */
-.ai-photo-thumb {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.ai-photo-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.ai-photo-thumb .x {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background: rgba(0,0,0,0.7);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-}
+/* ==== Header ==== */
+header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:100}
+.logo{font-family:"DM Serif Display",Georgia,serif;font-size:20px;color:var(--amber-bright);cursor:pointer;letter-spacing:.3px;flex-shrink:0}
+.logo small{color:var(--text-muted);font-size:11px;font-weight:normal;margin-left:4px;font-family:inherit}
+.header-spacer{flex:1}
+.header-search{flex:1;max-width:380px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-pill);padding:6px 14px;color:var(--text);font-size:13px}
+.header-search:focus{border-color:var(--amber-dim)}
+.user-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-pill);font-size:12px;color:var(--text-dim)}
+.user-pill img{width:20px;height:20px;border-radius:50%}
+.icon-btn{padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-dim);font-size:13px}
+.icon-btn:hover{border-color:var(--amber-dim);color:var(--amber)}
+
+/* AI bar + photo panel — AutoFlag lines 363-374 verbatim */
+.ai-bar-label{font-size:12px;color:var(--amber);font-weight:600;white-space:nowrap}
+.ai-bar-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-pill);padding:8px 14px;color:var(--text);font-size:13px}
+.ai-bar-input:focus{border-color:var(--amber-dim)}
+.ai-icon-btn{padding:7px 11px;background:var(--surface2);border:1px solid var(--amber-dim);border-radius:var(--radius-sm);color:var(--amber);font-size:14px;position:relative}
+.ai-icon-btn:hover{background:var(--amber-dim);color:#fff}
+.ai-photo-badge{position:absolute;top:-4px;right:-4px;background:var(--amber);color:#1a1208;font-size:10px;font-weight:700;border-radius:50%;min-width:16px;height:16px;line-height:16px;padding:0 3px}
+.ai-photo-panel{margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--amber-dim);border-radius:var(--radius);max-width:1400px;margin-left:auto;margin-right:auto}
+.ai-photo-panel-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+.ai-photo-panel-label{font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:1px;font-weight:500}
+.ai-photo-tip{font-size:11px;color:var(--amber);margin-bottom:8px}
+.ai-drop-zone{padding:7px 14px;background:transparent;border:1px dashed var(--border-dashed);border-radius:var(--radius-sm);color:var(--text-dim);font-size:12px;cursor:pointer}
+.ai-drop-zone.drag-over{border-color:var(--amber);color:var(--amber)}
+
+/* .btn classes — AutoFlag lines 157-160 verbatim. Used by the photo panel.
+   Verified zero existing CC class="btn" markup before paste. */
+.btn{padding:8px 14px;background:var(--amber);color:#1a1208;border-radius:var(--radius-sm);font-weight:600;font-size:13px}
+.btn:hover{background:var(--amber-bright)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--amber-dim);color:var(--amber)}
 
 /* Rev 9.5: clock + status-dot elements removed from header. updateClock()
    becomes a harmless no-op (its `if (el) el.textContent` guard skips the missing
-   element). The setInterval still runs once per second; cleanup deferred to a
-   future rev per Pattern 6.3.17 (one logical change per rev). */
+   element). */
 
 /* Sidebar */
 nav {
@@ -1430,12 +1259,11 @@ textarea.form-input { resize: vertical; min-height: 80px; }
      much chrome for a 380px phone screen — quick AI is still accessible via
      the chat page); bump tap-target sizes; 16px font on inputs prevents
      iOS zoom-on-focus.
-     Rev 9.5.2: hide .ai-photo-panel on mobile (the 📸 button is desktop-only
-     via header .ai-icon-btn { display: none }, so the panel must be hidden too —
-     even if some race condition flipped its display to block, this ensures it
-     stays gone). Replaces 9.5.1's now-deleted .ai-photo-preview-chip rule. */
+     Rev 9.5.2: AutoFlag's #aiInput id replaces 9.5.1's #cc-header-ai-input.
+     .ai-photo-panel hidden with !important since the 📸 button that toggles
+     it is desktop-only. */
   header .ai-bar-label,
-  header #cc-header-ai-input,
+  header #aiInput,
   header .ai-icon-btn { display: none; }
   .ai-photo-panel { display: none !important; }
   .header-search { min-height: 40px; font-size: 16px; }
@@ -1599,59 +1427,65 @@ async function googleSignIn() {
      (CC-specific — AutoFlag doesn't have a sidebar nav drawer). Clock + status
      dot from pre-9.5 are removed (not part of AutoFlag's header pattern). User
      pill is hardcoded "Phil Sigler★" until People system rolls out (backlog #39). -->
+<!-- Rev 9.5.2: AutoFlag Rev 1.76 <header> block, byte-for-byte from lines
+     429-439, with three connector changes:
+       1. Hamburger button INSERTED before AutoFlag's logo (CC-specific, mobile
+          drawer; AutoFlag has no sidebar nav).
+       2. Logo text: "AutoFlag<small>Installs</small>" → "Philinity<small>Command Center</small>";
+          onclick goHome() → navigateTo('ai').
+       3. Search input: id/handler swapped from AutoFlag's #searchInput +
+          renderActive() to CC's #global-search + globalSearchInput/
+          globalSearchKeydown. WRAPPED in CC's .global-search-wrap so the
+          dropdown anchors correctly.
+     askAI() onclick handlers kept AutoFlag-exact — CC defines window.askAI
+     as an alias to ccHeaderAskAI in JS below. -->
 <header>
-  <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
-    <span></span><span></span><span></span>
-  </button>
-  <div class="logo" onclick="navigateTo('ai')">Philinity<small>◆ Command Center</small></div>
-  <div class="global-search-wrap">
-    <span class="global-search-icon">🔍</span>
-    <input type="text" class="global-search-input" id="global-search" placeholder="Search contacts, house data, chat…" autocomplete="off">
-    <div class="global-search-dropdown" id="global-search-dropdown"></div>
-  </div>
-  <div class="header-spacer"></div>
-  <div class="ai-bar-label">🤖 Ask AI</div>
-  <!-- Rev 9.5.1: width 280px (fixed) matches AutoFlag Rev 1.76 line 433 exactly. -->
-  <input type="text" id="cc-header-ai-input" class="ai-bar-input" style="width:280px" placeholder="Ask anything, or attach a photo…" onkeydown="if(event.key==='Enter')ccHeaderAskAI()">
-  <button class="ai-icon-btn" onclick="ccHeaderAskAI()" title="Ask AI">🤖</button>
-  <!-- Rev 9.5.2: 📸 button now toggles the ai-photo-panel below the header
-       (matches AutoFlag Rev 1.76 lines 435-438 + panel at line 455). Supersedes
-       Rev 9.5.1's inline-chip-only approach. The panel supports take photo /
-       choose from library / drag-and-drop / Ctrl+V paste, up to 4 photos at a
-       time. Hidden on mobile via the existing header .ai-icon-btn rule. -->
-  <button class="ai-icon-btn" id="cc-ai-photo-btn" onclick="toggleCcAiPhotoPanel()" title="Attach photos (up to 4)">
-    📸
-    <span id="cc-ai-photo-badge" class="ai-photo-badge" style="display:none">0</span>
-  </button>
-</header>
-
-<!-- Rev 9.5.2: AI photo panel — toggleable, drops below the header as a
-     position:fixed overlay. Markup pattern cloned from AutoFlag Rev 1.76
-     lines 455-477 (Take Photo / Choose from Library / Drag & Drop / Ctrl+V
-     tip / Clear / preview row), palette-mapped + handler-renamed to ccAi*. -->
-<div id="cc-ai-photo-panel" class="ai-photo-panel" style="display:none">
-  <div class="ai-photo-panel-row">
-    <span class="ai-photo-panel-label">📸 Attach Photos (max 4)</span>
-    <label class="btn" style="cursor:pointer">
-      📷 Take Photo
-      <input type="file" id="cc-ai-camera-input" accept="image/*" capture="environment" multiple style="display:none" onchange="handleCcAiPhotoUpload(event)">
-    </label>
-    <label class="btn-secondary btn" style="cursor:pointer">
-      🖼 Choose from Library
-      <input type="file" id="cc-ai-library-input" accept="image/*" multiple style="display:none" onchange="handleCcAiPhotoUpload(event)">
-    </label>
-    <div id="cc-ai-drop-zone" class="ai-drop-zone"
-      ondragover="event.preventDefault();this.classList.add('drag-over')"
-      ondragleave="this.classList.remove('drag-over')"
-      ondrop="handleCcAiPhotoDrop(event)">
-      🖱 Drag &amp; Drop here
+    <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="logo" onclick="navigateTo('ai')">Philinity<small>Command Center</small></div>
+    <div class="global-search-wrap">
+      <input class="header-search" id="global-search" placeholder="Search contacts, house data, chat..." autocomplete="off" />
+      <div class="global-search-dropdown" id="global-search-dropdown"></div>
     </div>
-    <div style="flex:1"></div>
-    <button class="btn-secondary btn" onclick="clearCcAiPhotos()" style="font-size:11px">✕ Clear</button>
+    <div class="ai-bar-label" style="font-size:12px;color:var(--amber);font-weight:600;white-space:nowrap">🤖 Ask AI</div>
+    <input type="text" id="aiInput" class="ai-bar-input" style="width:280px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-pill);padding:8px 14px;color:var(--text);font-size:13px" placeholder="Ask anything, or: 'What's on the agenda today?'" onkeydown="if(event.key==='Enter')askAI()" />
+    <button class="ai-icon-btn" onclick="askAI()" title="Ask AI">🤖</button>
+    <button class="ai-icon-btn" id="aiPhotoToggle" onclick="toggleAIPhotoPanel()" title="Attach photos (up to 4)">
+      📸
+      <span id="aiPhotoBadge" class="ai-photo-badge" style="display:none">0</span>
+    </button>
+  </header>
+
+  <!-- AutoFlag Rev 1.76 photo panel + thinking + chat thread, byte-for-byte
+       from lines 453-483. Inert in CC (no thinking/chat-thread DOM consumers
+       below header — CC renders chat in #page-ai instead) but structurally
+       identical. -->
+  <div class="ai-bar" style="background:transparent;border-bottom:none;padding:0">
+    <div id="aiPhotoPanel" class="ai-photo-panel" style="display:none">
+      <div class="ai-photo-panel-row">
+        <span class="ai-photo-panel-label">📸 Attach Photos (max 4)</span>
+        <label class="btn" style="cursor:pointer">
+          📷 Take Photo
+          <input type="file" id="aiCameraInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handleAIPhotoUpload(event)">
+        </label>
+        <label class="btn-secondary btn" style="cursor:pointer">
+          🖼 Choose from Library
+          <input type="file" id="aiPhotoInput" accept="image/*" multiple style="display:none" onchange="handleAIPhotoUpload(event)">
+        </label>
+        <div id="aiDropZone" class="ai-drop-zone"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleAIPhotoDrop(event)">
+          🖱 Drag &amp; Drop here
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn-secondary btn" onclick="clearAIPhotos()" style="font-size:11px">✕ Clear</button>
+      </div>
+      <div class="ai-photo-tip">💡 Tip: <strong>Ctrl+V</strong> while this panel is open to paste a screenshot</div>
+      <div id="aiPhotoPreview" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
   </div>
-  <div class="ai-photo-tip">💡 Tip: <strong>Ctrl+V</strong> while this panel is open to paste a screenshot</div>
-  <div id="cc-ai-photo-preview" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-</div>
 
 <!-- SIDEBAR -->
 <nav>
@@ -3518,65 +3352,194 @@ async function aiSaveToHouseData(itemJson) {
   } catch(e) { return { success: false, error: e.message }; }
 }
 
-// Rev 9.5: tiny shim that routes header-bar AI input through CC's existing
-// sendMessage(). The header bar (#cc-header-ai-input) is a quick-ask surface
-// added by the AutoFlag-pattern header chrome.
-//
-// Rev 9.5.1 / 9.5.2: extended to support photo attachment. When no photos
-// are attached, the function still delegates to sendMessage() (text-only path,
-// unchanged). When photos ARE attached (1-4), the function builds a multimodal
-// message with one base64-source vision content block per photo plus the text
-// block, and submits directly to askAI — bypassing sendMessage() rather than
-// modifying it (Pattern 6.3.17, don't touch existing handlers).
-//
-// 9.5.2 supersedes 9.5.1's single-photo inline-chip approach with AutoFlag's
-// proper panel pattern: dedicated panel below the header with Take Photo,
-// Choose from Library, Drag-and-Drop, Ctrl+V paste, up to 4 photos. Phil's
-// feedback was that 9.5.1's "click-to-open-file-picker-only" UX was a
-// regression vs how he handles images everywhere else (paste/drag/drop).
-// 9.5.2 matches AutoFlag's full UX while keeping CC's true-vision base64
-// submit pattern.
-//
-// AutoFlag's askAI() at lines 3618-3742 is text-URL: photos uploaded to Storage,
-// URLs APPENDED AS PLAIN TEXT to the user message. Model receives URLs as
-// decorative text — askAI fast-mode has no web tools. CC implements TRUE
-// VISION: one { type: 'image', source: { type: 'base64', media_type: 'image/jpeg',
-// data: <b64> } } block per photo plus { type: 'text' }. Storage upload still
-// happens at command_center/ai_images/{ts}-{rand}.jpg for persistence per
-// Phil's spec, but runs FIRE-AND-FORGET in background.
-window.ccHeaderAskAI = async function() {
-  var src = document.getElementById('cc-header-ai-input');
+// ============================================================================
+// Rev 9.5.2 — AutoFlag Rev 1.76 photo + AI handlers
+// ----------------------------------------------------------------------------
+// JS handlers ported from AutoFlag lines 3511-3617, with three connector
+// changes:
+//   1. window.askAI is the renamed CC handler (was ccHeaderAskAI in 9.5.1).
+//      AutoFlag's onclick="askAI()" / onkeydown="askAI()" now resolves to
+//      CC's flow byte-for-byte.
+//   2. CC reads from #aiInput (AutoFlag's id), not #cc-header-ai-input.
+//   3. Vision pipeline kept from 9.5.1: base64 image content blocks, NOT
+//      AutoFlag's text-URL pattern. AutoFlag's photo URLs are decorative text
+//      (askAI fast-mode has no web tools); CC sends real Anthropic vision
+//      content blocks so the model analyzes the image.
+//      Storage upload at command_center/ai_images/{ts}-{rand}.jpg is fire-
+//      and-forget for persistence per Phil's spec.
+// ============================================================================
+
+var aiPendingPhotos = []; // [{file, dataUrl, base64}]
+
+window.toggleAIPhotoPanel = function() {
+  var p = document.getElementById('aiPhotoPanel');
+  if (!p) return;
+  p.style.display = p.style.display === 'none' ? '' : 'none';
+};
+
+window.handleAIPhotoUpload = function(ev) {
+  var files = Array.from((ev && ev.target && ev.target.files) || []);
+  if (ev && ev.target) ev.target.value = '';
+  files.forEach(addAIPhoto);
+};
+
+window.handleAIPhotoDrop = function(ev) {
+  ev.preventDefault();
+  if (ev.currentTarget && ev.currentTarget.classList) ev.currentTarget.classList.remove('drag-over');
+  var files = Array.from((ev.dataTransfer && ev.dataTransfer.files) || [])
+    .filter(function(f) { return f.type && f.type.startsWith('image/'); });
+  files.forEach(addAIPhoto);
+};
+
+// Ctrl+V paste handler — AutoFlag pattern simplified: CC's only target is the
+// AI panel (no site/pole modals). Only consumes when panel is open; other
+// paste handlers (House Data's hdInitClipboardPaste) run unobstructed when
+// panel is closed.
+document.addEventListener('paste', function(ev) {
+  var aiPanel = document.getElementById('aiPhotoPanel');
+  if (!aiPanel || aiPanel.style.display === 'none') return;
+  var items = Array.from((ev.clipboardData && ev.clipboardData.items) || []);
+  var consumed = false;
+  items.forEach(function(item) {
+    if (!item.type || !item.type.startsWith('image/')) return;
+    var f = item.getAsFile();
+    if (!f) return;
+    addAIPhoto(f);
+    consumed = true;
+  });
+  if (consumed) ev.preventDefault();
+});
+
+function addAIPhoto(file) {
+  if (!file || (file.type && !file.type.startsWith('image/'))) {
+    if (typeof showToast === 'function') showToast('Only image files are supported');
+    return;
+  }
+  if (aiPendingPhotos.length >= 4) {
+    if (typeof showToast === 'function') showToast('Max 4 photos');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function() {
+    // Compress to 800px / 0.75 JPEG before storing — matches
+    // hdLoadImgPreviewAndUpload pattern. base64 stripped of data:URL prefix
+    // for direct use as Anthropic vision content block source.
+    ccCompressImage(reader.result, function(compressedDataUrl) {
+      var base64 = compressedDataUrl.split(',')[1] || '';
+      aiPendingPhotos.push({
+        file: file,
+        dataUrl: compressedDataUrl,
+        base64: base64
+      });
+      renderAIPhotoPreview();
+    });
+  };
+  reader.onerror = function() {
+    if (typeof showToast === 'function') showToast('Failed to read image');
+  };
+  reader.readAsDataURL(file);
+}
+
+window.clearAIPhotos = function() {
+  aiPendingPhotos = [];
+  renderAIPhotoPreview();
+};
+
+window.removeAIPhoto = function(i) {
+  aiPendingPhotos.splice(i, 1);
+  renderAIPhotoPreview();
+};
+
+function renderAIPhotoPreview() {
+  var wrap = document.getElementById('aiPhotoPreview');
+  var badge = document.getElementById('aiPhotoBadge');
+  if (!wrap || !badge) return;
+  if (aiPendingPhotos.length === 0) {
+    wrap.innerHTML = '';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.textContent = aiPendingPhotos.length;
+  badge.style.display = '';
+  wrap.innerHTML = aiPendingPhotos.map(function(p, i) {
+    return '<div style="position:relative;width:64px;height:64px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)">' +
+      '<img src="' + p.dataUrl + '" style="width:100%;height:100%;object-fit:cover" />' +
+      '<button onclick="removeAIPhoto(' + i + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>' +
+      '</div>';
+  }).join('');
+}
+
+// Compress image via canvas. Mirrors hdLoadImgPreviewAndUpload (800px max,
+// 0.75 JPEG quality). Separate helper to avoid touching the existing handler.
+function ccCompressImage(dataUrl, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    var MAX = 800, w = img.width, h = img.height;
+    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+    else       { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    var compressed = canvas.toDataURL('image/jpeg', 0.75);
+    callback(compressed);
+  };
+  img.onerror = function() {
+    if (typeof showToast === 'function') showToast('Image processing failed');
+  };
+  img.src = dataUrl;
+}
+
+// Background Storage upload. Fire-and-forget; failures logged.
+async function ccAiUploadToStorage(dataUrl) {
+  try {
+    var ts = Date.now();
+    var rand = Math.random().toString(36).slice(2, 8);
+    var path = 'command_center/ai_images/' + ts + '-' + rand + '.jpg';
+    var storageRef = storage.ref(path);
+    var snapshot = await storageRef.putString(dataUrl, 'data_url');
+    return await snapshot.ref.getDownloadURL();
+  } catch (e) {
+    console.warn('[CC AI photo] Storage upload failed:', e && e.message);
+    return null;
+  }
+}
+
+// Header AI submit. AutoFlag's askAI() name kept so onclick handlers in the
+// pasted-verbatim header markup resolve directly. Behavior: text-only path
+// delegates to sendMessage() unchanged; with-photos path builds multimodal
+// vision request inline and submits directly to askAI Cloud Function.
+window.askAI = async function() {
+  var src = document.getElementById('aiInput');
   if (!src) return;
   var text = (src.value || '').trim();
-  var hasPhotos = ccAiPendingPhotos.length > 0;
+  var hasPhotos = aiPendingPhotos.length > 0;
 
   if (!text && !hasPhotos) return;
-  if (!text) text = '(image attached)'; // ensure non-empty user message
+  if (!text) text = '(image attached — please describe what you see)';
 
-  // No photos? Use the existing sendMessage() path unchanged.
+  // No photos → existing sendMessage() unchanged.
   if (!hasPhotos) {
     var dst = document.getElementById('chat-input');
     if (!dst) return;
     dst.value = text;
     src.value = '';
     if (typeof sendMessage === 'function') {
-      try { sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+      try { sendMessage(); } catch (e) { console.warn('[CC askAI] sendMessage failed:', e && e.message); }
     } else if (typeof window.sendMessage === 'function') {
-      try { window.sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+      try { window.sendMessage(); } catch (e) { console.warn('[CC askAI] sendMessage failed:', e && e.message); }
     }
     return;
   }
 
-  // Photos attached — build a multimodal request inline.
-  // Capture the photos locally and clear pending state immediately so a fast
-  // double-click can't double-submit.
-  var photos = ccAiPendingPhotos.slice();
-  clearCcAiPhotos();
-  var panel = document.getElementById('cc-ai-photo-panel');
+  // Photos attached → multimodal request inline.
+  var photos = aiPendingPhotos.slice();
+  clearAIPhotos();
+  var panel = document.getElementById('aiPhotoPanel');
   if (panel) panel.style.display = 'none';
   src.value = '';
 
-  // Switch to AI page (matches sendMessage's page-switch behavior)
+  // Switch to AI page (matches sendMessage's page-switch behavior).
   try {
     document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
     document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -3584,7 +3547,6 @@ window.ccHeaderAskAI = async function() {
     document.getElementById('page-ai').classList.add('active');
   } catch (_) { /* best-effort */ }
 
-  // Render the user bubble (text + photo-count indicator) and append to history.
   if (typeof addMessage === 'function') {
     addMessage('user', text + '  📸 ' + photos.length);
   }
@@ -3598,8 +3560,7 @@ window.ccHeaderAskAI = async function() {
 
   if (typeof setLoading === 'function') setLoading(true);
 
-  // Background: upload each photo to Storage for persistence/discoverability.
-  // NOT awaited — failure here doesn't block the AI response.
+  // Background Storage uploads — not awaited.
   photos.forEach(function(p) {
     ccAiUploadToStorage(p.dataUrl).then(function(url) {
       if (url) console.log('[CC AI photo] persisted to Storage:', url);
@@ -3616,6 +3577,11 @@ window.ccHeaderAskAI = async function() {
       return;
     }
     var idToken = await user.getIdToken();
+    // Diagnostic log: confirm the request body actually contains the image
+    // content block. Helps verify Issue 4 from the spec — that the Cloud
+    // Function receives base64 and forwards to Anthropic. Keep through 9.5.2
+    // shakeout; can remove in a future cleanup rev once verified.
+    console.log('[CC askAI] sending', messages.length, 'messages; last has', Array.isArray(messages[messages.length-1].content) ? messages[messages.length-1].content.length + ' content blocks' : 'string content');
     var response = await fetch('https://us-central1-philinity-893d2.cloudfunctions.net/askAI', {
       method: 'POST',
       headers: {
@@ -3629,6 +3595,7 @@ window.ccHeaderAskAI = async function() {
       })
     });
     var data = await response.json();
+    console.log('[CC askAI] response keys:', Object.keys(data || {}));
     if (data.error) {
       if (typeof addMessage === 'function') addMessage('ai', 'Error: ' + (data.error.message || 'unknown'));
     } else {
@@ -3644,150 +3611,6 @@ window.ccHeaderAskAI = async function() {
   }
   if (typeof setLoading === 'function') setLoading(false);
 };
-
-// ── Rev 9.5.2 — Multi-photo attach panel (replaces 9.5.1's single-photo chip) ──
-// Behavior pattern cloned from AutoFlag Rev 1.76 lines 3515-3611, palette-
-// adapted and renamed to ccAi* / cc-ai-* to keep symbols distinct.
-//
-// ccAiPendingPhotos: array of { dataUrl, base64, fileName }, max 4 entries.
-
-var ccAiPendingPhotos = [];
-
-window.toggleCcAiPhotoPanel = function() {
-  var p = document.getElementById('cc-ai-photo-panel');
-  if (!p) return;
-  p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
-};
-
-// File picker change handler (Take Photo + Choose from Library both bind here).
-window.handleCcAiPhotoUpload = function(ev) {
-  var files = Array.from(ev && ev.target && ev.target.files ? ev.target.files : []);
-  if (ev && ev.target) ev.target.value = ''; // allow re-selecting the same file later
-  files.forEach(addCcAiPhoto);
-};
-
-// Drag-and-drop handler (drop onto #cc-ai-drop-zone).
-window.handleCcAiPhotoDrop = function(ev) {
-  ev.preventDefault();
-  if (ev.currentTarget && ev.currentTarget.classList) ev.currentTarget.classList.remove('drag-over');
-  var files = Array.from(ev.dataTransfer && ev.dataTransfer.files ? ev.dataTransfer.files : [])
-    .filter(function(f) { return f.type && f.type.startsWith('image/'); });
-  files.forEach(addCcAiPhoto);
-};
-
-// Global Ctrl+V paste handler. Only consumes clipboard images when the AI photo
-// panel is open. CC's House Data page has its own paste handler (hdInitClipboardPaste)
-// for image-cell pasting; that handler is bound to a more-specific scope and runs
-// independently. Both handlers can coexist — this one short-circuits if the panel
-// is closed, leaving the event for any other listener.
-document.addEventListener('paste', function(ev) {
-  var panel = document.getElementById('cc-ai-photo-panel');
-  if (!panel || panel.style.display === 'none' || !panel.style.display) return;
-  var items = Array.from((ev.clipboardData && ev.clipboardData.items) || []);
-  var consumed = false;
-  items.forEach(function(item) {
-    if (!item.type || !item.type.startsWith('image/')) return;
-    var f = item.getAsFile();
-    if (!f) return;
-    addCcAiPhoto(f);
-    consumed = true;
-  });
-  if (consumed) ev.preventDefault();
-});
-
-// Read + compress + push into pending photos array (max 4).
-function addCcAiPhoto(file) {
-  if (!file || (file.type && !file.type.startsWith('image/'))) {
-    showToast('Only image files are supported');
-    return;
-  }
-  if (ccAiPendingPhotos.length >= 4) {
-    showToast('Max 4 photos');
-    return;
-  }
-  var reader = new FileReader();
-  reader.onload = function() {
-    ccCompressImage(reader.result, function(compressedDataUrl) {
-      // Strip the data URL prefix to get raw base64 for the Anthropic vision
-      // content block. data: URL format is "data:image/jpeg;base64,XXXX".
-      var base64 = compressedDataUrl.split(',')[1] || '';
-      ccAiPendingPhotos.push({
-        dataUrl: compressedDataUrl,
-        base64: base64,
-        fileName: (file.name || 'pasted.jpg')
-      });
-      renderCcAiPhotoPreview();
-    });
-  };
-  reader.onerror = function() { showToast('Failed to read image'); };
-  reader.readAsDataURL(file);
-}
-
-// Compress image via canvas. Mirrors hdLoadImgPreviewAndUpload at line ~4496
-// (800px max long edge, 0.75 JPEG quality). Extracted as separate helper rather
-// than refactoring the existing handler — Pattern 6.3.17.
-function ccCompressImage(dataUrl, callback) {
-  var img = new Image();
-  img.onload = function() {
-    var canvas = document.createElement('canvas');
-    var MAX = 800, w = img.width, h = img.height;
-    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
-    else       { if (h > MAX) { w = w * MAX / h; h = MAX; } }
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var compressed = canvas.toDataURL('image/jpeg', 0.75);
-    callback(compressed);
-  };
-  img.onerror = function() { showToast('Image processing failed'); };
-  img.src = dataUrl;
-}
-
-// Background upload to Firebase Storage at command_center/ai_images/{ts}-{rand}.jpg
-// for persistence + discoverability. NOT awaited by the AI flow.
-async function ccAiUploadToStorage(dataUrl) {
-  try {
-    var ts = Date.now();
-    var rand = Math.random().toString(36).slice(2, 8);
-    var path = 'command_center/ai_images/' + ts + '-' + rand + '.jpg';
-    var storageRef = storage.ref(path);
-    var snapshot = await storageRef.putString(dataUrl, 'data_url');
-    return await snapshot.ref.getDownloadURL();
-  } catch (e) {
-    console.warn('[CC AI photo] Storage upload failed:', e && e.message);
-    return null;
-  }
-}
-
-window.clearCcAiPhotos = function() {
-  ccAiPendingPhotos = [];
-  renderCcAiPhotoPreview();
-};
-
-window.removeCcAiPhoto = function(idx) {
-  if (idx < 0 || idx >= ccAiPendingPhotos.length) return;
-  ccAiPendingPhotos.splice(idx, 1);
-  renderCcAiPhotoPreview();
-};
-
-function renderCcAiPhotoPreview() {
-  var wrap = document.getElementById('cc-ai-photo-preview');
-  var badge = document.getElementById('cc-ai-photo-badge');
-  if (!wrap || !badge) return;
-  if (ccAiPendingPhotos.length === 0) {
-    wrap.innerHTML = '';
-    badge.style.display = 'none';
-    return;
-  }
-  badge.textContent = ccAiPendingPhotos.length;
-  badge.style.display = '';
-  wrap.innerHTML = ccAiPendingPhotos.map(function(p, i) {
-    return '<div class="ai-photo-thumb">' +
-      '<img src="' + p.dataUrl + '" alt="Attached" />' +
-      '<button class="x" onclick="removeCcAiPhoto(' + i + ')" title="Remove">×</button>' +
-      '</div>';
-  }).join('');
-}
 
 window.sendMessage = async function() {
   if (isLoading) return;
@@ -8109,118 +7932,58 @@ async function importFullBackup(event) {
 //          confirmation. Surfacing the discovery to Phil before shipping
 //          prevented a wasted rev that would have shipped a feature with no
 //          actual capability.
-// Rev 9.5.2  Photo attach UX — replace 9.5.1's inline-chip + file-picker-only
-//          approach with AutoFlag's full panel pattern.
-//          ROOT CAUSE OF 9.5.1 DEFICIENCY: Phil's spec said "fetch AutoFlag's
-//          📸 button markup + CSS verbatim. Same icon, same button shape, same
-//          placement." I read this as just-the-button (the markup at AutoFlag
-//          lines 435-438) and missed the panel at lines 455-477 that the
-//          button TOGGLES. The button without the panel is just a file picker
-//          trigger. AutoFlag's actual UX is panel-based with paste / drag-drop /
-//          file-picker, up to 4 photos. Phil's feedback caught the gap: "the
-//          camera pic next to the ai bot is only allowing uploads and not the
-//          normal way I like images to have copy / paste from website etc."
-//          — confirmed by the AutoFlag source he pointed to (paste handler
-//          at lines 3534-3561, drop handler at line 3526, panel toggle at
-//          line 3515). Pattern 6.3.18 audit was incomplete in 9.5.1; 9.5.2
-//          re-reads AutoFlag's panel structure end-to-end before code.
-//          AutoFlag panel structure traced (now read correctly):
-//          - Markup (lines 455-477): #aiPhotoPanel containing label, Take Photo
-//            button (label wrapping <input type="file" capture="environment">),
-//            Choose from Library button (label wrapping <input type="file">),
-//            #aiDropZone (drag-and-drop target with ondragover/dragleave/drop
-//            inline handlers), Clear button, tip text mentioning Ctrl+V,
-//            #aiPhotoPreview thumbnail row.
-//          - CSS (lines 369-374): .ai-photo-panel (margin-top, padding, surface2
-//            bg, amber-dim border, max-width 1400px, centered),
-//            .ai-photo-panel-row (flex row, wrap, gap 8px), .ai-photo-panel-label
-//            (small uppercase amber), .ai-photo-tip (small amber),
-//            .ai-drop-zone (dashed border, dim text), .ai-drop-zone.drag-over
-//            (amber border + text on dragover).
-//          - JS (lines 3515-3611): toggleAIPhotoPanel toggles display;
-//            handleAIPhotoUpload reads files from picker; handleAIPhotoDrop
-//            reads files from dataTransfer; addAIPhoto reads file as data URL,
-//            pushes into aiPendingPhotos array (max 4); GLOBAL paste handler at
-//            lines 3534-3561 with multi-target dispatch (AI panel / site modal /
-//            pole modal / site detail page) — for CC the only target is the AI
-//            panel, simpler dispatch; clearAIPhotos empties the array;
-//            removeAIPhoto pops a single entry; renderAIPhotoPreview rebuilds
-//            the thumbnail row + updates badge count.
-//          Diff summary 9.5.1 → 9.5.2:
-//          - CSS REMOVED: .ai-photo-preview-chip + 3 children (the inline-chip
-//            approach is gone), .user-pill (was retained-as-dead-code in 9.5.1
-//            per a misread; Phil's 9.5.1 spec was explicit about removing
-//            associated CSS classes).
-//          - CSS ADDED: .ai-photo-panel (position: fixed overlay since CC's
-//            .shell is height:100vh overflow:hidden — AutoFlag's normal-flow
-//            placement doesn't work in CC's grid; fixed-positioning bypasses
-//            grid math entirely), .ai-photo-panel-row, .ai-photo-panel-label,
-//            .ai-photo-tip, .ai-drop-zone (+ .drag-over state), .ai-photo-thumb
-//            (+ img + .x button), generic .btn + .btn-secondary (verified by
-//            grep that no existing CC markup uses class="btn" so the new rules
-//            can't collide).
-//          - Mobile media query: replaced "header .ai-photo-preview-chip" with
-//            ".ai-photo-panel { display: none !important }" (panel must be
-//            hidden on mobile because the 📸 button that toggles it is hidden,
-//            and !important defends against any race that flips its display
-//            inline).
-//          - Markup REMOVED: inline preview chip (<div id="cc-ai-photo-preview"
-//            class="ai-photo-preview-chip">), loose hidden file <input> at
-//            header level, deprecated .user-pill rule.
-//          - Markup ADDED: <div id="cc-ai-photo-panel"> after </header> with
-//            full AutoFlag-pattern children — Take Photo (with capture="environment"),
-//            Choose from Library, drop zone, tip, Clear, preview row. Camera
-//            button onclick changed from inline file-picker trigger to
-//            toggleCcAiPhotoPanel().
-//          - JS REPLACED: ccAiPendingPhoto (single-photo) → ccAiPendingPhotos
-//            (array, max 4). Helpers renamed and re-shaped: ccAiAttachPhoto →
-//            handleCcAiPhotoUpload (multi-file via Array.from(target.files)),
-//            ccAiClearPhoto → clearCcAiPhotos (empties array). NEW handlers:
-//            toggleCcAiPhotoPanel, handleCcAiPhotoDrop (drag-and-drop),
-//            removeCcAiPhoto (pop single entry), addCcAiPhoto (max-4 enforcement
-//            + MIME check + compress + push), renderCcAiPhotoPreview (multi-
-//            thumbnail grid). NEW global paste handler — only consumes images
-//            when panel is open; ev.preventDefault() only when consumed so
-//            other paste handlers (like House Data's hdInitClipboardPaste) can
-//            still run for their own scopes. ccCompressImage and
-//            ccAiUploadToStorage UNCHANGED from 9.5.1.
-//          - ccHeaderAskAI submit logic: previously built single-image content
-//            array; now builds N-image content array (one image block per photo)
-//            plus one text block. Tail of the request flow (askAI fetch, page
-//            switch, message rendering, Storage background upload loop) is
-//            otherwise unchanged in shape.
-//          Pattern 6.3.20 audit: panel is position: fixed; z-index: 102. Below
-//          modal-overlay (z:1000) and toast (z:9999), above header (z:100) and
-//          footer-on-mobile (z:100). No new stacking-context trap because the
-//          panel is at the top level of stacking (sibling of header), not
-//          nested inside a position:relative ancestor. The panel itself doesn't
-//          have descendants that need to escape — flat layout. Hidden on
-//          mobile via !important rule, so mobile stacking is unaffected.
-//          Pattern 6.3.19 audit: header element count UNCHANGED from 9.5.1
-//          desktop (8: hamburger, logo, search, spacer, ai-bar-label, ai-bar-
-//          input, 🤖 btn, 📸 btn). Mobile count UNCHANGED (4). The preview chip
-//          is gone from header markup; the panel is OUTSIDE header so doesn't
-//          contribute to header chip density.
-//          Diff scope: header markup (camera button onclick + remove inline
-//          chip + remove loose file input), panel markup (new outside header),
-//          ~10 CSS rule blocks (5 added, 4 removed including the deprecated
-//          .user-pill, 1 mobile rule changed), JS handler block replacement.
-//          NOT changed: footer chrome, Data Manager modal, House Data page,
-//          Contacts page, nav structure, Cloud Function, Firebase Storage rules,
-//          RTDB schema, sendMessage() body, hdLoadImgPreviewAndUpload,
-//          hdUploadImageToStorage, hdInitClipboardPaste (House Data has its
-//          own paste handler bound to a different scope; the new global paste
-//          handler is panel-scoped and short-circuits when the panel is closed).
-//          Pattern note for Bot 2 (already flagged in 9.5.1 as v4.11 candidate):
-//          when a feature port reveals the source app has an inert
-//          implementation, upgrade rather than clone. Re-affirmed in 9.5.2:
-//          even when porting a feature where the SOURCE pattern is correct
-//          (AutoFlag's panel UX is the right pattern), the implementer must
-//          read the SOURCE end-to-end (Pattern 6.3.18). 9.5.1 read AutoFlag's
-//          button-markup at lines 435-438 but skipped the panel-markup at lines
-//          455-477. The panel is what makes the button useful. Lesson: when
-//          porting a button that has an onclick handler, trace the handler
-//          end-to-end and port everything it touches, not just the button itself.
+// Rev 9.5.2  Header chrome ripped out and replaced with AutoFlag Rev 1.76's
+//          <header> block byte-for-byte (lines 429-439 of AutoFlag source).
+//          Header CSS likewise replaced byte-for-byte (AutoFlag lines 56-65 +
+//          157-160 + 363-374). Photo handler JS replaced byte-for-byte from
+//          AutoFlag lines 3511-3617.
+//          Approach: rather than palette-translating AutoFlag's CSS, four
+//          token aliases were added to CC's :root (--amber, --amber-bright,
+//          --amber-dim, --border-dashed) that resolve to CC's gold palette.
+//          AutoFlag's CSS text stays unedited; values resolve correctly.
+//          Three connector changes only:
+//          1. Hamburger button INSERTED before AutoFlag's logo (CC needs the
+//             mobile drawer; AutoFlag has no sidebar nav).
+//          2. Logo: "AutoFlag<small>Installs</small>" → "Philinity<small>Command
+//             Center</small>"; onclick goHome() → navigateTo('ai').
+//          3. Search input: AutoFlag's bare <input class="header-search"> wrapped
+//             in CC's existing .global-search-wrap so the dropdown anchors. id
+//             changed to #global-search; CC's existing addEventListener at
+//             line ~2921 already wires globalSearchInput/globalSearchKeydown.
+//          Wire renames in JS:
+//          - window.askAI is the renamed CC handler (was ccHeaderAskAI in
+//             9.5.1). AutoFlag's onclick="askAI()" / onkeydown="askAI()"
+//             resolves directly.
+//          - aiPendingPhotos (array, max 4) replaces 9.5.1's ccAiPendingPhoto
+//             (single).
+//          - All photo handlers use AutoFlag's exact names: toggleAIPhotoPanel,
+//             handleAIPhotoUpload, handleAIPhotoDrop, addAIPhoto, clearAIPhotos,
+//             removeAIPhoto, renderAIPhotoPreview. Global Ctrl+V paste
+//             listener simplified to AI-panel-only target (CC has no
+//             site/pole modals).
+//          Vision pipeline: kept from 9.5.1 (base64 content blocks, NOT
+//          AutoFlag's text-URL pattern). askAI submit body multimodal: N image
+//          content blocks + 1 text block. Storage upload at command_center/
+//          ai_images/{ts}-{rand}.jpg fire-and-forget for persistence.
+//          Diagnostic console.log added in askAI to verify Issue 4 (model
+//          actually receives the image): logs message count + content shape
+//          before fetch, response keys after. Remove in a future cleanup rev
+//          once vision is verified working.
+//          AutoFlag's photo panel + ai-bar wrapper markup (AutoFlag lines
+//          453-477) ALSO ported byte-for-byte and placed after </header>. The
+//          .ai-bar wrapper around it is included exactly as AutoFlag has it.
+//          Pattern 6.3.20 audit: header z:100 unchanged. Photo panel is in
+//          normal flow with margin-top: 10px (AutoFlag's exact pattern). On
+//          mobile, panel hidden via !important.
+//          Diff scope: header markup, header CSS, photo handler JS. NOT
+//          changed: footer, Data Manager modal, House Data, Contacts, nav,
+//          sendMessage() body (text-only path still delegates), Cloud Function,
+//          Storage rules, RTDB schema, hdLoadImgPreviewAndUpload.
+//          Lesson: CC adapts to AutoFlag's pattern, not the other way around.
+//          Earlier 9.5.x revs tried to "translate" — replacing palette tokens
+//          and renaming IDs. That left subtle deviations. 9.5.2 paste-verbatim
+//          + token-alias approach yields true byte-for-byte parity with
+//          AutoFlag's visual.
 // ============================================================
 
 </script>
