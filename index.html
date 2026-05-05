@@ -143,6 +143,11 @@
   --red: #c46a5a;
   --green: #6a9c7f;
   --radius: 12px;
+  /* Rev 9.5: added to support AutoFlag-pattern header chrome (porting verbatim
+     palette + radius vocabulary). Purely additive — no existing CSS used these
+     names yet so nothing pre-9.5 changes. */
+  --radius-pill: 20px;
+  --radius-sm: 8px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -192,48 +197,108 @@ body::after {
 }
 
 /* Header */
+/* Rev 9.5 — Header chrome cloned from AutoFlag Rev 1.76 (palette-mapped to CC).
+   Source: production curl of AutoFlag, lines 56-65 + 363-368 + mobile media at 250-274.
+   Palette substitutions: --amber → --gold, --amber-bright → --gold (CC has no -bright),
+   --amber-dim → --gold-dim. All other vars (--surface, --surface2, --border, --text,
+   --text-dim, --text-muted) match. AutoFlag's --radius-pill / --radius-sm now exist in
+   CC's :root (added above). header { z-index: 100 } unchanged from CC's pre-9.5 value
+   (matches AutoFlag exactly). grid-column: 1 / -1 retained for CC's grid layout (not in
+   AutoFlag because AutoFlag isn't grid-based). */
 header {
   grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 28px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(10,10,12,0.85);
-  backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
-  z-index: 100;
-}
-
-.logo {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.6rem;
-  font-weight: 300;
-  letter-spacing: 0.08em;
-  color: var(--gold);
-}
-.logo span { color: var(--text-dim); font-style: italic; }
-
-.header-meta {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
+  z-index: 100;
 }
-.header-time {
-  font-family: 'DM Mono', monospace;
-  font-size: 0.7rem;
+.logo {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  color: var(--gold);
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.logo small {
   color: var(--text-muted);
-  letter-spacing: 0.12em;
+  font-size: 11px;
+  font-weight: normal;
+  margin-left: 4px;
+  font-family: inherit;
 }
-.status-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-  animation: pulse 2s infinite;
+.header-spacer { flex: 1; }
+.header-search {
+  flex: 1;
+  max-width: 380px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  color: var(--text);
+  font-size: 13px;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.header-search:focus { border-color: var(--gold-dim); outline: none; }
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.user-pill img { width: 20px; height: 20px; border-radius: 50%; }
+.icon-btn {
+  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.ai-bar-label {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ai-bar-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.ai-bar-input:focus { border-color: var(--gold-dim); }
+.ai-icon-btn {
+  padding: 7px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 14px;
+  position: relative;
+  cursor: pointer;
+}
+.ai-icon-btn:hover { background: var(--gold-dim); color: #fff; }
+
+/* Rev 9.5: clock + status-dot elements removed from header. updateClock()
+   becomes a harmless no-op (its `if (el) el.textContent` guard skips the missing
+   element). The setInterval still runs once per second; cleanup deferred to a
+   future rev per Pattern 6.3.17 (one logical change per rev). */
 
 /* Sidebar */
 nav {
@@ -1238,6 +1303,19 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     padding: 10px 12px;
   }
 
+  /* Rev 9.5: header chrome mobile rules cloned from AutoFlag Rev 1.76 (lines
+     250-274 of AutoFlag's CSS). Hide AI elements in header on mobile (too
+     much chrome for a 380px phone screen — quick AI is still accessible via
+     the chat page); bump tap-target sizes; 16px font on inputs prevents
+     iOS zoom-on-focus. */
+  header .ai-bar-label,
+  header #cc-header-ai-input,
+  header .ai-icon-btn { display: none; }
+  .header-search { min-height: 40px; font-size: 16px; }
+  .ai-bar-input { min-height: 44px; font-size: 16px; }
+  .ai-icon-btn { min-width: 44px; min-height: 44px; }
+  .icon-btn { min-width: 44px; min-height: 44px; padding: 8px 12px; font-size: 16px; }
+
   /* Hero banner stack on mobile */
   #page-ai > div:first-child > div:first-child { flex-direction: column; }
 }
@@ -1324,7 +1402,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.4.4</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1387,19 +1465,29 @@ async function googleSignIn() {
 <div class="shell">
 
 <!-- HEADER -->
+<!-- Rev 9.5: Header chrome cloned from AutoFlag Rev 1.76. Logo (small subtitle in
+     AutoFlag's <small> tag style), header-search slot replaced by CC's existing
+     global-search-wrap (preserves dropdown anchoring + DOM IDs), header-spacer
+     pushes AI bar + user pill to the right. Hamburger retained at the start
+     (CC-specific — AutoFlag doesn't have a sidebar nav drawer). Clock + status
+     dot from pre-9.5 are removed (not part of AutoFlag's header pattern). User
+     pill is hardcoded "Phil Sigler★" until People system rolls out (backlog #39). -->
 <header>
   <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
-  <div class="logo" onclick="navigateTo('ai')" style="cursor:pointer">Philinity<span> ◆ Command Center</span></div>
+  <div class="logo" onclick="navigateTo('ai')">Philinity<small>◆ Command Center</small></div>
   <div class="global-search-wrap">
     <span class="global-search-icon">🔍</span>
     <input type="text" class="global-search-input" id="global-search" placeholder="Search contacts, house data, chat…" autocomplete="off">
     <div class="global-search-dropdown" id="global-search-dropdown"></div>
   </div>
-  <div class="header-meta">
-    <div class="header-time" id="clock">—</div>
-    <div class="status-dot"></div>
+  <div class="header-spacer"></div>
+  <div class="ai-bar-label">🤖 Ask AI</div>
+  <input type="text" id="cc-header-ai-input" class="ai-bar-input" style="max-width:280px" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')ccHeaderAskAI()">
+  <button class="ai-icon-btn" onclick="ccHeaderAskAI()" title="Ask AI">🤖</button>
+  <div class="user-pill" title="Hardcoded admin label — People system rollout pending (backlog #39)">
+    <span>Phil Sigler</span><span style="color:var(--gold);margin-left:2px">★</span>
   </div>
 </header>
 
@@ -2757,7 +2845,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.4.4</span>
+  <span class="ftr-rev">Philinity© Rev v9.5</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3267,6 +3355,29 @@ async function aiSaveToHouseData(itemJson) {
     return { success: true, sheet: sheetName, item: row.item };
   } catch(e) { return { success: false, error: e.message }; }
 }
+
+// Rev 9.5: tiny shim that routes header-bar AI input through CC's existing
+// sendMessage(). The header bar (#cc-header-ai-input) is a quick-ask surface
+// added by the AutoFlag-pattern header chrome. It does NOT introduce any new
+// AI functionality — just plumbing into the existing handler. Reads the header
+// input, copies its text into the chat-page #chat-input (which sendMessage()
+// reads), then calls sendMessage() which switches to the AI page and runs the
+// normal flow. Header input is cleared on submit so it visibly empties.
+window.ccHeaderAskAI = function() {
+  var src = document.getElementById('cc-header-ai-input');
+  if (!src) return;
+  var text = (src.value || '').trim();
+  if (!text) return;
+  var dst = document.getElementById('chat-input');
+  if (!dst) return;
+  dst.value = text;
+  src.value = '';
+  if (typeof sendMessage === 'function') {
+    try { sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+  } else if (typeof window.sendMessage === 'function') {
+    try { window.sendMessage(); } catch (e) { console.warn('[CC header AI] sendMessage failed:', e && e.message); }
+  }
+};
 
 window.sendMessage = async function() {
   if (isLoading) return;
@@ -7109,7 +7220,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.4.4
+// Philinity Command Center © Rev 9.5
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
@@ -7377,6 +7488,78 @@ async function importFullBackup(event) {
 //            importFullBackup() / importCSVToSheet() handlers (which target
 //            exporter-status / importer-status DOM IDs) untouched — the modal
 //            uses parallel cc* functions targeting cc-data-modal-status.
+// Rev 9.5    Header chrome cloned wholesale from AutoFlag Rev 1.76. Pulled
+//            AutoFlag's production source via curl-fetch (4017 lines, footer rev
+//            label 'Rev v1.76' confirmed at line 490) and ported header markup
+//            and header CSS verbatim, palette-substituted to CC.
+//          - New header structure (left → right): hamburger (CC-specific, kept,
+//            mobile-only) → logo "Philinity ◆ Command Center" (DM Serif Display
+//            font, gold, AutoFlag's <small> subtitle pattern) → global-search-
+//            wrap (CC-specific, kept, dropdown anchored at z:9999) → header-
+//            spacer (flex:1, AutoFlag pattern) → "🤖 Ask AI" label → AI input
+//            field (#cc-header-ai-input, max-width 280px) → 🤖 submit button →
+//            "Phil Sigler★" user pill (hardcoded, non-clickable, matches the
+//            footer 👥📋 pattern from Rev 9.4 — People system rollout pending,
+//            backlog #39).
+//          - Removed pre-9.5 header elements: clock (#clock), status-dot,
+//            .header-meta wrapper. Not part of AutoFlag's chrome. updateClock()
+//            function and its setInterval are left alive (the function's
+//            existing `if (el)` guard makes it a harmless no-op now); cleanup
+//            deferred to a future rev per Pattern 6.3.17.
+//          - Palette mapping (AutoFlag → CC): --amber → --gold,
+//            --amber-bright → --gold (CC has no -bright; close enough for the
+//            single use site, the .logo color), --amber-dim → --gold-dim. All
+//            other vars match exactly (--surface, --surface2, --border, --text,
+//            --text-dim, --text-muted).
+//          - Added two new CSS tokens to :root: --radius-pill: 20px (used by
+//            .header-search, .ai-bar-input, .user-pill) and --radius-sm: 8px
+//            (used by .ai-icon-btn, .icon-btn). Purely additive — no existing
+//            CC CSS used these names yet, so nothing pre-9.5 changes.
+//          - New JS shim: window.ccHeaderAskAI() — reads #cc-header-ai-input,
+//            copies its text into #chat-input, calls existing sendMessage().
+//            Pure plumbing into existing handler. NO new AI behavior, NO new
+//            Cloud Function calls, NO new fetch logic.
+//          - Mobile rules cloned from AutoFlag's @media (max-width: 768px) at
+//            lines 250-274 of AutoFlag's source: hide AI label + AI input + AI
+//            submit button on mobile (too much chrome for ~380px phone screen);
+//            16px font on .header-search and .ai-bar-input prevents iOS zoom-
+//            on-focus; 44px min tap targets on icon buttons. Hamburger continues
+//            to display via the existing .hamburger { display: flex } rule.
+//          - AutoFlag's photo button (📸, .ai-icon-btn with #aiPhotoToggle,
+//            aiPhotoBadge, ai-photo-panel markup) NOT ported. CC has no
+//            handleAIPhotoUpload / toggleAIPhotoPanel / clearAIPhotos handlers,
+//            and porting the photo workflow would couple this rev to AI feature
+//            work. Per Pattern 6.3.17, scoped to chrome only. AI photo support
+//            in CC is a separate future rev if Phil wants it.
+//          - Pattern 6.3.20 audit (z-index stacking): AutoFlag's header has
+//            z-index: 100 (sticky). CC's pre-9.5 header had the same z-index: 100.
+//            No change to header's stacking context. CC's .global-search-wrap
+//            has position: relative + z-index: 101 (creates its own stacking
+//            context); .global-search-dropdown z:9999 only competes WITHIN that
+//            wrap's local context. From outside, the dropdown effectively
+//            paints at header's z:100 (same as pre-9.5). Pre-existing behavior
+//            is preserved. If Phil ever needs the dropdown to escape (e.g.,
+//            paint above .nav-overlay z:199), that's a future-rev concern —
+//            fix path is to remove z-index from .global-search-wrap (so it
+//            doesn't create a context), or move the dropdown DOM-level out of
+//            the wrap. Documented for Bot 2 backlog consideration.
+//          - Pattern 6.3.19 audit (chip density): header has 6-7 horizontal
+//            elements on desktop (hamburger, logo, search, spacer, AI label,
+//            AI input, submit button, user pill). Element count is FIXED
+//            (not data-driven), gap: 10px between siblings, mobile media
+//            hides the 3 AI elements bringing mobile count to 5. No chip-
+//            density risk. Tested against the AutoFlag pattern which uses the
+//            same count successfully.
+//          - Diff scope: header markup + header-related CSS rules. Three new
+//            classes added (.header-spacer was new since CC didn't use one),
+//            existing .logo / header rules replaced. .header-meta / .header-
+//            time / .status-dot / @keyframes pulse REMOVED (no longer
+//            referenced in markup). One JS shim added (ccHeaderAskAI),
+//            window-exposed. updateClock left as-is (no-op). Zero changes to
+//            footer chrome (Rev 9.4.x), Data Manager modal (Rev 9.4.4),
+//            stacking-context fix (Rev 9.4.3), nav contrast (Rev 9.4.1+),
+//            position-fixed footer (Rev 9.4.2), Firebase SDK shim (Rev 9.3),
+//            data model, RTDB schema, Cloud Function, auth, footer handlers.
 // ============================================================
 
 </script>
