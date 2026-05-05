@@ -1403,7 +1403,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.13</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.14</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2880,7 +2880,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.13</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.14</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3365,11 +3365,74 @@ window.quickSend = function(text) {
 };
 
 // ── AI → Firebase write ──
-async function aiSaveToHouseData(itemJson) {
+// Rev 9.5.14: hdEnsureLoaded — DOM-safe wrapper around hdInit with concurrent
+// call guard. Used by aiSaveToHouseData to prevent the data-destruction bug
+// that existed pre-9.5.14: when AI saves arrived before House Data was loaded,
+// hdAllSheets was empty, and aiSaveToHouseData would create a placeholder
+// sheet entry then write it — wiping any real Firebase data in that sheet.
+//
+// Pattern: single in-flight promise. Concurrent callers all await the same
+// promise. Promise cleared after settle so retries work if the first attempt
+// failed.
+var hdLoadingPromise = null;
+async function hdEnsureLoaded() {
+  if (hdLoaded && Object.keys(hdAllSheets).length > 0) return true;
+  if (hdLoadingPromise) {
+    try { await hdLoadingPromise; } catch (_) { /* see below */ }
+    return hdLoaded;
+  }
+  // hdInit touches a DOM element (#hd-status) that only exists on the House
+  // Data page. When called from AI save flow, that element may not exist.
+  // Stub it so hdInit's textContent assignments are harmless.
+  var stubAdded = false;
+  if (!document.getElementById('hd-status')) {
+    var stub = document.createElement('div');
+    stub.id = 'hd-status';
+    stub.style.display = 'none';
+    document.body.appendChild(stub);
+    stubAdded = true;
+  }
+  hdLoadingPromise = (async function() {
+    try {
+      await hdInit();
+    } finally {
+      if (stubAdded) {
+        var s = document.getElementById('hd-status');
+        if (s && s.parentNode) s.parentNode.removeChild(s);
+      }
+    }
+  })();
   try {
+    await hdLoadingPromise;
+  } finally {
+    hdLoadingPromise = null;
+  }
+  return hdLoaded;
+}
+
+async function aiSaveToHouseData(itemJson) {
+  // Rev 9.5.14: load-guard. If House Data isn't loaded yet, load it before
+  // touching hdAllSheets. Without this guard, an AI save fired pre-load
+  // would overwrite the real Firebase sheet with a placeholder containing
+  // only the new row.
+  console.log('[ai save] start; hdLoaded=', hdLoaded, 'sheets=', Object.keys(hdAllSheets || {}).length);
+  try {
+    if (!hdLoaded || Object.keys(hdAllSheets || {}).length === 0) {
+      console.log('[ai save] House Data not loaded — calling hdEnsureLoaded');
+      var ok = await hdEnsureLoaded();
+      if (!ok || !hdLoaded) {
+        console.warn('[ai save] hdEnsureLoaded did not produce loaded state — aborting save to prevent data loss');
+        return { success: false, error: 'Could not load House Data — save aborted to protect existing data' };
+      }
+      console.log('[ai save] House Data now loaded; sheets=', Object.keys(hdAllSheets).length);
+    }
+
     var item = typeof itemJson === 'string' ? JSON.parse(itemJson) : itemJson;
     var sheetKey = item.sheet_key || 'furniture';
     var sheetName = item.sheet_name || 'Furniture';
+    var pathTaken = hdAllSheets[sheetKey] ? 'upsert' : 'create';
+    console.log('[ai save] sheetKey=', sheetKey, 'path=', pathTaken);
+
     if (!hdAllSheets[sheetKey]) {
       hdAllSheets[sheetKey] = { sheet_name: sheetName, rows: [], row_count: 0, exported_at: new Date().toISOString() };
       if (hdSheetOrder.indexOf(sheetKey) === -1) hdSheetOrder.push(sheetKey);
@@ -3389,10 +3452,88 @@ async function aiSaveToHouseData(itemJson) {
     hdAllSheets[sheetKey].rows.push(row);
     hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
     await db.ref('command_center/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
+    console.log('[ai save] firebase write OK: sheet=', sheetKey, 'rows now=', hdAllSheets[sheetKey].row_count);
     return { success: true, sheet: sheetName, item: row.item };
-  } catch(e) { return { success: false, error: e.message }; }
+  } catch(e) {
+    console.warn('[ai save] threw:', e && e.message);
+    return { success: false, error: e.message };
+  }
 }
 
+// ============================================================================
+// Rev 9.5.14: shared response handler. Both sendMessage and askAI photo branch
+// call this with the raw reply text. Single source of truth for the
+// %%SAVE_TO_HOUSE_DATA:{...}%% extract → save → toast pipeline. Pre-9.5.14
+// only sendMessage had this logic; askAI photo branch rendered the markers
+// verbatim in the bubble and silently dropped saves.
+//
+// Returns nothing. Side effects: addMessage('ai', cleanText), aiSaveToHouseData
+// per match, showToast on save outcome, messages array push, hdInit refresh
+// when saves succeed and House Data is loaded.
+async function aiHandleResponse(rawReply) {
+  if (typeof rawReply !== 'string') {
+    console.warn('[ai response] non-string reply:', typeof rawReply);
+    return;
+  }
+  var saveRegex = /%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/g;
+  var saveMatches = [];
+  var m;
+  while ((m = saveRegex.exec(rawReply)) !== null) {
+    saveMatches.push(m);
+  }
+  console.log('[ai response] reply length=', rawReply.length, 'save matches=', saveMatches.length);
+
+  var cleanReply = rawReply;
+  if (saveMatches.length > 0) {
+    cleanReply = rawReply.replace(/%%SAVE_TO_HOUSE_DATA:[\s\S]*?%%/g, '').trim();
+  }
+  // Render the cleaned bubble (or raw reply if no markers).
+  if (typeof addMessage === 'function') addMessage('ai', cleanReply || rawReply);
+
+  // Push assistant turn into messages array + cap at 40.
+  if (typeof messages !== 'undefined' && Array.isArray(messages)) {
+    messages.push({ role: 'assistant', content: rawReply });
+    if (messages.length > 40) messages = messages.slice(-40);
+  }
+
+  // Persist to localStorage history.
+  if (typeof aiHistoryAutoSave === 'function') aiHistoryAutoSave();
+
+  // Process saves serially so toasts and Firebase writes don't race.
+  for (var i = 0; i < saveMatches.length; i++) {
+    var match = saveMatches[i];
+    console.log('[ai response] processing save block', i + 1, '/', saveMatches.length);
+    try {
+      var parsed;
+      try {
+        parsed = JSON.parse(match[1]);
+        console.log('[ai response] parsed save block', i + 1, '— sheet=', parsed.sheet_key, 'item=', parsed.item);
+      } catch (parseErr) {
+        console.warn('[ai response] JSON parse failed for save block', i + 1, ':', parseErr && parseErr.message);
+        if (typeof showToast === 'function') showToast('⚠️ Save block ' + (i + 1) + ' had invalid JSON');
+        continue;
+      }
+      var result = await aiSaveToHouseData(parsed);
+      if (result && result.success) {
+        if (typeof showToast === 'function') {
+          showToast('\u2705 Saved \u201c' + (result.item || 'item') + '\u201d to ' + (result.sheet || 'sheet'));
+        }
+        // Refresh House Data render only if the page was already showing it.
+        if (hdLoaded && typeof hdInit === 'function') {
+          hdLoaded = false;
+          await hdInit();
+        }
+      } else {
+        var errMsg = (result && result.error) || 'unknown error';
+        console.warn('[ai response] save returned failure:', errMsg);
+        if (typeof showToast === 'function') showToast('⚠️ Save failed: ' + errMsg);
+      }
+    } catch (e) {
+      console.warn('[ai response] save loop caught:', e && e.message);
+      if (typeof showToast === 'function') showToast('Save error: ' + (e && e.message ? e.message : 'unknown'));
+    }
+  }
+}
 // ============================================================================
 // Rev 9.5.2 — AutoFlag Rev 1.76 photo + AI handlers
 // ----------------------------------------------------------------------------
@@ -3928,13 +4069,12 @@ window.askAI = async function() {
       if (typeof addMessage === 'function') addMessage('ai', 'Error: ' + (data.error.message || 'unknown'));
     } else {
       var reply = (data.content && data.content[0] && data.content[0].text) || 'No response received.';
-      if (typeof addMessage === 'function') addMessage('ai', reply);
-      if (typeof messages !== 'undefined' && Array.isArray(messages)) {
-        messages.push({ role: 'assistant', content: reply });
-        if (messages.length > 40) messages = messages.slice(-40);
-      }
-      // Rev 9.5.13: persist to localStorage history after successful response.
-      if (typeof aiHistoryAutoSave === 'function') aiHistoryAutoSave();
+      // Rev 9.5.14: route through shared aiHandleResponse helper which extracts
+      // %%SAVE_TO_HOUSE_DATA%% markers, processes saves, renders the cleaned
+      // bubble, pushes to messages, and triggers history auto-save. Pre-9.5.14
+      // this branch did its own bare addMessage + push and silently dropped
+      // save markers (visible verbatim in chat bubbles).
+      await aiHandleResponse(reply);
     }
   } catch (e) {
     if (typeof addMessage === 'function') addMessage('ai', 'Network error: ' + (e && e.message ? e.message : 'unknown'));
@@ -3993,27 +4133,12 @@ window.sendMessage = async function() {
       addMessage('ai', `Error: ${data.error.message}`);
     } else {
       const reply = data.content?.[0]?.text || 'No response received.';
-      const saveRegex = /%%SAVE_TO_HOUSE_DATA:(\{[\s\S]*?\})%%/g;
-      const saveMatches = [...reply.matchAll(saveRegex)];
-      if (saveMatches.length > 0) {
-        const cleanReply = reply.replace(/%%SAVE_TO_HOUSE_DATA:[\s\S]*?%%/g, '').trim();
-        addMessage('ai', cleanReply);
-        for (const match of saveMatches) {
-          try {
-            const result = await aiSaveToHouseData(match[1]);
-            if (result.success) {
-              showToast('\u2705 Saved \u201c' + result.item + '\u201d to ' + result.sheet);
-              if (hdLoaded) { hdLoaded = false; await hdInit(); }
-            } else { showToast('\u26a0\ufe0f Save failed: ' + result.error); }
-          } catch(e) { showToast('Save error: ' + e.message); }
-        }
-      } else {
-        addMessage('ai', reply);
-      }
-      messages.push({ role: 'assistant', content: reply });
-      if (messages.length > 40) messages = messages.slice(-40);
-      // Rev 9.5.13: persist to localStorage history after successful response.
-      if (typeof aiHistoryAutoSave === 'function') aiHistoryAutoSave();
+      // Rev 9.5.14: route through shared aiHandleResponse helper. Same
+      // logic that used to live inline here (extract %%SAVE_TO_HOUSE_DATA%%
+      // markers, save items, toast, push to messages, auto-save history) is
+      // now in one place — also called by askAI photo branch which
+      // previously had no such logic.
+      await aiHandleResponse(reply);
     }
   } catch(e) {
     addMessage('ai', `Network error: ${e.message}`);
@@ -8102,7 +8227,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.13
+// Philinity Command Center © Rev 9.5.14
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
