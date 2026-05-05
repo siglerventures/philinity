@@ -1270,43 +1270,109 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  min-width: 420px;
+  min-width: 480px;
   background: var(--surface);
   border: 1px solid var(--border2, rgba(255,255,255,0.13));
   border-radius: 12px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.6);
   z-index: 9999;
-  max-height: 480px;
+  max-height: 60vh;
   overflow-y: auto;
   animation: fadeInDown 0.15s ease;
 }
 .global-search-dropdown.open { display: block; }
 @keyframes fadeInDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+/* Section header — clickable for collapse/expand */
+.gs-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+.gs-section-header:first-child { border-top: none; }
+.gs-section-header:hover { background: var(--surface2); }
+.gs-section-chevron {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  width: 10px;
+  display: inline-block;
+  text-align: center;
+  transition: transform 0.15s;
+}
+.gs-section-header.collapsed .gs-section-chevron { transform: rotate(-90deg); }
 .gs-section-label {
   font-family: 'DM Mono', monospace;
-  font-size: 0.58rem;
+  font-size: 0.62rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--gold);
-  padding: 10px 16px 4px;
-  border-top: 1px solid var(--border);
+  flex: 1;
 }
-.gs-section-label:first-child { border-top: none; }
+.gs-section-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* Section body — hidden when collapsed */
+.gs-section-body { display: block; }
+.gs-section-body.collapsed { display: none; }
+
+/* Result row */
 .gs-result {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  padding: 9px 16px;
+  padding: 8px 14px;
   cursor: pointer;
   transition: background 0.12s;
-  border-radius: 0;
 }
-.gs-result:hover { background: var(--surface2); }
-.gs-result-icon { font-size: 0.85rem; flex-shrink: 0; margin-top: 2px; }
+.gs-result:hover, .gs-result.gs-selected { background: var(--surface2); }
+.gs-result-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.gs-result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .gs-result-main { flex: 1; min-width: 0; }
-.gs-result-title { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-result-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-result-badge { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text-muted); flex-shrink: 0; }
+.gs-result-title {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.gs-result-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radius: 2px; padding: 0 1px; }
 .gs-empty { padding: 20px 16px; font-size: 0.78rem; color: var(--text-muted); text-align: center; font-style: italic; }
 
@@ -1316,7 +1382,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.7</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.8</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2780,7 +2846,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.7</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.8</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6860,10 +6926,41 @@ function globalSearchInput(q) {
 
 function globalSearchKeydown(e) {
   var dd = document.getElementById('global-search-dropdown');
-  var items = dd ? dd.querySelectorAll('.gs-result') : [];
+  if (!dd) return;
   if (e.key === 'Escape') { closeGlobalSearch(); return; }
+
+  // Rev 9.5.8: ArrowDown/Up walks across all sections in flat order, skipping
+  // collapsed-section rows. ArrowDown landing inside a collapsed section
+  // expands that section first, then continues the walk into it.
+  function visibleResults() {
+    return Array.prototype.slice.call(dd.querySelectorAll('.gs-section-body:not(.collapsed) .gs-result'));
+  }
+  var items = visibleResults();
+
   if (e.key === 'ArrowDown') {
     e.preventDefault();
+    // If we're at the last visible item but there are collapsed sections after it, expand the next one.
+    if (gsSelectedIdx >= items.length - 1) {
+      var bodies = Array.prototype.slice.call(dd.querySelectorAll('.gs-section-body'));
+      var nextCollapsed = null;
+      for (var i = 0; i < bodies.length; i++) {
+        if (bodies[i].classList.contains('collapsed')) {
+          // Check if this collapsed section is AFTER the currently selected item.
+          if (gsSelectedIdx === -1 || (items.length && bodies[i].compareDocumentPosition(items[gsSelectedIdx]) & Node.DOCUMENT_POSITION_PRECEDING)) {
+            nextCollapsed = bodies[i]; break;
+          }
+        }
+      }
+      if (nextCollapsed) {
+        nextCollapsed.classList.remove('collapsed');
+        var hdr = nextCollapsed.previousElementSibling;
+        if (hdr && hdr.classList.contains('gs-section-header')) {
+          hdr.classList.remove('collapsed');
+          gsSetSheetCollapsed(hdr.getAttribute('data-gs-sheet-key'), false);
+        }
+        items = visibleResults();
+      }
+    }
     gsSelectedIdx = Math.min(gsSelectedIdx + 1, items.length - 1);
     highlightGsResult(items);
   } else if (e.key === 'ArrowUp') {
@@ -6877,17 +6974,21 @@ function globalSearchKeydown(e) {
 
 function highlightGsResult(items) {
   items.forEach(function(el, i) {
-    el.style.background = i === gsSelectedIdx ? 'var(--surface2)' : '';
+    if (i === gsSelectedIdx) {
+      el.classList.add('gs-selected');
+      // Scroll into view if needed (results dropdown can scroll).
+      try { el.scrollIntoView({ block: 'nearest' }); } catch (_) {}
+    } else {
+      el.classList.remove('gs-selected');
+    }
   });
 }
 
 function closeGlobalSearch() {
   var dd = document.getElementById('global-search-dropdown');
-  // Rev 9.5.3: removed `var inp = ...; inp.value = ''` — that was clearing
-  // the input on every keystroke under 2 chars (globalSearchInput calls
-  // closeGlobalSearch when q.length < 2). Closing the dropdown should NOT
-  // clear the input value. Pre-existing bug, not caused by the 9.5.x
-  // header port.
+  // Rev 9.5.3: removed `inp.value = ''` — that was clearing the input on
+  // every keystroke under 2 chars (globalSearchInput calls closeGlobalSearch
+  // when q.length < 2). Closing the dropdown should NOT clear the input.
   if (dd) { dd.classList.remove('open'); dd.innerHTML = ''; }
   gsSelectedIdx = -1;
   gsResults = [];
@@ -6909,9 +7010,88 @@ function gsHighlight(text, q) {
   return out;
 }
 
+// Rev 9.5.8 — Search-result helpers ─────────────────────────────────────────
+// Sheets matching any of these patterns are EXCLUDED from search results.
+// Match against either the sheet key OR the sheet's display name.
+var HD_SEARCH_EXCLUDE_PATTERNS = [/-OLD$/i, /^OLD\b/i, /\(deprecated\)/i];
+
+function hdSearchSheetExcluded(key, name) {
+  for (var i = 0; i < HD_SEARCH_EXCLUDE_PATTERNS.length; i++) {
+    var pat = HD_SEARCH_EXCLUDE_PATTERNS[i];
+    if (pat.test(key) || pat.test(name)) return true;
+  }
+  return false;
+}
+
+// Pick a thumbnail URL from a House Data row, if one exists.
+function hdRowThumb(row) {
+  if (!row || typeof row !== 'object') return '';
+  if (row.img && typeof row.img === 'string') return row.img;
+  if (row.photo && typeof row.photo === 'string') return row.photo;
+  if (Array.isArray(row.photos) && row.photos.length && typeof row.photos[0] === 'string') return row.photos[0];
+  return '';
+}
+
+// Build the brand · price · notes-snippet sub line. Skip blank fields.
+function hdRowSubLine(row) {
+  if (!row) return '';
+  var parts = [];
+  if (row.brand) parts.push(String(row.brand));
+  if (row.price) {
+    var pr = String(row.price);
+    if (!pr.startsWith('$') && /^\d/.test(pr)) pr = '$' + pr;
+    parts.push(pr);
+  }
+  if (row.notes) {
+    var notes = String(row.notes).replace(/\s+/g, ' ').trim();
+    if (notes.length > 50) notes = notes.substring(0, 50) + '…';
+    parts.push(notes);
+  }
+  return parts.join(' · ');
+}
+
+// Persist per-sheet collapsed state across searches in the session.
+var GS_COLLAPSE_KEY = 'cc_gs_collapsed_sheets_v1';
+function gsGetCollapsedSheets() {
+  try {
+    var raw = localStorage.getItem(GS_COLLAPSE_KEY);
+    if (!raw) return {};
+    var obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (_) { return {}; }
+}
+function gsSetSheetCollapsed(sheetKey, collapsed) {
+  if (!sheetKey) return;
+  try {
+    var map = gsGetCollapsedSheets();
+    if (collapsed) map[sheetKey] = 1;
+    else delete map[sheetKey];
+    localStorage.setItem(GS_COLLAPSE_KEY, JSON.stringify(map));
+  } catch (_) { /* localStorage blocked / full — silent */ }
+}
+
+// Section toggle handler — wired in onclick after render. Argument is the
+// sheet key (use the section's own group key for non-HD sections like
+// 'contacts' or 'chat').
+window.gsToggleSection = function(sheetKey, headerEl) {
+  var body = headerEl.nextElementSibling;
+  if (!body || !body.classList.contains('gs-section-body')) return;
+  var willCollapse = !body.classList.contains('collapsed');
+  body.classList.toggle('collapsed', willCollapse);
+  headerEl.classList.toggle('collapsed', willCollapse);
+  gsSetSheetCollapsed(sheetKey, willCollapse);
+  // After toggle, recompute visible-row indices so keyboard nav stays valid.
+  gsSelectedIdx = -1;
+  var dd = document.getElementById('global-search-dropdown');
+  if (dd) {
+    var items = Array.prototype.slice.call(dd.querySelectorAll('.gs-section-body:not(.collapsed) .gs-result'));
+    highlightGsResult(items);
+  }
+};
+
 async function runGlobalSearch(q) {
   var needle = q.toLowerCase();
-  var sections = [];
+  var sections = []; // { key, label, count, items: [{...}] }
 
   // ── CONTACTS ──
   var contactHits = [];
@@ -6923,13 +7103,14 @@ async function runGlobalSearch(q) {
   });
   if (contactHits.length) {
     sections.push({
+      key: '__contacts',
       label: '👥 Contacts',
-      items: contactHits.slice(0, 6).map(function(c) {
+      count: contactHits.length,
+      items: contactHits.slice(0, 8).map(function(c) {
         return {
-          icon: '👤',
-          title: c.name || 'Unknown',
-          sub: [c.role, c.company, c.phone].filter(Boolean).join(' · '),
-          badge: c.category || '',
+          thumbHtml: '<span>👤</span>',
+          titleHtml: gsHighlight(c.name || 'Unknown', q),
+          subText: [c.role, c.company, c.phone].filter(Boolean).join(' · '),
           action: function() {
             closeGlobalSearch();
             navigateTo('contacts');
@@ -6944,50 +7125,69 @@ async function runGlobalSearch(q) {
   }
 
   // ── HOUSE DATA ──
-  // Rev 9.5.5: ensure House Data is loaded before searching. Previous behavior
-  // silently skipped House Data if user hadn't visited that page yet in the
-  // session (hdLoaded === false → entire House Data section skipped).
-  var hdHits = [];
+  // Rev 9.5.5: ensure House Data is loaded before searching.
+  // Rev 9.5.8: sheet-grouped results, OLD sheets excluded, thumbnails added.
   if (!hdLoaded && typeof hdInit === 'function') {
     try { await hdInit(); } catch (e) { console.warn('[search] hdInit failed:', e && e.message); }
   }
   if (hdLoaded) {
+    // Build per-sheet hit buckets so each sheet becomes its own collapsible
+    // section. Sort sheets by hit count descending so most-relevant sheet
+    // appears first.
+    var sheetBuckets = {}; // key → { name, hits: [] }
     hdSheetOrder.forEach(function(key) {
       var sheet = hdAllSheets[key];
       if (!sheet || !sheet.rows) return;
       var sheetName = sheet.sheet_name || key;
+      if (hdSearchSheetExcluded(key, sheetName)) return;
       sheet.rows.forEach(function(row, rowIdx) {
         var vals = Object.values(row).filter(function(v) { return v && typeof v === 'string'; });
         if (vals.some(function(v) { return v.toLowerCase().includes(needle); })) {
-          var title = row.item || row.name || row.category || row.appliances || ('Row ' + (rowIdx + 1));
-          var sub = [row.brand, row.notes, row.price].filter(Boolean).join(' · ').substring(0, 80);
-          hdHits.push({ key: key, sheetName: sheetName, title: title, sub: sub, row: row });
+          if (!sheetBuckets[key]) sheetBuckets[key] = { name: sheetName, hits: [] };
+          sheetBuckets[key].hits.push({ row: row, rowIdx: rowIdx });
         }
       });
     });
-  }
-  if (hdHits.length) {
-    sections.push({
-      label: '🏠 House Data',
-      items: hdHits.slice(0, 6).map(function(h) {
+    var bucketKeys = Object.keys(sheetBuckets);
+    // Sort by hit count desc, then by sheet display name asc as tiebreaker.
+    bucketKeys.sort(function(a, b) {
+      var d = sheetBuckets[b].hits.length - sheetBuckets[a].hits.length;
+      if (d !== 0) return d;
+      return sheetBuckets[a].name.localeCompare(sheetBuckets[b].name);
+    });
+
+    bucketKeys.forEach(function(key) {
+      var bucket = sheetBuckets[key];
+      var items = bucket.hits.slice(0, 12).map(function(h) {
+        var row = h.row;
+        var title = row.item || row.name || row.category || row.appliances || ('Row ' + (h.rowIdx + 1));
+        var thumbUrl = hdRowThumb(row);
+        var thumbHtml = thumbUrl
+          ? '<img src="' + String(thumbUrl).replace(/"/g, '&quot;') + '" alt="" />'
+          : '<span>📷</span>';
         return {
-          icon: '📋',
-          title: h.title,
-          sub: h.sub,
-          badge: h.sheetName,
-          action: (function(hh) { return function() {
+          thumbHtml: thumbHtml,
+          titleHtml: gsHighlight(title, q),
+          subText: hdRowSubLine(row),
+          action: (function(kk, qq) { return function() {
             closeGlobalSearch();
             navigateTo('housedata');
             setTimeout(function() {
-              hdSelectSheet(hh.key);
+              hdSelectSheet(kk);
               setTimeout(function() {
                 var rowSearch = document.getElementById('hd-row-search');
-                if (rowSearch) { rowSearch.value = q; hdFilterRows(q); }
+                if (rowSearch) { rowSearch.value = qq; hdFilterRows(qq); }
               }, 300);
             }, 200);
-          }; })(h)
+          }; })(key, q)
         };
-      })
+      });
+      sections.push({
+        key: key,
+        label: '🏠 ' + bucket.name,
+        count: bucket.hits.length,
+        items: items
+      });
     });
   }
 
@@ -6996,7 +7196,7 @@ async function runGlobalSearch(q) {
   var container = document.getElementById('chat-messages');
   if (container) {
     var bubbles = container.querySelectorAll('.msg-bubble');
-    bubbles.forEach(function(b, i) {
+    bubbles.forEach(function(b) {
       var text = b.textContent || '';
       if (text.toLowerCase().includes(needle)) {
         var preview = text.substring(0, 80).trim();
@@ -7006,13 +7206,14 @@ async function runGlobalSearch(q) {
   }
   if (chatHits.length) {
     sections.push({
+      key: '__chat',
       label: '✦ AI Chat',
-      items: chatHits.slice(0, 4).map(function(h) {
+      count: chatHits.length,
+      items: chatHits.slice(0, 6).map(function(h) {
         return {
-          icon: '💬',
-          title: h.preview,
-          sub: 'Current session',
-          badge: '',
+          thumbHtml: '<span>💬</span>',
+          titleHtml: gsHighlight(h.preview, q),
+          subText: 'Current session',
           action: (function(hh) { return function() {
             closeGlobalSearch();
             navigateTo('ai');
@@ -7034,30 +7235,55 @@ async function runGlobalSearch(q) {
     return;
   }
 
+  var collapsedMap = gsGetCollapsedSheets();
   var html = '';
+  // Track action callbacks by global index (across all sections, all rows)
+  // so flat keyboard walk + click both resolve to the right handler.
+  var allActions = [];
   sections.forEach(function(sec) {
-    html += '<div class="gs-section-label">' + sec.label + '</div>';
-    sec.items.forEach(function(item, i) {
-      html += '<div class="gs-result" data-gs-idx="' + i + '">' +
-        '<span class="gs-result-icon">' + item.icon + '</span>' +
-        '<div class="gs-result-main">' +
-          '<div class="gs-result-title">' + gsHighlight(item.title, q) + '</div>' +
-          (item.sub ? '<div class="gs-result-sub">' + stripHTML(item.sub) + '</div>' : '') +
-        '</div>' +
-        (item.badge ? '<span class="gs-result-badge">' + stripHTML(item.badge) + '</span>' : '') +
-        '</div>';
+    var isCollapsed = !!collapsedMap[sec.key];
+    var safeSheetKey = String(sec.key).replace(/"/g, '&quot;');
+    html += '<div class="gs-section-header' + (isCollapsed ? ' collapsed' : '') + '" ' +
+            'data-gs-sheet-key="' + safeSheetKey + '" ' +
+            'onclick="gsToggleSection(\'' + safeSheetKey.replace(/'/g, '\\\'') + '\', this)">' +
+            '<span class="gs-section-chevron">▾</span>' +
+            '<span class="gs-section-label">' + stripHTML(sec.label) + '</span>' +
+            '<span class="gs-section-count">' + sec.count + (sec.count === 1 ? ' match' : ' matches') + '</span>' +
+            '</div>';
+    html += '<div class="gs-section-body' + (isCollapsed ? ' collapsed' : '') + '">';
+    sec.items.forEach(function(item) {
+      var actionIdx = allActions.length;
+      allActions.push(item.action);
+      html += '<div class="gs-result" data-gs-action="' + actionIdx + '">' +
+              '<div class="gs-result-thumb">' + item.thumbHtml + '</div>' +
+              '<div class="gs-result-main">' +
+                '<div class="gs-result-title">' + item.titleHtml + '</div>' +
+                (item.subText ? '<div class="gs-result-sub">' + stripHTML(item.subText) + '</div>' : '') +
+              '</div>' +
+              '</div>';
     });
+    html += '</div>';
   });
 
   dd.innerHTML = html;
   dd.classList.add('open');
 
-  // Wire up click handlers
-  var allItems = [];
-  sections.forEach(function(sec) { sec.items.forEach(function(it) { allItems.push(it); }); });
-  dd.querySelectorAll('.gs-result').forEach(function(el, i) {
-    el.addEventListener('click', function() { if (allItems[i]) allItems[i].action(); });
+  // Wire click handlers via data-gs-action index — keeps click + keyboard
+  // enter resolving the same callback regardless of which section the row
+  // lives in.
+  dd.querySelectorAll('.gs-result').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var idx = parseInt(el.getAttribute('data-gs-action'), 10);
+      if (!isNaN(idx) && allActions[idx]) allActions[idx]();
+    });
   });
+
+  // Auto-highlight first visible result.
+  var firstItems = Array.prototype.slice.call(dd.querySelectorAll('.gs-section-body:not(.collapsed) .gs-result'));
+  if (firstItems.length) {
+    gsSelectedIdx = 0;
+    highlightGsResult(firstItems);
+  }
 }
 
 // Close on outside click
@@ -7442,7 +7668,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.7
+// Philinity Command Center © Rev 9.5.8
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
