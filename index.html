@@ -553,11 +553,7 @@ main {
 .chat-wrapper .chat-header {
   order: 0;
 }
-.chat-wrapper .chat-input-area {
-  order: 1;
-  border-top: none;
-  border-bottom: 1px solid var(--border);
-}
+/* Rev 9.5.7: .chat-wrapper .chat-input-area order rule removed (markup deleted). */
 .chat-wrapper .chat-quick {
   order: 2;
   border-bottom: 1px solid var(--border);
@@ -687,48 +683,9 @@ main {
 .dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
 
-.chat-input-area {
-  padding: 16px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  background: var(--surface2);
-}
-#chat-input {
-  flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--border-bright);
-  border-radius: 10px;
-  padding: 10px 14px;
-  color: var(--text);
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.82rem;
-  resize: none;
-  min-height: 40px;
-  max-height: 120px;
-  outline: none;
-  transition: border-color 0.2s;
-  line-height: 1.5;
-}
-#chat-input:focus { border-color: var(--gold); }
-#chat-input::placeholder { color: var(--text-muted); }
-#send-btn {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  border: none;
-  background: var(--gold);
-  color: var(--bg);
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-#send-btn:hover { background: #d4b880; transform: scale(1.05); }
-#send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+/* Rev 9.5.7: .chat-input-area, #chat-input, #send-btn rules removed —
+   their markup was deleted from #page-ai. Header's #aiInput is the sole
+   AI submit surface now. */
 
 /* Progress bars */
 .progress-bar {
@@ -1359,7 +1316,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.5</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.7</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1589,25 +1546,10 @@ async function googleSignIn() {
   <!-- ══════════ AI ASSISTANT ══════════ -->
     <div class="page active" id="page-ai">
 
-    <!-- Hero Banner -->
-    <div style="background:linear-gradient(135deg,#0f0f14 0%,#1a1520 40%,#0f1418 100%);border:1px solid rgba(201,169,110,0.2);border-radius:16px;padding:28px 32px 24px;margin-bottom:16px;position:relative;overflow:hidden;flex-shrink:0">
-      <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(201,169,110,0.08) 0%,transparent 70%);pointer-events:none"></div>
-      <div style="position:absolute;bottom:-40px;left:60px;width:150px;height:150px;background:radial-gradient(circle,rgba(124,155,170,0.06) 0%,transparent 70%);pointer-events:none"></div>
-
-      <!-- Top row: label + edit button -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.25em;color:var(--gold);text-transform:uppercase">✦ Philinity Command Center</div>
-        <button onclick="openAIProjectsModal()" title="Edit AI Projects" style="background:none;border:none;color:rgba(232,228,220,0.2);cursor:pointer;font-size:0.65rem;padding:4px 8px;letter-spacing:0.05em;font-family:'DM Mono',monospace" onmouseover="this.style.color='var(--text-dim)'" onmouseout="this.style.color='rgba(232,228,220,0.2)'">✏️ edit</button>
-      </div>
-
-      <!-- Subtitle -->
-      <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.6;margin-bottom:20px">Your personal AI knows Philinity, Sigler Ventures, every circuit, fixture, appliance, cocktail recipe, and restaurant order.</div>
-
-      <!-- AI Project Bubbles — centered -->
-      <div id="ai-project-bubbles" style="display:flex;flex-direction:row;gap:10px;justify-content:center;flex-wrap:wrap"></div>
-
-      <!-- Rev 9.4: in-page rev pill removed; canonical rev label now lives in global footer -->
-    </div>
+    <!-- Rev 9.5.7: Hero banner removed. AI page now starts directly at the
+         chat-wrapper with quick-button chips. AI project links relocated to
+         the Apps nav group (see auto-injection in navEditorInit + DEFAULT_NAV
+         apps-group). -->
 
     <!-- Chat -->
     <div class="chat-wrapper">
@@ -1638,11 +1580,6 @@ async function googleSignIn() {
         <div class="typing-indicator show">
           <div class="dot"></div><div class="dot"></div><div class="dot"></div>
         </div>
-      </div>
-
-      <div class="chat-input-area">
-        <textarea id="chat-input" rows="1" placeholder="Ask anything — home systems, investments, dining, cocktails, Alexa commands…"></textarea>
-        <button id="send-btn" onclick="sendMessage()">➤</button>
       </div>
     </div>
   </div>
@@ -2843,7 +2780,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.5</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.7</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3319,8 +3256,12 @@ let messages = [];
 let isLoading = false;
 
 window.quickSend = function(text) {
-  document.getElementById('chat-input').value = text;
-  sendMessage();
+  // Rev 9.5.7: chat-input + send-btn removed from #page-ai. Header's
+  // #aiInput + askAI() is the sole entry point.
+  var inp = document.getElementById('aiInput');
+  if (inp) inp.value = text;
+  if (typeof askAI === 'function') askAI();
+  else if (typeof window.askAI === 'function') window.askAI();
 };
 
 // ── AI → Firebase write ──
@@ -3518,12 +3459,10 @@ window.askAI = async function() {
   if (!text && !hasPhotos) return;
   if (!text) text = '(image attached — please describe what you see)';
 
-  // No photos → existing sendMessage() unchanged.
+  // No photos → delegate to sendMessage() which reads from #aiInput directly
+  // (Rev 9.5.7: previously this branch had to copy into #chat-input first;
+  // chat-input is gone now and sendMessage was rewired to read aiInput).
   if (!hasPhotos) {
-    var dst = document.getElementById('chat-input');
-    if (!dst) return;
-    dst.value = text;
-    src.value = '';
     if (typeof sendMessage === 'function') {
       try { sendMessage(); } catch (e) { console.warn('[CC askAI] sendMessage failed:', e && e.message); }
     } else if (typeof window.sendMessage === 'function') {
@@ -3614,7 +3553,12 @@ window.askAI = async function() {
 
 window.sendMessage = async function() {
   if (isLoading) return;
-  const input = document.getElementById('chat-input');
+  // Rev 9.5.7: chat-input element removed from page-ai. Read from header's
+  // #aiInput instead. sendMessage() is still called by the no-photo branch
+  // of askAI() (when delegated to via dst = chat-input pre-9.5.7) and by the
+  // page-title mini-search. Switching the source keeps both callers working.
+  const input = document.getElementById('aiInput');
+  if (!input) return;
   const text = input.value.trim();
   if (!text) return;
 
@@ -3626,7 +3570,6 @@ window.sendMessage = async function() {
 
   addMessage('user', text);
   input.value = '';
-  input.style.height = 'auto';
   messages.push({ role: 'user', content: text });
 
   setLoading(true);
@@ -3717,24 +3660,18 @@ function formatMessage(text) {
 
 function setLoading(state) {
   isLoading = state;
-  document.getElementById('send-btn').disabled = state;
+  // Rev 9.5.7: #send-btn removed. Guard the ref so setLoading still runs.
+  var sendBtn = document.getElementById('send-btn');
+  if (sendBtn) sendBtn.disabled = state;
   document.getElementById('typing').style.display = state ? 'flex' : 'none';
   const msgs = document.getElementById('chat-messages');
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-// Auto-resize textarea
-document.getElementById('chat-input').addEventListener('input', function() {
-  this.style.height = 'auto';
-  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-});
-
-document.getElementById('chat-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
+// Rev 9.5.7: chat-input addEventListener calls removed. The element is gone;
+// the textarea-resize and Enter-to-send behaviors aren't needed because the
+// header's #aiInput is a single-line input with inline onkeydown="if(event.key==='Enter')askAI()"
+// that already handles Enter submission.
 
 
 // ══════════ HOUSE DATA ══════════
@@ -5346,6 +5283,9 @@ var DEFAULT_NAV = [
   },
   {
     id: 'apps-group', label: '🚀 Apps', items: [
+      { emoji: '🌍', label: 'Philinity AI', type: 'external', url: 'https://claude.ai/project/019ce77e-2ed2-774b-9a36-72fb6036a043' },
+      { emoji: '💼', label: 'Sigler Ventures AI', type: 'external', url: 'https://claude.ai/project/019d31b6-f622-76c1-993c-0617adb8530d' },
+      { emoji: '🚩', label: 'AutoFlag FSI', type: 'external', url: 'https://claude.ai/project/019ce413-3ddc-701b-9694-1aac4715af54' },
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
       { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
       { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' },
@@ -5360,11 +5300,30 @@ async function navEditorInit() {
     var snap = await db.ref(NAV_EDITOR_PATH).get();
     if (snap.exists()) {
       navStructure = snap.val();
-      // Ensure Apps group always has Backup Database and Data Importer
+      // Ensure Apps group always has Backup Database, Data Importer, and the
+      // three AI project links (Rev 9.5.7).
       var appsGroup = navStructure.find(function(g) { return g.id === 'apps-group'; });
       if (appsGroup) {
         var items = appsGroup.items || [];
         var needsSave = false;
+
+        // Rev 9.5.7: AI project links injected at the TOP of Apps group if
+        // missing. Order-preserving pattern: build the list in the desired
+        // order and prepend any missing items in reverse order so the final
+        // order is Philinity AI → Sigler Ventures AI → AutoFlag FSI → existing.
+        var aiProjects = [
+          { emoji: '🌍', label: 'Philinity AI',       type: 'external', url: 'https://claude.ai/project/019ce77e-2ed2-774b-9a36-72fb6036a043' },
+          { emoji: '💼', label: 'Sigler Ventures AI', type: 'external', url: 'https://claude.ai/project/019d31b6-f622-76c1-993c-0617adb8530d' },
+          { emoji: '🚩', label: 'AutoFlag FSI',       type: 'external', url: 'https://claude.ai/project/019ce413-3ddc-701b-9694-1aac4715af54' }
+        ];
+        // Walk the desired order in REVERSE so each unshift lands at index 0
+        // and the final array starts with the first AI project.
+        for (var ai = aiProjects.length - 1; ai >= 0; ai--) {
+          var proj = aiProjects[ai];
+          var exists = items.some(function(i) { return i.url === proj.url; });
+          if (!exists) { items.unshift(proj); needsSave = true; }
+        }
+
         var hasImporter = items.some(function(i) { return i.page === 'importer'; });
         var hasExport   = items.some(function(i) { return i.page === 'export'; });
         var hasBackup   = items.some(function(i) { return i.page === 'backup'; });
@@ -6109,9 +6068,11 @@ async function forceRTDBReconnect(reason) {
     }
     // Re-run the loaders that have stable function names in CC.
     // Each is wrapped in its own try so one bad path doesn't block the others.
-    if (typeof loadAIProjects === 'function') {
-      try { await loadAIProjects(); } catch (e) { console.warn('[CC RTDB] loadAIProjects failed:', e && e.message); }
-    }
+    // Rev 9.5.7: loadAIProjects() skipped — hero bubbles container removed.
+    // System retained as dead code; safe to delete in a future cleanup rev.
+    // if (typeof loadAIProjects === 'function') {
+    //   try { await loadAIProjects(); } catch (e) { console.warn('[CC RTDB] loadAIProjects failed:', e && e.message); }
+    // }
     // Nav structure: read from Firebase directly and re-render the sidebar.
     // (CC's full navEditorInit() touches a UI status element that only exists
     // on the Nav Editor page, so we inline a side-effect-free reload here.)
@@ -6179,6 +6140,12 @@ var DEFAULT_AI_PROJECTS = [
   { id: 'autoflag-ai',   emoji: '🚩', name: 'AutoFlag™️ FSI',          sub: 'AutoFlag Business AI', url: 'https://claude.ai/project/019ce413-3ddc-701b-9694-1aac4715af54', order: 2 },
 ];
 
+// ── DEAD CODE — Rev 9.5.7 moved AI project links to Apps nav. ──
+// loadAIProjects / saveAIProjectsToDB / renderAIProjectBubbles /
+// openAIProjectsModal / saveAIProjects are unused after the hero box
+// was removed from #page-ai. Safe to delete in a future cleanup rev.
+// The Firebase RTDB key (AI_PROJ_PATH = 'command_center/ai_projects') is
+// also untouched in case Phil wants to revive the bubble UI later.
 async function loadAIProjects() {
   try {
     const snap = await db.ref(AI_PROJ_PATH).get();
@@ -6683,10 +6650,13 @@ function initMiniSearch() {
       if (!q) return;
       navigateTo('ai');
       setTimeout(function() {
-        var chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-          chatInput.value = q;
-          sendMessage();
+        // Rev 9.5.7: was writing to #chat-input (now removed) + calling
+        // sendMessage(). Now writes to header #aiInput + calls askAI().
+        var aiInput = document.getElementById('aiInput');
+        if (aiInput) {
+          aiInput.value = q;
+          if (typeof askAI === 'function') askAI();
+          else if (typeof window.askAI === 'function') window.askAI();
           input.value = '';
         }
       }, 150);
@@ -7102,7 +7072,13 @@ async function appInit() {
   await authReadyPromise;  // wait for anonymous auth before any Firebase reads
   await initFirebase();
   await navEditorInit(); // loads nav structure
-  await loadAIProjects(); // loads AI project bubbles
+  // Rev 9.5.7: loadAIProjects() skipped — hero box (with #ai-project-bubbles
+  // container) removed. AI project links now live in the Apps nav group.
+  // The loadAIProjects / renderAIProjectBubbles / openAIProjectsModal /
+  // saveAIProjectsToDB system is dead code (safe to delete in a future
+  // cleanup rev). The Firebase RTDB key command_center/ai_projects also
+  // remains untouched — small data, may be reused later.
+  // await loadAIProjects(); // DEAD — bubbles container removed in Rev 9.5.7
   initMiniSearch();       // adds mini search to all page titles
   hdInitClipboardPaste(); // enable paste image from clipboard
   // Contacts load lazily when Contacts page is first opened
@@ -7466,537 +7442,8 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.5
-// ------------------------------------------------------------
-// Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
-// Rev 3.6  Edit Navigation button subtle, floating button removed
-// Rev 3.7  Mini AI search bar on all page title headers
-// Rev 3.8  House Data page: browse 82 Firebase sheets
-// Rev 3.9  House Data: Add Item form (photo drag/drop/paste/URL)
-//          Firebase fully owns nav — removed hardcoded sidebar HTML
-// Rev 4.0  House Data: double-click row to edit, Delete row,
-//          price formatting $13,499, Edit Row modal with photo
-// Rev 4.1  Images upload to Firebase Storage (not base64 in DB)
-//          Clipboard paste (Ctrl+V) for images in modals
-//          Double-click row replaces edit button column
-// Rev 4.2  Clickable column headers to sort asc/desc
-//          Smart price auto-detection for col2/col3 etc.
-//          Apps Script v4 with smarter header detection
-// Rev 4.3  Multi-sheet tags: items appear in multiple sheets
-//          stored once, shown via tags array
-//          Drag & drop sheet reordering (saved to Firebase)
-//          Tag picker chip UI in Add Item and Edit Row modals
-// Rev 4.4  Tag picker changed to dropdown with checkboxes + search
-//          Column name overrides: wwwmldcom->URL, tyler->Contact
-//          Price fields strip $/, on focus for easy editing
-// Rev 4.5  Right-click sheet: context menu (Rename / Delete)
-//          Double-click sheet name to rename inline
-// Rev 4.6  Column management: right-click or double-tap headers
-//          Rename column, Move Left/Right, Hide, Show All
-//          Per-sheet col config saved to Firebase
-//          Float price fix: 46178.86000000001 -> $46,179
-// Rev 4.7  Sheet rename via modal (no more inline DOM edit)
-//          Sheet delete via inline confirm bar (no browser confirm)
-//          Column rename via prompt()
-// Rev 5.7  FORMAT AS, Also In auto-hidden, AI Firebase writes
-// Rev 6.7  Removed table-layout:fixed that broke House Data layout
-// Rev 6.9  Anonymous Firebase auth + authReadyPromise gates all DB reads
-// Rev 7.0  Clean stable release — auth + hdLoaded fix confirmed working
-// Rev 7.1  Multi-photo gallery in House Data: Pic column always first, upload multiple, click to set Main
-// Rev 7.2  Pic column now participates in col config — right-click to move/rename/hide like any other column
-// Rev 7.3  Nav groups default to expanded (display:block) — fixes blank sidebar on fresh load
-// Rev 7.4  Full backup restore — one-click import of all 82 house data sheets from Apr 11 backup
-// Rev 9.2  Data Importer added to Apps nav; auto-injected into Firebase nav_structure if missing
-// Rev 9.3  Firebase compat SDK -> modular v10 SDK migration (no visual changes)
-//          - 4 compat <script src=> tags replaced with single <script type="module"> shim
-//          - Module imports v10 modular APIs and re-exposes a compat-shaped surface on
-//            window: db.ref(p).get/set/update/remove, storage.ref(p).put/putString/
-//            getDownloadURL/delete, auth.currentUser/onAuthStateChanged/signInWithPopup/
-//            signOut/setPersistence, firebase.auth().GoogleAuthProvider class
-//          - All ~30 db.ref(...) call sites and the single storage.ref(...) site
-//            unchanged textually — preserves the diff surface for Pattern 6.3.17 isolation
-//          - Top-level firebase.* calls in classic scripts gated on firebase-ready
-//            event so they don't fire before the deferred module finishes
-//          - var db, storage, auth (instead of const) so they can be assigned post-init
-//          - Footer chrome and header chrome will land in Rev 9.4 / 9.5 (separate revs
-//            per Pattern 6.3.17, one logical change per rev)
-// Rev 9.4  Footer chrome ported from AutoFlag Rev 1.76 (footer only, no header changes)
-//          - New global <footer class="cc-footer"> inserted before .shell closes:
-//            Philinity© Rev v9.4 · 📦 Data · 🔄 Reconnect · 👥📋 Phil Sigler★ · 🚪 Sign Out
-//          - .shell grid-template-rows: auto 1fr -> auto 1fr auto (third row for footer)
-//          - Mobile: footer flex-wrap onto 2 lines, .chat-wrapper height calc bumped
-//            from 100vh-120px to 100vh-168px so the new footer doesn't overlap chat
-//          - Removed redundant in-page Rev pill from the AI page (canonical rev label
-//            now lives in the global footer; brings version sources to two: login + footer)
-//          - 📦 Data opens new #cc-data-modal with Backup (download /command_center as
-//            cc-backup-YYYY-MM-DD.json) and Restore from Backup (overwrites house_data,
-//            house_sheet_order, ai_projects, house_col_config, contacts, nav_structure
-//            in batches; reuses the same shape as importFullBackup but writes status to
-//            the modal rather than the nav-editor page)
-//          - 🔄 Reconnect = forceRTDBReconnect('manual'): refreshes ID token and re-runs
-//            CC's existing loaders (loadAIProjects, NAV_EDITOR_PATH read + applyNavStructure,
-//            loadContacts, hdInit if House Data is the active page). NOTE: this is the
-//            simple version — AutoFlag pairs forceRTDBReconnect with the REST-fallback
-//            data layer (Pattern 6.3.16). CC has NOT ported that pattern. If CC reproduces
-//            the SDK-hang fingerprint (.info/connected hangs while REST fetch returns 200
-//            fast on the same data path), porting Pattern 6.3.16 to CC is its own future
-//            rev — pattern is currently AutoFlag-only.
-//          - 👥📋 Phil Sigler★ is a non-clickable hardcoded admin label for now. CC has
-//            no People system yet — see backlog #39 for the coordinated rev that adds
-//            /command_center/people/{emailKey} + a cc branch in askAI's isAuthorized()
-//          - 🚪 Sign Out calls auth.signOut() then location.reload() so the auth gate
-//            re-renders cleanly. Matches AutoFlag's signOutNow pattern.
-//          - All footer handlers exposed on window for inline onclick: openCcDataModal,
-//            closeCcDataModal, ccBackupJSON, ccRestoreJSON, forceRTDBReconnect, signOutNow
-//          - No header changes, no data model changes, no RTDB schema changes,
-//            no Cloud Function changes (Rev 9.5 will land header chrome next)
-// Rev 9.4.1 Mobile-only fixes (no desktop changes, no other behavior touched)
-//          - Issue 1: footer not visible on mobile. Fixes:
-//            (a) explicit grid-row: 3 on footer.cc-footer (removes auto-flow ambiguity)
-//            (b) restate grid-template-rows: auto 1fr auto inside @media (max-width:768px)
-//                so the rows declaration is unambiguous on mobile
-//            (c) main { min-height: 0 } in mobile media query — standard fix for the
-//                grid-cell + flex-column + overflow stack that can push auto rows
-//                off-screen when content overflows
-//          - Issue 2: sidebar nav text unreadable on mobile (pre-existing, not from 9.4):
-//            .nav-item { color: var(--text) } inside the mobile media query bumps
-//            contrast from --text-dim (rgba 0.5 alpha) to --text (full alpha #e8e4dc).
-//            Same color desktop hover already uses, so no new color introduced.
-//            Desktop stays unchanged (--text-dim) per Phil's preference.
-//          - Diff scope: 4 CSS rules touched. Zero JS, zero markup, zero handler,
-//            zero data model. Per Pattern 6.3.17, both fixes are mobile-CSS-only and
-//            scoped to exactly the two reported issues.
-// Rev 9.4.2 9.4.1 fixes did NOT take effect in production on Android Chrome despite
-//          being verified present in the deployed file (curl-fetched and confirmed all
-//          4 CSS rules at the right line numbers). The grid-based fix could not work
-//          for the actual root cause:
-//          - Root cause for Issue 1 (Phil's diagnosis, confirmed by inspection):
-//            body { height: 100vh; overflow: hidden } + .shell { height: 100vh;
-//            overflow: hidden } + Android Chrome's URL bar geometry. 100vh on Android
-//            Chrome reports the LARGER viewport (URL bar collapsed). Layout sizes a
-//            box for ~640px but the actually-visible area is ~600px while the URL bar
-//            is up. The grid math (auto 1fr auto) is correct, but the third row lands
-//            in the bottom ~40px which is exactly the URL-bar-overlap region; the
-//            outer overflow: hidden then clips it. The 9.4.1 grid-row: 3 +
-//            grid-template-rows restate + min-height: 0 are all valid grid-layout
-//            improvements but none of them moves the third row out of the clipped
-//            zone. They're keeping the footer findable in DevTools but rendered off
-//            the visual viewport on real Android Chrome.
-//          - Real fix for Issue 1: position: fixed; bottom: 0 on the footer in the
-//            mobile media query. position: fixed pins to the visual viewport on
-//            Android Chrome (it correctly excludes the URL bar overlap region) and
-//            removes the footer from grid flow entirely. Added padding-bottom: 60px
-//            on main inside the same mobile media query so content doesn't slide
-//            under the now-fixed footer (10px breathing room on top of ~50px wrapped
-//            footer height). Desktop grid behavior unchanged — footer stays in grid
-//            row 3 on desktop where the grid math works fine.
-//          - The 9.4.1 grid fixes are RETAINED for desktop and as belt-and-suspenders
-//            on mobile (in case position: fixed is ever removed). Cost is 0; benefit
-//            is the bug can't recur from any of the four mobile-CSS quirks now.
-//          - Real fix for Issue 2 (per Phil's instruction): bumped to !important.
-//            Mobile contrast is a hard requirement; specificity safety wins over
-//            stylistic purism here. .nav-item { color: var(--text) !important; }
-//            plus matching .nav-item.active { color: var(--gold) !important; } so
-//            the active item still wins (gold over text). Why 9.4.1 didn't take is
-//            unclear — both rules had the same 0,1,0 specificity, mobile rule
-//            cascaded later, should have won. Either Android Chrome was miscascading
-//            the media query, or some rendering edge case kicked in. !important
-//            removes the ambiguity.
-//          - Diff scope: 4 CSS edits in the same media query. Zero JS, zero markup,
-//            zero data model, zero handler. Per Pattern 6.3.17, scope is exactly
-//            'fix what 9.4.1 didn't fix' and nothing else.
-//          - Pattern candidate flagged for Bot 2: 'Mobile viewport unit traps with
-//            locked-overflow ancestors' — when body and a wrapper both have
-//            height: 100vh + overflow: hidden, dynamic-viewport quirks on mobile
-//            browsers (Android Chrome URL bar, iOS Safari toolbar) clip auto-placed
-//            grid descendants in the URL-bar overlap region. position: fixed; bottom: 0
-//            is the only reliable escape; 100dvh is cleaner but has Safari support
-//            quirks. Document if this gets ported to other Philinity apps.
-// Rev 9.4.3 Mobile nav drawer renders dimmed when hamburger menu is open. Phil's
-//          screenshot showed the entire drawer (active "Philinity AI" item, nav
-//          labels, edit-navigation button) at very low contrast, looking like the
-//          .nav-overlay backdrop is covering it instead of being beneath it.
-//          - Phil's z-index hypotheses (3 options) all addressed symptoms but missed
-//            the root cause. Bumping nav z-index to 1001 wouldn't have worked either,
-//            and here's why:
-//          - Root cause: STACKING CONTEXT, not z-index numerics.
-//            .shell { position: relative; z-index: 1 } creates a stacking context.
-//            All children of .shell (including <nav>) are stacked WITHIN that context.
-//            From the parent's perspective, the entire .shell paints at z:1.
-//            .nav-overlay is a SIBLING of .shell (DOM order: .nav-overlay, .shell)
-//            and lives in the root stacking context at z:199.
-//            199 > 1, so .nav-overlay paints above the entire .shell subtree —
-//            INCLUDING <nav> with its z:200, because that 200 only applies inside
-//            .shell's local stacking context. From outside, nav is "z:1 but high in
-//            the local order", which still loses to the sibling overlay's z:199.
-//          - Verified by inspection: lines 184-192 desktop .shell rule has
-//            position:relative + z-index:1 (both required to create a stacking
-//            context). Line 1375 .nav-overlay is OUTSIDE .shell in the DOM
-//            (sibling, not descendant). Line 1396 <nav> is a CHILD of .shell.
-//            On desktop the overlay never renders (no .open class), so the bug
-//            is invisible. On mobile the overlay renders and the bug is obvious.
-//          - This bug existed since whenever .shell got z-index:1 (pre-Rev 9.0,
-//            before Phil's rev history starts). It surfaced now because Rev 9.4.x
-//            mobile chrome made the hamburger usable for the first time on mobile.
-//          - Real fix: dissolve .shell's stacking context on mobile by overriding
-//            z-index: auto inside @media (max-width: 768px). position: relative is
-//            retained (cheap to keep, defensive against any descendant absolute
-//            positioning that might rely on it). Without z-index:1, .shell stops
-//            creating a stacking context, and nav (z:200) and nav-overlay (z:199)
-//            both compete in the root context where 200 > 199 wins cleanly.
-//          - Why this doesn't break desktop: desktop never opens .nav-overlay
-//            (the .open class is mobile-only behavior) and the desktop .shell rule
-//            with z-index:1 is untouched. The override is scoped to the mobile
-//            media query.
-//          - Verified safe: ran grep for position:absolute children of .shell —
-//            all matches are anchored to nearer-ancestor relative/absolute parents
-//            (drop-preview, contact-row badges, etc.), not to .shell. Removing
-//            .shell's stacking context (while keeping position:relative) doesn't
-//            disturb any layout.
-//          - 9.4.2 footer fix (position: fixed; bottom: 0; z-index: 100) still
-//            works correctly under the new stacking model: footer is now in the
-//            root context too at z:100, below overlay (199) and nav (200) but
-//            above body::before/::after (z:0). Open hamburger → overlay dims
-//            footer area → nav drawer covers everything from the left. Close
-//            hamburger → overlay hidden → footer visible at bottom. Correct.
-//          - The 9.4.1 contrast fix (.nav-item color !important) is RETAINED.
-//            In hindsight Phil's "unreadable nav text" report was likely the same
-//            symptom as the dimmed-drawer report — overlay covering everything.
-//            But the !important contrast rule does no harm and is defensive against
-//            future low-contrast regressions. Per Pattern 6.3.17, leaving it alone
-//            keeps this rev's diff scoped to exactly the new symptom.
-//          - Diff scope: 1 CSS line added (z-index: auto) to the existing mobile
-//            .shell block. Zero JS, zero markup, zero DOM order changes, zero
-//            other CSS rules touched.
-//          - Pattern 6.3.21 candidate flagged for Bot 2: 'z-index numeric ladders
-//            don't escape stacking contexts.' When element A's z-index needs to
-//            beat element B's z-index, BOTH must be in the same stacking context.
-//            If A is a descendant of an ancestor with position:relative + z-index,
-//            no number assigned to A can lift it above an outside-the-context
-//            sibling. The fix is to dissolve the intermediate stacking context
-//            (z-index: auto on the wrapper) or move the elements into the same
-//            context. CC's hamburger-drawer-dimmed-by-overlay bug is the worked
-//            example. Document — this is exactly the kind of trap that becomes
-//            invisible on desktop and surfaces only on mobile when overlays
-//            actually render.
-// Rev 9.4.4 Data Manager modal upgraded from 2-card to 4-card layout matching
-//          AutoFlag Rev 1.76. New cards inserted between existing Backup and
-//          Restore: Export Sheets as CSV, then Merge / Import.
-//          - Card order in modal: Backup → Export → Merge → Restore
-//          - Export card: dropdown of all sheets (auto-populated when modal opens
-//            via _ccPopulateSheetSelect, which lazy-runs hdInit() if House Data
-//            hasn't loaded yet) plus two buttons. ⬇️ Sheet CSV downloads the
-//            selected sheet as philinity-{sheet}-{date}.csv. ⬇️ All Sheets CSV
-//            downloads a combined file with each sheet separated by a
-//            ### {sheet_name} ### header. Both reuse the existing rowsToCSV()
-//            helper. The standalone Data Exporter page (#page-export) is
-//            untouched and still works independently.
-//          - Merge card: green-themed safe import. Picks a cc-backup-*.json file
-//            and adds new sheets/rows without overwriting existing data. Match
-//            rules:
-//              house_data: per-sheet, match rows by title field (item || name ||
-//                appliances || category). Sheet doesn't exist → add whole sheet.
-//                Sheet exists → walk incoming rows, append only those whose title
-//                doesn't already appear. Known limitation: rows with duplicate
-//                titles within a sheet are deduped to one. Acceptable for CC's
-//                data shape — Phil rarely has duplicate item names in a sheet.
-//              house_sheet_order: append new keys after existing order.
-//              ai_projects: match by .id, skip if exists, otherwise append.
-//              contacts: match by .id, skip if exists, otherwise append per-record
-//                (matches existing CC pattern — see line ~5755).
-//              house_col_config: skip per-sheet key if exists.
-//              nav_structure: NOT merged. Conservative call — nav is small and
-//                Phil edits it directly via the Nav Editor; merging would risk
-//                creating malformed nav state.
-//          - Merge presents a confirm() dialog showing the full plan before
-//            writing: how many sheets/rows/projects/contacts/configs will be
-//            added vs how many will be skipped (because they already exist).
-//            User can review and cancel without any writes happening. If the
-//            plan totals zero adds, an info message is shown and nothing is
-//            written even on confirm.
-//          - Restore card UNCHANGED — same handler (ccRestoreJSON), same
-//            destructive ⚠ warning, same DOM ID for the filename element. The
-//            new Merge card uses its own filename element (cc-data-modal-merge-
-//            filename) so the two pickers don't share state.
-//          - openCcDataModal extended to (a) reset the new merge filename
-//            element, (b) call _ccPopulateSheetSelect() which lazy-loads house
-//            data if needed and fills the Export dropdown.
-//          - Three new handlers exposed on window: ccExportSheetCSV,
-//            ccExportAllCSV, ccMergeImport.
-//          - Pattern 6.3.19 audit: Data Manager has 4 vertically-stacked cards
-//            (flex-direction: column, gap: 10px). Card count is fixed (not data-
-//            driven), no horizontal flex, no chip-density risk. Safe.
-//          - Pattern 6.3.17 scope: modal markup + 3 new handlers + tiny additive
-//            extension to openCcDataModal. Existing Backup / Restore / Reconnect /
-//            SignOut handlers untouched. Existing standalone Data Importer
-//            (#page-importer), Data Exporter (#page-export), Backup pages
-//            untouched. Existing exportSheetCSV() / exportAllCSV() /
-//            importFullBackup() / importCSVToSheet() handlers (which target
-//            exporter-status / importer-status DOM IDs) untouched — the modal
-//            uses parallel cc* functions targeting cc-data-modal-status.
-// Rev 9.5    Header chrome cloned wholesale from AutoFlag Rev 1.76. Pulled
-//            AutoFlag's production source via curl-fetch (4017 lines, footer rev
-//            label 'Rev v1.76' confirmed at line 490) and ported header markup
-//            and header CSS verbatim, palette-substituted to CC.
-//          - New header structure (left → right): hamburger (CC-specific, kept,
-//            mobile-only) → logo "Philinity ◆ Command Center" (DM Serif Display
-//            font, gold, AutoFlag's <small> subtitle pattern) → global-search-
-//            wrap (CC-specific, kept, dropdown anchored at z:9999) → header-
-//            spacer (flex:1, AutoFlag pattern) → "🤖 Ask AI" label → AI input
-//            field (#cc-header-ai-input, max-width 280px) → 🤖 submit button →
-//            "Phil Sigler★" user pill (hardcoded, non-clickable, matches the
-//            footer 👥📋 pattern from Rev 9.4 — People system rollout pending,
-//            backlog #39).
-//          - Removed pre-9.5 header elements: clock (#clock), status-dot,
-//            .header-meta wrapper. Not part of AutoFlag's chrome. updateClock()
-//            function and its setInterval are left alive (the function's
-//            existing `if (el)` guard makes it a harmless no-op now); cleanup
-//            deferred to a future rev per Pattern 6.3.17.
-//          - Palette mapping (AutoFlag → CC): --amber → --gold,
-//            --amber-bright → --gold (CC has no -bright; close enough for the
-//            single use site, the .logo color), --amber-dim → --gold-dim. All
-//            other vars match exactly (--surface, --surface2, --border, --text,
-//            --text-dim, --text-muted).
-//          - Added two new CSS tokens to :root: --radius-pill: 20px (used by
-//            .header-search, .ai-bar-input, .user-pill) and --radius-sm: 8px
-//            (used by .ai-icon-btn, .icon-btn). Purely additive — no existing
-//            CC CSS used these names yet, so nothing pre-9.5 changes.
-//          - New JS shim: window.ccHeaderAskAI() — reads #cc-header-ai-input,
-//            copies its text into #chat-input, calls existing sendMessage().
-//            Pure plumbing into existing handler. NO new AI behavior, NO new
-//            Cloud Function calls, NO new fetch logic.
-//          - Mobile rules cloned from AutoFlag's @media (max-width: 768px) at
-//            lines 250-274 of AutoFlag's source: hide AI label + AI input + AI
-//            submit button on mobile (too much chrome for ~380px phone screen);
-//            16px font on .header-search and .ai-bar-input prevents iOS zoom-
-//            on-focus; 44px min tap targets on icon buttons. Hamburger continues
-//            to display via the existing .hamburger { display: flex } rule.
-//          - AutoFlag's photo button (📸, .ai-icon-btn with #aiPhotoToggle,
-//            aiPhotoBadge, ai-photo-panel markup) NOT ported. CC has no
-//            handleAIPhotoUpload / toggleAIPhotoPanel / clearAIPhotos handlers,
-//            and porting the photo workflow would couple this rev to AI feature
-//            work. Per Pattern 6.3.17, scoped to chrome only. AI photo support
-//            in CC is a separate future rev if Phil wants it.
-//          - Pattern 6.3.20 audit (z-index stacking): AutoFlag's header has
-//            z-index: 100 (sticky). CC's pre-9.5 header had the same z-index: 100.
-//            No change to header's stacking context. CC's .global-search-wrap
-//            has position: relative + z-index: 101 (creates its own stacking
-//            context); .global-search-dropdown z:9999 only competes WITHIN that
-//            wrap's local context. From outside, the dropdown effectively
-//            paints at header's z:100 (same as pre-9.5). Pre-existing behavior
-//            is preserved. If Phil ever needs the dropdown to escape (e.g.,
-//            paint above .nav-overlay z:199), that's a future-rev concern —
-//            fix path is to remove z-index from .global-search-wrap (so it
-//            doesn't create a context), or move the dropdown DOM-level out of
-//            the wrap. Documented for Bot 2 backlog consideration.
-//          - Pattern 6.3.19 audit (chip density): header has 6-7 horizontal
-//            elements on desktop (hamburger, logo, search, spacer, AI label,
-//            AI input, submit button, user pill). Element count is FIXED
-//            (not data-driven), gap: 10px between siblings, mobile media
-//            hides the 3 AI elements bringing mobile count to 5. No chip-
-//            density risk. Tested against the AutoFlag pattern which uses the
-//            same count successfully.
-//          - Diff scope: header markup + header-related CSS rules. Three new
-//            classes added (.header-spacer was new since CC didn't use one),
-//            existing .logo / header rules replaced. .header-meta / .header-
-//            time / .status-dot / @keyframes pulse REMOVED (no longer
-//            referenced in markup). One JS shim added (ccHeaderAskAI),
-//            window-exposed. updateClock left as-is (no-op). Zero changes to
-//            footer chrome (Rev 9.4.x), Data Manager modal (Rev 9.4.4),
-//            stacking-context fix (Rev 9.4.3), nav contrast (Rev 9.4.1+),
-//            position-fixed footer (Rev 9.4.2), Firebase SDK shim (Rev 9.3),
-//            data model, RTDB schema, Cloud Function, auth, footer handlers.
-// Rev 9.5.1  Header polish — three changes scoped to the header chrome only.
-//          Both production sources curl-fetched and verified before any code
-//          changes (Pattern 6.3.18). CC v9.5 confirmed at line count and rev
-//          label match; AutoFlag v1.76 confirmed at line 490 of /tmp/af_prod.html.
-//          Change 1 — AI input width:
-//          - max-width: 280px → width: 280px (AutoFlag Rev 1.76 line 433 inline
-//            style is "width:280px" — fixed, not max-width). Pre-9.5.1's
-//            max-width allowed the input to collapse below 280px when flex
-//            siblings competed for space. Phil's reported "shorter input"
-//            symptom was correct. Single-character fix in the inline style.
-//          Change 2 — User pill removed:
-//          - "Phil Sigler★" markup at end of header removed. Matches AutoFlag's
-//            chrome exactly (AutoFlag has no user pill in its header). The
-//            People system rev (backlog #39) will reintroduce some kind of
-//            user identification at the right time.
-//          - .user-pill CSS class retained as dead code with a deprecation
-//            comment — safe to delete in a future cleanup rev. No current
-//            consumers; keeps this rev's diff scoped to chrome behavior, not
-//            CSS spring-cleaning.
-//          Change 3 — 📸 attach photo button:
-//          - Markup pattern cloned from AutoFlag Rev 1.76 lines 435-438:
-//            <button class="ai-icon-btn" id="cc-ai-photo-btn"> 📸 +
-//            <span class="ai-photo-badge"> ... </button>. Hidden file <input>
-//            sibling triggered by the button via .click(). Inline preview chip
-//            (.ai-photo-preview-chip) renders thumbnail + ✕ when a photo is
-//            attached.
-//          - Hidden on mobile via the existing Rev 9.5 mobile rule
-//            "header .ai-icon-btn { display: none }" plus a new rule
-//            "header .ai-photo-preview-chip { display: none }" that mirrors
-//            AutoFlag's mobile behavior (📸 is desktop-only in AutoFlag too,
-//            line 252 of AutoFlag CSS).
-//          - .ai-photo-badge CSS ported verbatim from AutoFlag line 368,
-//            palette-mapped: --amber → --gold, color #1a1208 → #0d0d0f.
-//          - .ai-photo-preview-chip CSS is CC-specific (AutoFlag uses a
-//            separate panel via toggleAIPhotoPanel; CC uses an inline chip
-//            in the header for a more compact pattern that doesn't cross
-//            chip-density thresholds when collapsed).
-//          BEHAVIORAL DEVIATION FROM AUTOFLAG (deliberate):
-//          - AutoFlag's askAI() at lines 3618-3742 is text-URL: it uploads
-//            photos to Firebase Storage at autoflag/installs/_ai_uploads/...,
-//            gets the download URLs, then APPENDS THE URLS AS PLAIN TEXT to
-//            the user message string. The model receives URLs as decorative
-//            text — askAI fast-mode has no web tools, so the model can't
-//            actually fetch and "see" the image content. AutoFlag's 📸 is
-//            essentially a URL-attachment, not vision.
-//          - CC implements TRUE VISION: messages[].content is built as
-//            [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg',
-//            data: <base64> } }, { type: 'text', text: <prompt> }]. The model
-//            actually analyzes the image content. This makes CC more capable
-//            than AutoFlag in this dimension. When AutoFlag eventually upgrades
-//            to true vision, CC's pattern at this rev is the reference.
-//          - Storage upload still happens at command_center/ai_images/{ts}-{rand}.jpg
-//            for persistence/discoverability per Phil's spec — but it runs in
-//            background (NOT awaited) so a slow or failed Storage write doesn't
-//            block the AI response. The AI gets the image inline as base64.
-//          - askAI Cloud Function audit (per v4.10 doc Section 3.7): function
-//            destructures `messages` from req.body and passes it unchanged to
-//            client.messages.create({ messages, ... }). It's a transparent
-//            proxy. Vision content blocks pass through without code changes.
-//            ZERO Cloud Function modifications required.
-//          - Anthropic Sonnet 4.6 supports vision via base64 source per docs.
-//            Image format: JPEG, max 800px long edge, ~50KB compressed.
-//            Base64 payload ~67KB inline in the request. Negligible vs the
-//            12000-char system prompt cap.
-//          - askAI app config for 'cc' uses claude-sonnet-4-6 fast mode
-//            (1000 max_tokens, no tools). Vision works in fast mode (no tools
-//            required). No model swap needed.
-//          New JS surface (all window-exposed for inline onclick):
-//          - ccHeaderAskAI (rewritten, async): no-photo path delegates to
-//            sendMessage() unchanged; photo path builds multimodal request
-//            inline and submits directly to askAI. sendMessage() text-only
-//            path is COMPLETELY UNTOUCHED per Pattern 6.3.17.
-//          - ccAiAttachPhoto(ev): file picker change handler. Reads the file,
-//            compresses via ccCompressImage, stores in ccAiPendingPhoto.
-//          - ccCompressImage(dataUrl, callback): mirrors the inline canvas
-//            compression in hdLoadImgPreviewAndUpload at line ~4496 (800px max,
-//            0.75 JPEG quality). Extracted as separate helper rather than
-//            refactoring hdLoadImgPreviewAndUpload — Pattern 6.3.17 says don't
-//            touch existing handlers, slight code duplication accepted for
-//            regression safety.
-//          - ccAiUploadToStorage(dataUrl): background upload to
-//            command_center/ai_images/{ts}-{rand}.jpg via storage.ref().putString.
-//            Called fire-and-forget by ccHeaderAskAI; failures logged not toasted.
-//          - ccAiClearPhoto(): clears pending photo + repaints preview chip.
-//          - ccAiRenderPhotoPreview(): updates the preview chip + badge based on
-//            current ccAiPendingPhoto state.
-//          - ccAiPendingPhoto: module-level state holder (single photo, not array
-//            — AutoFlag supports up to 4; CC's header-chip pattern supports 1).
-//          Pattern 6.3.20 audit:
-//          - .ai-icon-btn already has position: relative (Rev 9.5 ported from
-//            AutoFlag for badge positioning). The new 📸 button uses the same
-//            class so it has the same stacking context. The badge uses
-//            position: absolute and stays inside the button's local context —
-//            badge always paints above the button face. From outside the
-//            button, the entire button paints at header's z:100 — same as
-//            existing 🤖 button. No new stacking-context trap.
-//          - .ai-photo-preview-chip is position: static (default), participates
-//            normally in header flex flow. No new stacking context.
-//          Pattern 6.3.19 audit:
-//          - Header element count: pre-9.5.1 desktop was 8 (hamburger, logo,
-//            search-wrap, spacer, ai-bar-label, ai-bar-input, 🤖 btn, user-pill).
-//            Post-9.5.1 desktop is 9 with photo attached (added 📸 btn + hidden
-//            input + preview chip), 8 without (preview chip display:none).
-//          - Mobile: pre-9.5.1 was 5 (hamburger, logo, search, spacer, user-pill).
-//            Post-9.5.1 is 4 (user-pill removed; AI bar elements still hidden;
-//            preview chip explicitly hidden via the new mobile rule).
-//          - Net change: +1 desktop element when photo attached, -1 mobile
-//            element. The hidden file input doesn't participate in layout
-//            (display: none). Header has plenty of room on desktop (>1024px).
-//            No chip-density risk.
-//          Diff scope: header markup + 4 new CSS rule blocks (.ai-photo-badge,
-//          .ai-photo-preview-chip + 3 children) + ccHeaderAskAI rewrite +
-//          5 new helper functions (ccAiAttachPhoto, ccCompressImage,
-//          ccAiUploadToStorage, ccAiClearPhoto, ccAiRenderPhotoPreview). One
-//          existing CSS rule deprecated-but-retained (.user-pill).
-//          NOT changed: footer chrome, Data Manager modal, House Data page,
-//          Contacts page, nav structure, Cloud Function, Firebase Storage rules,
-//          RTDB schema, sendMessage() body (text-only path stays exactly as
-//          shipped in Rev 9.5), hdLoadImgPreviewAndUpload, hdUploadImageToStorage.
-//          Storage path verification: CC already writes to Firebase Storage
-//          successfully today via hdUploadImageToStorage at house_data/{filename}
-//          (line ~4483) — proves the deployed Storage rules allow authenticated
-//          writes from CC. New path command_center/ai_images/{ts}-{rand}.jpg
-//          uses the same auth-required rule pattern. If the rules are unexpectedly
-//          path-scoped to /house_data/ only, the upload returns null silently and
-//          the AI request continues without the persisted URL — graceful
-//          degradation. Phil to verify on first photo submit; rules update is a
-//          separate deploy if needed.
-//          Pattern note for Bot 2 (v4.11 candidate): when a feature port from
-//          one Philinity app to another reveals the source app has an inert
-//          implementation (AutoFlag's text-URL "vision" doesn't actually use
-//          vision content blocks because askAI fast-mode has no web tools),
-//          the right move is to upgrade the dest app to the standard pattern,
-//          not to clone the inert implementation. Pattern 6.3.18 audit (verify
-//          before assuming) found this gap; Pattern 6.3.17 (one logical change
-//          per rev) was held by deviating from spec only after explicit Phil
-//          confirmation. Surfacing the discovery to Phil before shipping
-//          prevented a wasted rev that would have shipped a feature with no
-//          actual capability.
-// Rev 9.5.2  Header chrome ripped out and replaced with AutoFlag Rev 1.76's
-//          <header> block byte-for-byte (lines 429-439 of AutoFlag source).
-//          Header CSS likewise replaced byte-for-byte (AutoFlag lines 56-65 +
-//          157-160 + 363-374). Photo handler JS replaced byte-for-byte from
-//          AutoFlag lines 3511-3617.
-//          Approach: rather than palette-translating AutoFlag's CSS, four
-//          token aliases were added to CC's :root (--amber, --amber-bright,
-//          --amber-dim, --border-dashed) that resolve to CC's gold palette.
-//          AutoFlag's CSS text stays unedited; values resolve correctly.
-//          Three connector changes only:
-//          1. Hamburger button INSERTED before AutoFlag's logo (CC needs the
-//             mobile drawer; AutoFlag has no sidebar nav).
-//          2. Logo: "AutoFlag<small>Installs</small>" → "Philinity<small>Command
-//             Center</small>"; onclick goHome() → navigateTo('ai').
-//          3. Search input: AutoFlag's bare <input class="header-search"> wrapped
-//             in CC's existing .global-search-wrap so the dropdown anchors. id
-//             changed to #global-search; CC's existing addEventListener at
-//             line ~2921 already wires globalSearchInput/globalSearchKeydown.
-//          Wire renames in JS:
-//          - window.askAI is the renamed CC handler (was ccHeaderAskAI in
-//             9.5.1). AutoFlag's onclick="askAI()" / onkeydown="askAI()"
-//             resolves directly.
-//          - aiPendingPhotos (array, max 4) replaces 9.5.1's ccAiPendingPhoto
-//             (single).
-//          - All photo handlers use AutoFlag's exact names: toggleAIPhotoPanel,
-//             handleAIPhotoUpload, handleAIPhotoDrop, addAIPhoto, clearAIPhotos,
-//             removeAIPhoto, renderAIPhotoPreview. Global Ctrl+V paste
-//             listener simplified to AI-panel-only target (CC has no
-//             site/pole modals).
-//          Vision pipeline: kept from 9.5.1 (base64 content blocks, NOT
-//          AutoFlag's text-URL pattern). askAI submit body multimodal: N image
-//          content blocks + 1 text block. Storage upload at command_center/
-//          ai_images/{ts}-{rand}.jpg fire-and-forget for persistence.
-//          Diagnostic console.log added in askAI to verify Issue 4 (model
-//          actually receives the image): logs message count + content shape
-//          before fetch, response keys after. Remove in a future cleanup rev
-//          once vision is verified working.
-//          AutoFlag's photo panel + ai-bar wrapper markup (AutoFlag lines
-//          453-477) ALSO ported byte-for-byte and placed after </header>. The
-//          .ai-bar wrapper around it is included exactly as AutoFlag has it.
-//          Pattern 6.3.20 audit: header z:100 unchanged. Photo panel is in
-//          normal flow with margin-top: 10px (AutoFlag's exact pattern). On
-//          mobile, panel hidden via !important.
-//          Diff scope: header markup, header CSS, photo handler JS. NOT
-//          changed: footer, Data Manager modal, House Data, Contacts, nav,
-//          sendMessage() body (text-only path still delegates), Cloud Function,
-//          Storage rules, RTDB schema, hdLoadImgPreviewAndUpload.
-//          Lesson: CC adapts to AutoFlag's pattern, not the other way around.
-//          Earlier 9.5.x revs tried to "translate" — replacing palette tokens
-//          and renaming IDs. That left subtle deviations. 9.5.2 paste-verbatim
-//          + token-alias approach yields true byte-for-byte parity with
-//          AutoFlag's visual.
+// Philinity Command Center © Rev 9.5.7
+// Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
 </script>
