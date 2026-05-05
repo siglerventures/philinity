@@ -1385,7 +1385,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.9</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.10</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2849,7 +2849,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.9</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.10</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -7035,18 +7035,21 @@ function hdRowThumb(row) {
   return '';
 }
 
-// Rev 9.5.9: smarter row-title fallback chain. Returns { title, usedNotes }.
-// Stage 1 tries known identifying fields. Stage 2 synthesizes a title from
-// brand + notes-snippet when no direct field exists (this is what Cabinets
-// rows hit — they have no `item` field but do have brand + notes). usedNotes
-// flag tells the sub-line builder to skip notes so the same text doesn't
-// appear in both title and sub.
-function hdRowTitle(row, fallbackIdx) {
+// Rev 9.5.9 / 9.5.10: smarter row-title fallback chain. Returns
+// { title, usedNotes }. Stage 1 tries known identifying fields. Stage 2
+// synthesizes "brand — notes-snippet". Stage 3 (Rev 9.5.10) uses the
+// matched field's value when stages 1 and 2 produced nothing — surfaces
+// what actually matched rather than a useless "Row N". Stage 4 is the
+// final "Row N" fallback. usedNotes flag tells the sub-line builder to
+// skip notes when stage 2 used them.
+function hdRowTitle(row, fallbackIdx, matchedFieldValue) {
+  // Stage 1: known identifying fields
   var direct = row.item || row.name || row.title || row.description ||
                row.model || row.style || row.product || row.appliances ||
                row.category;
   if (direct) return { title: String(direct), usedNotes: false };
-  // Stage 2: synthesize from brand + notes-snippet.
+
+  // Stage 2: synthesize from brand + notes-snippet
   var parts = [];
   if (row.brand) parts.push(String(row.brand));
   var usedNotes = false;
@@ -7057,7 +7060,17 @@ function hdRowTitle(row, fallbackIdx) {
     usedNotes = true;
   }
   if (parts.length) return { title: parts.join(' — '), usedNotes: usedNotes };
-  // Last resort.
+
+  // Stage 3 (Rev 9.5.10): matching field's value. Stages 1 and 2 returned
+  // nothing, so brand and notes are both empty by definition — no collision
+  // risk with the sub-line.
+  if (matchedFieldValue) {
+    var snippet = String(matchedFieldValue).replace(/\s+/g, ' ').trim();
+    if (snippet.length > 80) snippet = snippet.substring(0, 80) + '…';
+    return { title: snippet, usedNotes: false };
+  }
+
+  // Stage 4: final fallback
   return { title: 'Row ' + (fallbackIdx + 1), usedNotes: false };
 }
 
@@ -7133,6 +7146,7 @@ async function runGlobalSearch(q) {
   });
   if (contactHits.length) {
     sections.push({
+      kind: 'contacts',
       key: '__contacts',
       label: '👥 Contacts',
       count: contactHits.length,
@@ -7171,10 +7185,25 @@ async function runGlobalSearch(q) {
       var sheetName = sheet.sheet_name || key;
       if (hdSearchSheetExcluded(key, sheetName)) return;
       sheet.rows.forEach(function(row, rowIdx) {
-        var vals = Object.values(row).filter(function(v) { return v && typeof v === 'string'; });
-        if (vals.some(function(v) { return v.toLowerCase().includes(needle); })) {
+        // Rev 9.5.10: walk keys (not values) so we can skip internal fields
+        // and capture the matching value. Captured value passes to
+        // hdRowTitle as stage 3 fallback when no identifying field exists.
+        // Skip-list = internal metadata + photo URLs (URLs as titles look bad).
+        var matchedFieldValue = '';
+        var keys = Object.keys(row);
+        for (var ki = 0; ki < keys.length; ki++) {
+          var k = keys[ki];
+          if (k === '_sheet' || k === '_tagged' || k === 'tags' || k === 'photos' ||
+              k === 'img' || k === 'photo' || k === 'url') continue;
+          var v = row[k];
+          if (v && typeof v === 'string' && v.toLowerCase().includes(needle)) {
+            matchedFieldValue = v;
+            break;
+          }
+        }
+        if (matchedFieldValue) {
           if (!sheetBuckets[key]) sheetBuckets[key] = { name: sheetName, hits: [] };
-          sheetBuckets[key].hits.push({ row: row, rowIdx: rowIdx });
+          sheetBuckets[key].hits.push({ row: row, rowIdx: rowIdx, matchedFieldValue: matchedFieldValue });
         }
       });
     });
@@ -7191,7 +7220,7 @@ async function runGlobalSearch(q) {
       var HD_PER_SHEET_CAP = 6;
       var items = bucket.hits.slice(0, HD_PER_SHEET_CAP).map(function(h) {
         var row = h.row;
-        var t = hdRowTitle(row, h.rowIdx);
+        var t = hdRowTitle(row, h.rowIdx, h.matchedFieldValue);
         var thumbUrl = hdRowThumb(row);
         // Rev 9.5.9: thumbnail rendered only when row has an image. No
         // fallback emoji — empty thumb slot collapses so title fills the row
@@ -7241,6 +7270,7 @@ async function runGlobalSearch(q) {
         });
       }
       sections.push({
+        kind: 'hd',
         key: key,
         label: '🏠 ' + bucket.name,
         count: bucket.hits.length,
@@ -7264,6 +7294,7 @@ async function runGlobalSearch(q) {
   }
   if (chatHits.length) {
     sections.push({
+      kind: 'chat',
       key: '__chat',
       label: '✦ AI Chat',
       count: chatHits.length,
@@ -7294,12 +7325,25 @@ async function runGlobalSearch(q) {
   }
 
   var collapsedMap = gsGetCollapsedSheets();
+  // Rev 9.5.10: when 2+ House Data sheets match, House Data sections default
+  // to collapsed for a cleaner overview. Contacts and AI Chat sections always
+  // default to expanded — they don't sprawl. localStorage entries always win
+  // (so manual expand/collapse persists per sheet across searches).
+  var hdSectionCount = sections.filter(function(s) { return s.kind === 'hd'; }).length;
+  var hdCollapseDefault = hdSectionCount >= 2;
   var html = '';
   // Track action callbacks by global index (across all sections, all rows)
   // so flat keyboard walk + click both resolve to the right handler.
   var allActions = [];
   sections.forEach(function(sec) {
-    var isCollapsed = !!collapsedMap[sec.key];
+    // localStorage entry wins. If absent, kind 'hd' defaults to hdCollapseDefault,
+    // others default to expanded.
+    var isCollapsed;
+    if (collapsedMap.hasOwnProperty(sec.key)) {
+      isCollapsed = !!collapsedMap[sec.key];
+    } else {
+      isCollapsed = (sec.kind === 'hd') ? hdCollapseDefault : false;
+    }
     var safeSheetKey = String(sec.key).replace(/"/g, '&quot;');
     html += '<div class="gs-section-header' + (isCollapsed ? ' collapsed' : '') + '" ' +
             'data-gs-sheet-key="' + safeSheetKey + '" ' +
@@ -7727,7 +7771,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.9
+// Philinity Command Center © Rev 9.5.10
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
