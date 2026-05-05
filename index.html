@@ -1281,6 +1281,8 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   flex: 1;
   max-width: 380px;
   z-index: 101;
+  display: flex;       /* Rev 9.5.2 fix: makes .header-search { flex:1 } fill the wrap */
+  align-items: center;
 }
 .global-search-input {
   width: 100%;
@@ -1357,7 +1359,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.2</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.3</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1445,7 +1447,7 @@ async function googleSignIn() {
     </button>
     <div class="logo" onclick="navigateTo('ai')">Philinity<small>Command Center</small></div>
     <div class="global-search-wrap">
-      <input class="header-search" id="global-search" placeholder="Search contacts, house data, chat..." autocomplete="off" />
+      <input class="header-search" id="global-search" placeholder="Search contacts, house data, chat..." oninput="globalSearchInput(this.value)" onkeydown="globalSearchKeydown(event)" autocomplete="off" />
       <div class="global-search-dropdown" id="global-search-dropdown"></div>
     </div>
     <div class="ai-bar-label" style="font-size:12px;color:var(--amber);font-weight:600;white-space:nowrap">🤖 Ask AI</div>
@@ -2841,7 +2843,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.2</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.3</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -2915,12 +2917,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Wire global search here to guarantee functions exist
-  var gsInp = document.getElementById('global-search');
-  if (gsInp) {
-    gsInp.addEventListener('input', function() { globalSearchInput(this.value); });
-    gsInp.addEventListener('keydown', function(e) { globalSearchKeydown(e); });
-  }
+  // Wire global search: handlers are inline on the input element (Rev 9.5.2
+  // matches AutoFlag's inline-handler pattern). This addEventListener was
+  // removed because it was redundant with the inline handlers; keeping both
+  // would fire each handler twice per keystroke.
 });
 
 function toggleMobileNav() {
@@ -7453,7 +7453,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.2
+// Philinity Command Center © Rev 9.5.3
 // ------------------------------------------------------------
 // Rev 3.5  Nav Editor: drag/drop groups & items, Firebase sync
 // Rev 3.6  Edit Navigation button subtle, floating button removed
