@@ -1375,6 +1375,9 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 }
 mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radius: 2px; padding: 0 1px; }
 .gs-empty { padding: 20px 16px; font-size: 0.78rem; color: var(--text-muted); text-align: center; font-style: italic; }
+/* Rev 9.5.9 — drill-in link row when a sheet has more matches than the cap. */
+.gs-result.gs-more-link { border-top: 1px dashed var(--border); }
+.gs-result.gs-more-link .gs-result-title { color: var(--gold); font-style: italic; font-size: 0.74rem; }
 
 </style>
 </head>
@@ -1382,7 +1385,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.8</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.9</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2846,7 +2849,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.8</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.9</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -7032,8 +7035,35 @@ function hdRowThumb(row) {
   return '';
 }
 
-// Build the brand · price · notes-snippet sub line. Skip blank fields.
-function hdRowSubLine(row) {
+// Rev 9.5.9: smarter row-title fallback chain. Returns { title, usedNotes }.
+// Stage 1 tries known identifying fields. Stage 2 synthesizes a title from
+// brand + notes-snippet when no direct field exists (this is what Cabinets
+// rows hit — they have no `item` field but do have brand + notes). usedNotes
+// flag tells the sub-line builder to skip notes so the same text doesn't
+// appear in both title and sub.
+function hdRowTitle(row, fallbackIdx) {
+  var direct = row.item || row.name || row.title || row.description ||
+               row.model || row.style || row.product || row.appliances ||
+               row.category;
+  if (direct) return { title: String(direct), usedNotes: false };
+  // Stage 2: synthesize from brand + notes-snippet.
+  var parts = [];
+  if (row.brand) parts.push(String(row.brand));
+  var usedNotes = false;
+  if (row.notes) {
+    var notes = String(row.notes).replace(/\s+/g, ' ').trim();
+    if (notes.length > 60) notes = notes.substring(0, 60) + '…';
+    parts.push(notes);
+    usedNotes = true;
+  }
+  if (parts.length) return { title: parts.join(' — '), usedNotes: usedNotes };
+  // Last resort.
+  return { title: 'Row ' + (fallbackIdx + 1), usedNotes: false };
+}
+
+// Build the brand · price · notes-snippet sub line. Skip blank fields, and
+// skip notes if the title already used them (avoid duplication).
+function hdRowSubLine(row, titleUsedNotes) {
   if (!row) return '';
   var parts = [];
   if (row.brand) parts.push(String(row.brand));
@@ -7042,7 +7072,7 @@ function hdRowSubLine(row) {
     if (!pr.startsWith('$') && /^\d/.test(pr)) pr = '$' + pr;
     parts.push(pr);
   }
-  if (row.notes) {
+  if (row.notes && !titleUsedNotes) {
     var notes = String(row.notes).replace(/\s+/g, ' ').trim();
     if (notes.length > 50) notes = notes.substring(0, 50) + '…';
     parts.push(notes);
@@ -7108,7 +7138,7 @@ async function runGlobalSearch(q) {
       count: contactHits.length,
       items: contactHits.slice(0, 8).map(function(c) {
         return {
-          thumbHtml: '<span>👤</span>',
+          thumbHtml: '<div class="gs-result-thumb"><span>👤</span></div>',
           titleHtml: gsHighlight(c.name || 'Unknown', q),
           subText: [c.role, c.company, c.phone].filter(Boolean).join(' · '),
           action: function() {
@@ -7158,17 +7188,21 @@ async function runGlobalSearch(q) {
 
     bucketKeys.forEach(function(key) {
       var bucket = sheetBuckets[key];
-      var items = bucket.hits.slice(0, 12).map(function(h) {
+      var HD_PER_SHEET_CAP = 6;
+      var items = bucket.hits.slice(0, HD_PER_SHEET_CAP).map(function(h) {
         var row = h.row;
-        var title = row.item || row.name || row.category || row.appliances || ('Row ' + (h.rowIdx + 1));
+        var t = hdRowTitle(row, h.rowIdx);
         var thumbUrl = hdRowThumb(row);
+        // Rev 9.5.9: thumbnail rendered only when row has an image. No
+        // fallback emoji — empty thumb slot collapses so title fills the row
+        // width (Cabinets and other image-less sheets read cleanly).
         var thumbHtml = thumbUrl
-          ? '<img src="' + String(thumbUrl).replace(/"/g, '&quot;') + '" alt="" />'
-          : '<span>📷</span>';
+          ? '<div class="gs-result-thumb"><img src="' + String(thumbUrl).replace(/"/g, '&quot;') + '" alt="" /></div>'
+          : '';
         return {
           thumbHtml: thumbHtml,
-          titleHtml: gsHighlight(title, q),
-          subText: hdRowSubLine(row),
+          titleHtml: gsHighlight(t.title, q),
+          subText: hdRowSubLine(row, t.usedNotes),
           action: (function(kk, qq) { return function() {
             closeGlobalSearch();
             navigateTo('housedata');
@@ -7182,6 +7216,30 @@ async function runGlobalSearch(q) {
           }; })(key, q)
         };
       });
+      // Rev 9.5.9: if more matches exist beyond the cap, append a "X more in
+      // [sheet] →" drill-in link as the last item in this section. Same
+      // navigation behavior as a row click — drops user into House Data with
+      // the search term pre-applied.
+      if (bucket.hits.length > HD_PER_SHEET_CAP) {
+        var moreCount = bucket.hits.length - HD_PER_SHEET_CAP;
+        items.push({
+          isMore: true,
+          thumbHtml: '',
+          titleHtml: moreCount + ' more in ' + stripHTML(bucket.name) + ' →',
+          subText: '',
+          action: (function(kk, qq) { return function() {
+            closeGlobalSearch();
+            navigateTo('housedata');
+            setTimeout(function() {
+              hdSelectSheet(kk);
+              setTimeout(function() {
+                var rowSearch = document.getElementById('hd-row-search');
+                if (rowSearch) { rowSearch.value = qq; hdFilterRows(qq); }
+              }, 300);
+            }, 200);
+          }; })(key, q)
+        });
+      }
       sections.push({
         key: key,
         label: '🏠 ' + bucket.name,
@@ -7211,7 +7269,7 @@ async function runGlobalSearch(q) {
       count: chatHits.length,
       items: chatHits.slice(0, 6).map(function(h) {
         return {
-          thumbHtml: '<span>💬</span>',
+          thumbHtml: '<div class="gs-result-thumb"><span>💬</span></div>',
           titleHtml: gsHighlight(h.preview, q),
           subText: 'Current session',
           action: (function(hh) { return function() {
@@ -7254,8 +7312,9 @@ async function runGlobalSearch(q) {
     sec.items.forEach(function(item) {
       var actionIdx = allActions.length;
       allActions.push(item.action);
-      html += '<div class="gs-result" data-gs-action="' + actionIdx + '">' +
-              '<div class="gs-result-thumb">' + item.thumbHtml + '</div>' +
+      var rowClass = 'gs-result' + (item.isMore ? ' gs-more-link' : '');
+      html += '<div class="' + rowClass + '" data-gs-action="' + actionIdx + '">' +
+              item.thumbHtml +
               '<div class="gs-result-main">' +
                 '<div class="gs-result-title">' + item.titleHtml + '</div>' +
                 (item.subText ? '<div class="gs-result-sub">' + stripHTML(item.subText) + '</div>' : '') +
@@ -7668,7 +7727,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.8
+// Philinity Command Center © Rev 9.5.9
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
