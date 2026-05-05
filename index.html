@@ -233,7 +233,9 @@ header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid v
 .ai-icon-btn{padding:7px 11px;background:var(--surface2);border:1px solid var(--amber-dim);border-radius:var(--radius-sm);color:var(--amber);font-size:14px;position:relative}
 .ai-icon-btn:hover{background:var(--amber-dim);color:#fff}
 .ai-photo-badge{position:absolute;top:-4px;right:-4px;background:var(--amber);color:#1a1208;font-size:10px;font-weight:700;border-radius:50%;min-width:16px;height:16px;line-height:16px;padding:0 3px}
-.ai-photo-panel{margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--amber-dim);border-radius:var(--radius);max-width:1400px;margin-left:auto;margin-right:auto}
+.ai-photo-panel{position:relative;margin-top:10px;padding:12px;background:var(--surface2);border:1px solid var(--amber-dim);border-radius:var(--radius);max-width:1400px;margin-left:auto;margin-right:auto}
+.ai-photo-panel-close{position:absolute;top:6px;right:8px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;line-height:1;border-radius:4px;transition:color 0.12s,background 0.12s}
+.ai-photo-panel-close:hover{color:var(--text);background:rgba(255,255,255,0.05)}
 .ai-photo-panel-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
 .ai-photo-panel-label{font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:1px;font-weight:500}
 .ai-photo-tip{font-size:11px;color:var(--amber);margin-bottom:8px}
@@ -1385,7 +1387,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.11</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.12</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1483,6 +1485,9 @@ async function googleSignIn() {
       📸
       <span id="aiPhotoBadge" class="ai-photo-badge" style="display:none">0</span>
     </button>
+    <!-- Rev 9.5.12: ✨ New chat button. Slot in header reserved here. Rev 9.6
+         will slide a 📚 History button in next to this without UI rework. -->
+    <button class="ai-icon-btn" id="aiNewChat" onclick="aiNewChat()" title="Clear conversation and start fresh">✨</button>
   </header>
 
   <!-- AutoFlag Rev 1.76 photo panel + thinking + chat thread, byte-for-byte
@@ -1491,6 +1496,10 @@ async function googleSignIn() {
        identical. -->
   <div class="ai-bar" style="background:transparent;border-bottom:none;padding:0;position:absolute;top:53px;left:0;right:0;z-index:99">
     <div id="aiPhotoPanel" class="ai-photo-panel" style="display:none">
+      <!-- Rev 9.5.12: panel-level ✕ at top-right closes the panel without
+           touching aiPendingPhotos. Distinct from "✕ Clear" (which clears
+           photos but leaves the panel open). Photos persist if you re-open. -->
+      <button class="ai-photo-panel-close" onclick="closeAIPhotoPanel()" title="Close panel">✕</button>
       <div class="ai-photo-panel-row">
         <span class="ai-photo-panel-label">📸 Attach Photos (max 4)</span>
         <label class="btn" style="cursor:pointer">
@@ -2849,7 +2858,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.11</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.12</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3385,6 +3394,58 @@ window.toggleAIPhotoPanel = function() {
   var p = document.getElementById('aiPhotoPanel');
   if (!p) return;
   p.style.display = p.style.display === 'none' ? '' : 'none';
+};
+
+// Rev 9.5.12: explicit close — panel hides, photos preserved.
+window.closeAIPhotoPanel = function() {
+  var p = document.getElementById('aiPhotoPanel');
+  if (p) p.style.display = 'none';
+};
+
+// Rev 9.5.12: click-outside-to-close. Same pattern as closeGlobalSearch's
+// outside-click handler. Ignores clicks inside the panel itself, on the
+// 📸 toggle button, or inside file pickers triggered by panel labels.
+document.addEventListener('mousedown', function(ev) {
+  var panel = document.getElementById('aiPhotoPanel');
+  if (!panel || panel.style.display === 'none') return;
+  var toggle = document.getElementById('aiPhotoToggle');
+  var t = ev.target;
+  if (panel.contains(t)) return;
+  if (toggle && toggle.contains(t)) return;
+  panel.style.display = 'none';
+});
+
+// Rev 9.5.12: ✨ New chat. Clears the in-memory `messages` array and the
+// chat-messages DOM, preserving the seeded welcome bubble (first child).
+// Today there's no persistence, so confirm() before wiping. The "coming in
+// 9.6" framing tells the user why this is a one-way action right now —
+// once 9.6 ships history persistence, this confirm goes away.
+window.aiNewChat = function() {
+  var hasContent = (typeof messages !== 'undefined' && Array.isArray(messages) && messages.length > 0);
+  if (hasContent) {
+    var ok = confirm("Clear this conversation? This can't be undone yet — conversation history is coming in Rev 9.6.");
+    if (!ok) return;
+  }
+  // Reset in-memory thread.
+  if (typeof messages !== 'undefined' && Array.isArray(messages)) {
+    messages.length = 0;
+  }
+  // Wipe chat-messages DOM except the first child (seeded welcome bubble).
+  var container = document.getElementById('chat-messages');
+  if (container) {
+    var welcome = container.firstElementChild;
+    container.innerHTML = '';
+    if (welcome) container.appendChild(welcome);
+  }
+  // Also clear any pending photos so the next message starts clean.
+  if (typeof aiPendingPhotos !== 'undefined' && Array.isArray(aiPendingPhotos)) {
+    aiPendingPhotos.length = 0;
+    if (typeof renderAIPhotoPreview === 'function') renderAIPhotoPreview();
+  }
+  // Hide photo panel if open.
+  closeAIPhotoPanel();
+  // Make sure we're on the AI page so the user sees the cleared state.
+  if (typeof navigateTo === 'function') navigateTo('ai');
 };
 
 window.handleAIPhotoUpload = function(ev) {
@@ -7778,7 +7839,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.11
+// Philinity Command Center © Rev 9.5.12
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
