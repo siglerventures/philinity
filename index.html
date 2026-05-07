@@ -421,7 +421,7 @@
   <div class="sub">Customer Installation / Tracking</div>
   <button class="btn-google" onclick="signIn()">Sign in with Google</button>
   <div id="loginPending" style="display:none;margin-top:18px;color:var(--text-dim);font-size:13px;font-style:italic">📡 Signing you in…</div>
-  <div class="ver">AutoFlag© · v1.77</div>
+  <div class="ver">AutoFlag© · v1.78</div>
 </div>
 
 <!-- ==== App shell ==== -->
@@ -487,7 +487,7 @@
   <button class="fab" onclick="openAddMenu()" title="Add">+</button>
 
   <footer>
-    AutoFlag© <span>Rev v1.77</span>
+    AutoFlag© <span>Rev v1.78</span>
     · <span class="ftr-link" onclick="openDataModal()">📦 Data</span>
     · <span class="ftr-link" onclick="forceRTDBReconnect('manual')">🔄 Reconnect</span>
     · <button class="icon-btn" id="peopleBtn" onclick="openPeopleModal()" title="Manage people" style="display:none;background:transparent;border:none;padding:0 4px;color:var(--text-dim);font-size:14px;vertical-align:middle;cursor:pointer">👥</button><button class="icon-btn" id="proceduresBtn" onclick="openProceduresModal()" title="Edit install procedures" style="display:none;background:transparent;border:none;padding:0 4px;color:var(--text-dim);font-size:14px;vertical-align:middle;cursor:pointer">📋</button>
@@ -570,11 +570,11 @@
         <option value="cylinder">Cylinder (ornamental/architectural)</option>
       </select></div>
       <div class="form-grid-2">
-        <div class="form-row"><label>Pole serial</label><input id="mp-serial" /></div>
+        <div class="form-row"><label>Flag Pole Height</label><input id="mp-serial" placeholder="e.g., 20 ft" /></div>
         <div class="form-row"><label>SIM / ICCID</label><input id="mp-sim" /></div>
       </div>
       <div class="form-grid-2">
-        <div class="form-row"><label>Firmware version</label><input id="mp-fw" /></div>
+        <div class="form-row"><label>Serial #</label><input id="mp-fw" /></div>
         <div class="form-row"><label>SaaS plan</label><select id="mp-plan">
           <option value="">—</option>
           <option value="lte">LTE ($199/yr)</option>
@@ -1533,7 +1533,7 @@ function fmtHistoryValue(v){
 function fmtHistoryField(f){
   const labels = {
     label:"Label", status:"Status", installType:"Install Type",
-    serial:"Serial", sim:"SIM", fw:"Firmware", plan:"Plan", saas:"SaaS",
+    serial:"Flag Pole Height", sim:"SIM", fw:"Serial #", plan:"Plan", saas:"SaaS",
     lat:"Latitude", lng:"Longitude",
     expectedInstallDate:"Expected Install Date",
     completedDate:"Completed Date",
@@ -2117,7 +2117,7 @@ function renderBrowse(){
                   <span class="status-badge status-${p.status}">${STATUS_LABELS[p.status]||p.status}</span>
                   ${getDisplayDate(p)?`<span class="tree-stat-date" title="${getDisplayDateLabel(p)}">${fmtShortDate(getDisplayDate(p))}</span>`:''}
                   ${p.installType?`<span class="data-chip" style="font-size:10px;padding:1px 8px">${formatInstallType(p.installType)}</span>`:''}
-                  ${p.serial?`<span class="tree-stat" style="font-family:monospace;font-size:10px">SN: ${p.serial}</span>`:''}
+                  ${p.serial?`<span class="tree-stat" style="font-family:monospace;font-size:10px">H: ${p.serial}</span>`:''}
                   ${p.photos.length?`<span class="tree-stat">📷 ${p.photos.length}</span>`:''}
                 </div>
               </div>`;
@@ -2294,7 +2294,7 @@ function renderPoleCard(c,s,p,big){
     ${big?`<div style="font-size:12px;color:var(--text-dim);margin-top:6px">${c.name} · ${s.name}</div>`:''}
     <div class="chips-inline" style="margin-top:8px">
       ${p.installType?`<span class="data-chip" style="border-color:var(--amber);color:var(--amber-bright)">${formatInstallType(p.installType)}</span>`:''}
-      ${p.serial?`<span class="data-chip">SN: ${p.serial}</span>`:''}
+      ${p.serial?`<span class="data-chip">H: ${p.serial}</span>`:''}
       ${p.plan?`<span class="data-chip">${p.plan.toUpperCase()}</span>`:''}
       ${p.saas?`<span class="data-chip">SaaS: ${p.saas}</span>`:''}
       ${p.photos.length?`<span class="data-chip">📷 ${p.photos.length}</span>`:''}
@@ -2387,7 +2387,7 @@ function renderKanban(){
         <div class="meta">
           ${getDisplayDate(p)?`<span style="background:#1a2a3a;color:#a8c5e6;font-weight:600" title="${getDisplayDateLabel(p)}">📅 ${fmtShortDate(getDisplayDate(p))}</span>`:''}
           ${p.installType?`<span style="background:var(--amber-dim);color:#fff">${formatInstallType(p.installType)}</span>`:''}
-          ${p.serial?`<span>SN: ${p.serial}</span>`:''}
+          ${p.serial?`<span>H: ${p.serial}</span>`:''}
           ${p.plan?`<span>${p.plan.toUpperCase()}</span>`:''}
           ${p.photos.length?`<span>📷 ${p.photos.length}</span>`:''}
         </div>
@@ -2700,7 +2700,7 @@ function renderList(){
   const th = (col, label) => `<th onclick="setListSort('${col}')" style="cursor:pointer;user-select:none">${label}${ind(col)}</th>`;
 
   let html = `<table class="list-table"><thead><tr>
-    ${th("pole","Pole")}${th("customer","Customer")}${th("site","Site")}${th("type","Type")}${th("status","Status")}${th("date","Date")}${th("serial","Serial")}${th("plan","Plan")}${th("completedBy","Completed By")}${th("updated","Updated")}
+    ${th("pole","Pole")}${th("customer","Customer")}${th("site","Site")}${th("type","Type")}${th("status","Status")}${th("date","Date")}${th("serial","Height")}${th("plan","Plan")}${th("completedBy","Completed By")}${th("updated","Updated")}
   </tr></thead><tbody>`;
   sorted.forEach(({c,s,p}) => {
     // Each filterable cell is wrapped in a clickable span. event.stopPropagation()
