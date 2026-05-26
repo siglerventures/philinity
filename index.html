@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.23</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.24</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2886,7 +2886,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.23</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.24</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -5068,7 +5068,7 @@ function hdOpenEditRow(rowIdx, sheetKey) {
 
   var photoLabel = document.createElement('label');
   photoLabel.className = 'form-label';
-  photoLabel.textContent = 'PHOTOS — Click to Set Main · ★ = Main';
+  photoLabel.textContent = 'PHOTOS — Click to View · ★ Sets Main';
   photoDiv.appendChild(photoLabel);
 
   // Hidden fields to track main url
@@ -7438,8 +7438,12 @@ function hdGalleryRender(containerId, mainSrc) {
     item.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;width:90px;height:90px;background:var(--surface2);border:2px solid ' + (isMain ? 'var(--gold)' : 'var(--border)') + ';flex-shrink:0';
     var img = document.createElement('img');
     img.src = url;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;cursor:pointer';
-    img.onclick = function() { hdGallerySetMain(i); };
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;cursor:zoom-in';
+    img.title = 'Click to view full size';
+    // Rev 9.5.24: image click now opens the lightbox. The ★ Main button on
+    // non-main thumbs still handles "set as main"; clicking the photo itself
+    // was the only way to view it full-size, so this surfaces that intent.
+    (function(u) { img.onclick = function(e) { e.stopPropagation(); hdOpenImagePreview(u); }; })(url);
     item.appendChild(img);
     if (isMain) {
       var badge = document.createElement('div');
@@ -8433,7 +8437,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.23
+// Philinity Command Center © Rev 9.5.24
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
