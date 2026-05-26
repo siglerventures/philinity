@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.25</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.26</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2463,6 +2463,7 @@ async function googleSignIn() {
           <span id="hd-panel-title" style="font-family:Cormorant Garamond,serif;font-size:1.1rem;color:var(--gold)">Select a sheet</span>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="hd-row-count" style="font-family:DM Mono,monospace;font-size:0.62rem;color:var(--text-muted)"></span>
+            <button id="hd-add-col-btn" onclick="hdOpenAddColumnPrompt()" title="Add a new column. Right-click any column header to rename, hide, format, or delete." style="display:none;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">+ Col</button>
             <button id="hd-add-to-sheet-btn" onclick="hdOpenAddModal()" style="display:none;border:none;background:var(--gold-dim);color:var(--gold);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer">+ Add Item</button>
           </div>
         </div>
@@ -2886,7 +2887,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.25</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.26</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4551,6 +4552,8 @@ async function hdSelectSheet(key) {
   document.getElementById('hd-row-count').textContent = hdCurrentRows.length + ' items';
   document.getElementById('hd-row-search-wrap').style.display = 'block';
   document.getElementById('hd-add-to-sheet-btn').style.display = 'block';
+  var addColBtn = document.getElementById('hd-add-col-btn');
+  if (addColBtn) addColBtn.style.display = 'block';
   document.getElementById('hd-row-search').value = '';
   hdRenderTable(hdCurrentRows);
   hdRenderSheetList();
@@ -4675,6 +4678,18 @@ function hdRenderTable(rows) {
       if (allKeys.indexOf(k) === -1) allKeys.push(k);
     });
   });
+  // Rev 9.5.26: include keys the user has registered via "+ Col" but for
+  // which no row yet has a value. Without this, an empty column would never
+  // appear in the rendered table (allKeys is built strictly from row keys).
+  if (hdCurrentSheet) {
+    var renderCfg = hdColConfig[hdCurrentSheet];
+    if (renderCfg && Array.isArray(renderCfg.col_order)) {
+      renderCfg.col_order.forEach(function(k) {
+        if (k === '_sheet' || k === '_tagged' || k === 'tags') return;
+        if (allKeys.indexOf(k) === -1) allKeys.push(k);
+      });
+    }
+  }
 
   var priority = ['img','photo','item','name','brand','qty','price','cost','extended','extended_price','total_price','variant','notes','notes_details'];
   allKeys.sort(function(a, b) {
@@ -5150,6 +5165,16 @@ function hdOpenEditRow(rowIdx, sheetKey) {
   }
 
   hdEditRowKeys = Object.keys(row).filter(function(k) { return k !== '_sheet' && k !== '_tagged'; });
+  // Rev 9.5.26: include columns the user added via "+ Col" so a freshly
+  // added column shows up in the edit modal even when this specific row
+  // doesn't yet have a value for it.
+  var editCfg = hdColConfig[sourceSheet];
+  if (editCfg && Array.isArray(editCfg.col_order)) {
+    editCfg.col_order.forEach(function(k) {
+      if (k === '_sheet' || k === '_tagged' || k === 'tags' || k === 'photos' || k === '_total') return;
+      if (hdEditRowKeys.indexOf(k) === -1) hdEditRowKeys.push(k);
+    });
+  }
 
   var body = document.getElementById('hd-edit-row-body');
   body.innerHTML = '';
@@ -5763,6 +5788,8 @@ async function hdDeleteConfirmed() {
         document.getElementById('hd-table-wrap').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px;font-size:0.82rem">Select a sheet on the left to view its data</div>';
         document.getElementById('hd-row-search-wrap').style.display = 'none';
         document.getElementById('hd-add-to-sheet-btn').style.display = 'none';
+        var addColBtnSel = document.getElementById('hd-add-col-btn');
+        if (addColBtnSel) addColBtnSel.style.display = 'none';
         document.getElementById('hd-row-count').textContent = '';
       }
       hdRenderSheetList();
@@ -5946,6 +5973,59 @@ async function hdLoadColConfig(sheetKey) {
     if (!hdColConfig[sheetKey]) hdColConfig[sheetKey] = empty;
   }
   return hdColConfig[sheetKey];
+}
+
+// Rev 9.5.26: "+ Col" — create a new empty column on the current sheet.
+// Existing rename / hide / delete / format / move ops live on the right-click
+// (or double-tap on mobile) column header context menu, so we only need to
+// add the missing "create" action here. The new column is registered in
+// col_order; hdRenderTable and hdOpenEditRow include col_order keys even when
+// no row carries that key yet, so the column appears immediately as empty
+// cells, ready to be filled via the edit modal.
+async function hdOpenAddColumnPrompt() {
+  if (!hdCurrentSheet) { showToast('Pick a sheet first'); return; }
+  var displayName = prompt('New column name:');
+  if (displayName === null) return;
+  displayName = String(displayName).trim();
+  if (!displayName) return;
+
+  var baseKey = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!baseKey) baseKey = 'col_' + Date.now();
+
+  // Ensure cfg exists with all sub-objects populated.
+  if (!hdColConfig[hdCurrentSheet]) {
+    hdColConfig[hdCurrentSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
+  }
+  var cfg = hdColConfig[hdCurrentSheet];
+  if (!cfg.col_order) cfg.col_order = [];
+  if (!cfg.col_names) cfg.col_names = {};
+  if (!cfg.col_hidden) cfg.col_hidden = [];
+
+  // Collect keys already in use on this sheet — both stored row fields and
+  // anything tracked in col_order — so we can auto-suffix on collision.
+  var taken = {};
+  cfg.col_order.forEach(function(k) { taken[k] = true; });
+  var sheet = hdAllSheets[hdCurrentSheet];
+  if (sheet && Array.isArray(sheet.rows)) {
+    sheet.rows.forEach(function(r) {
+      if (!r || typeof r !== 'object') return;
+      Object.keys(r).forEach(function(k) { taken[k] = true; });
+    });
+  }
+  ['_sheet', '_tagged', 'tags', 'photos', 'added', '_total'].forEach(function(k) { taken[k] = true; });
+  var key = baseKey, n = 2;
+  while (taken[key]) { key = baseKey + '_' + n; n++; }
+
+  cfg.col_order.push(key);
+  cfg.col_names[key] = displayName;
+
+  try {
+    await hdSaveColConfig(hdCurrentSheet);
+    showToast('Column "' + displayName + '" added. Right-click any header to rename, format, or delete.');
+    hdSelectSheet(hdCurrentSheet);
+  } catch (e) {
+    showToast('Could not save column: ' + (e && e.message ? e.message : 'unknown'));
+  }
 }
 
 async function hdSaveColConfig(sheetKey) {
@@ -8535,7 +8615,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.25
+// Philinity Command Center © Rev 9.5.26
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
