@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.22</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.23</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2886,7 +2886,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.22</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.23</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4591,6 +4591,40 @@ function hdSortBy(key) {
 }
 
 // ── Render Table ──
+// Rev 9.5.23: image lightbox. Clicking any thumbnail in a House Data row
+// opens the full-size image in a fullscreen overlay. Click backdrop or
+// press Esc to close. Reuses a single #hd-lightbox node (recreated per
+// open) so successive views don't stack.
+function hdOpenImagePreview(url) {
+  if (!url) return;
+  hdCloseImagePreview(); // remove any existing lightbox first
+  var box = document.createElement('div');
+  box.id = 'hd-lightbox';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:10000;cursor:zoom-out;padding:20px';
+  var big = document.createElement('img');
+  big.src = url;
+  big.style.cssText = 'max-width:95vw;max-height:95vh;object-fit:contain;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,0.6);cursor:default';
+  big.onclick = function(e) { e.stopPropagation(); };
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.setAttribute('aria-label', 'Close image');
+  closeBtn.style.cssText = 'position:absolute;top:18px;right:22px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1';
+  closeBtn.onclick = function(e) { e.stopPropagation(); hdCloseImagePreview(); };
+  box.appendChild(big);
+  box.appendChild(closeBtn);
+  box.onclick = function() { hdCloseImagePreview(); };
+  document.body.appendChild(box);
+  document.addEventListener('keydown', hdLightboxKeyHandler);
+}
+function hdCloseImagePreview() {
+  var box = document.getElementById('hd-lightbox');
+  if (box && box.parentNode) box.parentNode.removeChild(box);
+  document.removeEventListener('keydown', hdLightboxKeyHandler);
+}
+function hdLightboxKeyHandler(e) {
+  if (e.key === 'Escape') hdCloseImagePreview();
+}
+
 function hdRenderTable(rows) {
   var wrap = document.getElementById('hd-table-wrap');
   if (!rows || rows.length === 0) {
@@ -4737,7 +4771,13 @@ function hdRenderTable(rows) {
         if (val) {
           var img = document.createElement('img');
           img.src = val;
-          img.style.cssText = 'width:48px;height:48px;object-fit:cover;border-radius:6px';
+          img.style.cssText = 'width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:zoom-in';
+          img.title = 'Click to view full size';
+          (function(url) {
+            img.onclick = function(e) { e.stopPropagation(); hdOpenImagePreview(url); };
+            // Prevent row dblclick (edit modal) from firing on a double-click of the thumbnail.
+            img.ondblclick = function(e) { e.stopPropagation(); };
+          })(val);
           td.style.padding = '4px 8px';
           td.appendChild(img);
         }
@@ -8393,7 +8433,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.22
+// Philinity Command Center © Rev 9.5.23
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
