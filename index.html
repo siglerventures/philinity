@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.24</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.25</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2886,7 +2886,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.24</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.25</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4625,6 +4625,42 @@ function hdLightboxKeyHandler(e) {
   if (e.key === 'Escape') hdCloseImagePreview();
 }
 
+// Rev 9.5.25: derived Total column + footer sum helpers.
+// hdFmtMoney keeps cents when present so the displayed sum matches the rows
+// it totals (the existing hdFormatCellValue rounds to whole dollars, which
+// causes drift when summing prices like $359.95).
+function hdParsePrice(p) {
+  if (p === null || p === undefined || p === '') return NaN;
+  var s = String(p).replace(/[$,\s]/g, '').trim();
+  if (!s) return NaN;
+  var n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+function hdParseQty(q) {
+  if (q === null || q === undefined || q === '') return 1;
+  var s = String(q).replace(/[,\s]/g, '').trim();
+  if (!s) return 1;
+  var n = parseFloat(s);
+  return (isNaN(n) || n <= 0) ? 1 : n;
+}
+function hdFmtMoney(n) {
+  if (typeof n !== 'number' || !isFinite(n)) return '';
+  if (Math.abs(n - Math.round(n)) < 0.005) return '$' + Math.round(n).toLocaleString('en-US');
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function hdRowTotal(row) {
+  if (!row) return NaN;
+  // Prefer an explicit per-row total field if the sheet uses one.
+  var explicit = row.total_price || row.extended_price || row.extended;
+  if (explicit) {
+    var ep = hdParsePrice(explicit);
+    if (!isNaN(ep)) return ep;
+  }
+  var price = hdParsePrice(row.price);
+  if (isNaN(price)) return NaN;
+  return price * hdParseQty(row.qty);
+}
+
 function hdRenderTable(rows) {
   var wrap = document.getElementById('hd-table-wrap');
   if (!rows || rows.length === 0) {
@@ -4660,6 +4696,22 @@ function hdRenderTable(rows) {
     }
   }
 
+  // Rev 9.5.25: virtual Total column. Inject after `price` ONLY if the sheet
+  // has at least one priced row AND no rows carry an explicit total field
+  // (total_price/extended_price/extended) — otherwise the existing column
+  // already shows the same thing and a virtual one would just duplicate.
+  var hasExplicitTotal = rows.some(function(r) {
+    return r && (r.total_price || r.extended_price || r.extended);
+  });
+  var hasAnyPrice = rows.some(function(r) {
+    return r && !isNaN(hdParsePrice(r.price));
+  });
+  if (!hasExplicitTotal && hasAnyPrice && allKeys.indexOf('_total') === -1) {
+    var priceIdx = allKeys.indexOf('price');
+    if (priceIdx >= 0) allKeys.splice(priceIdx + 1, 0, '_total');
+    else allKeys.push('_total');
+  }
+
   var table = document.createElement('table');
   table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem;table-layout:fixed';
 
@@ -4669,6 +4721,7 @@ function hdRenderTable(rows) {
     var col = document.createElement('col');
     var savedW = hdCurrentSheet ? hdGetColWidth(hdCurrentSheet, k) : null;
     if (k === 'img' || k === 'photo') { col.style.width = '60px'; }
+    else if (k === '_total') { col.style.width = '100px'; }
     else if (savedW) { col.style.width = savedW + 'px'; }
     col.setAttribute('data-col', k);
     colgroup.appendChild(col);
@@ -4682,7 +4735,14 @@ function hdRenderTable(rows) {
 
   allKeys.forEach(function(k) {
     var th = document.createElement('th');
-    if (k === 'img' || k === 'photo') {
+    if (k === '_total') {
+      // Rev 9.5.25: virtual Total column header. Non-sortable, non-resizable,
+      // non-renamable — purely derived from qty × price (or the explicit total
+      // field when present).
+      th.textContent = 'Total $';
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;user-select:none';
+      th.title = 'Derived from qty × price';
+    } else if (k === 'img' || k === 'photo') {
       th.textContent = 'Pic';
       th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left;cursor:pointer;user-select:none';
       th.title = 'Right-click to rename/reorder';
@@ -4762,10 +4822,26 @@ function hdRenderTable(rows) {
     })(row);
 
     allKeys.forEach(function(k) {
-      var val = row[k] || '';
+      var val;
+      if (k === '_total') {
+        var t = hdRowTotal(row);
+        val = isNaN(t) ? '' : hdFmtMoney(t);
+      } else {
+        val = row[k] || '';
+      }
       var td = document.createElement('td');
       td.style.cssText = 'padding:7px 12px;border-bottom:1px solid var(--border);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)';
       td.title = String(val);
+
+      if (k === '_total') {
+        td.textContent = val;
+        if (val) {
+          td.style.color = 'var(--text)';
+          td.style.fontFamily = 'DM Mono, monospace';
+        }
+        tr.appendChild(td);
+        return;
+      }
 
       if (k === 'img' || k === 'photo') {
         if (val) {
@@ -4829,6 +4905,28 @@ function hdRenderTable(rows) {
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
+
+  // Rev 9.5.25: sticky footer summing the visible rows (filter-aware). Only
+  // rendered when at least one row contributes a numeric total. colSpan spans
+  // every data column plus the "Also In" tags column if present, so the value
+  // sits flush against the right edge of the table.
+  var sumValue = 0, sumCount = 0;
+  rows.forEach(function(r) {
+    var t = hdRowTotal(r);
+    if (!isNaN(t)) { sumValue += t; sumCount++; }
+  });
+  if (sumCount > 0) {
+    var tfoot = document.createElement('tfoot');
+    var sumRow = document.createElement('tr');
+    var sumCell = document.createElement('td');
+    sumCell.colSpan = allKeys.length + (hdHasAnyTags ? 1 : 0);
+    sumCell.style.cssText = 'position:sticky;bottom:0;background:var(--surface2);padding:12px 18px;text-align:right;font-family:DM Mono,monospace;font-size:0.82rem;color:var(--gold);border-top:2px solid var(--gold-dim);letter-spacing:0.05em;z-index:5';
+    sumCell.textContent = 'TOTAL — ' + sumCount + ' priced ' + (sumCount === 1 ? 'item' : 'items') + ': ' + hdFmtMoney(sumValue);
+    sumRow.appendChild(sumCell);
+    tfoot.appendChild(sumRow);
+    table.appendChild(tfoot);
+  }
+
   wrap.innerHTML = '';
   wrap.appendChild(table);
 }
@@ -8437,7 +8535,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.24
+// Philinity Command Center © Rev 9.5.25
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
