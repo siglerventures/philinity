@@ -3524,9 +3524,16 @@ async function aiHandleResponse(rawReply) {
           showToast('\u2705 Saved \u201c' + (result.item || 'item') + '\u201d to ' + (result.sheet || 'sheet'));
         }
         // Refresh House Data render only if the page was already showing it.
+        // Rev 9.5.15: also re-render the active sheet's table — hdInit() only
+        // redraws the sheet list sidebar, leaving the visible table stale until
+        // the user re-clicks a sheet or reloads the page.
         if (hdLoaded && typeof hdInit === 'function') {
+          var resumeSheet = hdCurrentSheet;
           hdLoaded = false;
           await hdInit();
+          if (resumeSheet && typeof hdSelectSheet === 'function') {
+            await hdSelectSheet(resumeSheet);
+          }
         }
       } else {
         var errMsg = (result && result.error) || 'unknown error';
