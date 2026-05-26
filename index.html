@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.21</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.22</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2886,7 +2886,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.21</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.22</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -7750,6 +7750,53 @@ async function runGlobalSearch(q) {
     try { await hdInit(); } catch (e) { console.warn('[search] hdInit failed:', e && e.message); }
   }
   if (hdLoaded) {
+    // ── HOUSE DATA SHEET NAMES ──
+    // Rev 9.5.22: typing a category name (e.g. "Landscape") should surface a
+    // clickable result that jumps straight to that sheet. Pre-9.5.22 the
+    // search only looked inside rows, so a sheet-name query returned its rows
+    // and forced the user to spot the right one. Now sheet names + keys are
+    // matched directly and rendered in their own "🗂️ Categories" section,
+    // positioned above the row buckets. Prefix matches sort first so an exact
+    // start-of-name match outranks substring hits.
+    var sheetNameHits = [];
+    hdSheetOrder.forEach(function(key) {
+      var sheet = hdAllSheets[key];
+      if (!sheet) return;
+      var name = sheet.sheet_name || key;
+      if (hdSearchSheetExcluded(key, name)) return;
+      var nameLower = name.toLowerCase();
+      var keyLower = String(key).toLowerCase();
+      if (nameLower.includes(needle) || keyLower.includes(needle)) {
+        sheetNameHits.push({ key: key, name: name, count: (sheet.rows || []).length });
+      }
+    });
+    if (sheetNameHits.length) {
+      sheetNameHits.sort(function(a, b) {
+        var aPrefix = a.name.toLowerCase().indexOf(needle) === 0 ? 0 : 1;
+        var bPrefix = b.name.toLowerCase().indexOf(needle) === 0 ? 0 : 1;
+        if (aPrefix !== bPrefix) return aPrefix - bPrefix;
+        return a.name.localeCompare(b.name);
+      });
+      sections.push({
+        kind: 'sheets',
+        key: '__sheets',
+        label: '🗂️ Categories',
+        count: sheetNameHits.length,
+        items: sheetNameHits.slice(0, 8).map(function(h) {
+          return {
+            thumbHtml: '<div class="gs-result-thumb"><span>🗂️</span></div>',
+            titleHtml: gsHighlight(h.name, q),
+            subText: h.count + ' item' + (h.count === 1 ? '' : 's'),
+            action: (function(kk) { return function() {
+              closeGlobalSearch();
+              navigateTo('housedata');
+              setTimeout(function() { hdSelectSheet(kk); }, 200);
+            }; })(h.key)
+          };
+        })
+      });
+    }
+
     // Build per-sheet hit buckets so each sheet becomes its own collapsible
     // section. Sort sheets by hit count descending so most-relevant sheet
     // appears first.
@@ -8346,7 +8393,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.21
+// Philinity Command Center © Rev 9.5.22
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
