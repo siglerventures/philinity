@@ -1403,7 +1403,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.16</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.17</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2560,9 +2560,9 @@ async function googleSignIn() {
       <div class="modal-title" id="hd-edit-row-modal-title">Edit Row</div>
       <div id="hd-edit-row-body" style="display:flex;flex-direction:column;gap:0;max-height:60vh;overflow-y:auto;padding-right:4px"></div>
       <div class="modal-actions" style="margin-top:16px">
-        <button class="btn-save" onclick="hdSaveEditRow()">Save Changes</button>
-        <button class="btn-cancel" onclick="document.getElementById('hd-edit-row-modal').classList.remove('open')">Cancel</button>
         <button class="btn-delete" onclick="hdDeleteRow()">Delete Row</button>
+        <button class="btn-cancel" style="margin-left:auto" onclick="document.getElementById('hd-edit-row-modal').classList.remove('open')">Cancel</button>
+        <button class="btn-save" onclick="hdSaveEditRow()">Save Changes</button>
       </div>
     </div>
   </div>
@@ -5324,7 +5324,9 @@ function hdInitClipboardPaste() {
 // Close modals on overlay click
 document.getElementById('hd-add-modal').addEventListener('click', function(e) { if (e.target === this) hdCloseAddModal(); });
 document.getElementById('hd-sheet-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
-document.getElementById('hd-edit-row-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+// Rev 9.5.17: click-outside-to-close disabled on the edit row modal — too easy
+// to dismiss accidentally and lose edits. Cancel/Save Changes are the only
+// ways out now.
 
 
 
@@ -8269,7 +8271,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.16
+// Philinity Command Center © Rev 9.5.17
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
