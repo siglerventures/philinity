@@ -1403,7 +1403,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.18</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.19</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2880,7 +2880,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.18</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.19</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3162,6 +3162,12 @@ When the user attaches photos to a save request, the frontend uploads them to Fi
 
 Example with photo attached: %%SAVE_TO_HOUSE_DATA:{"sheet_key":"outdoor-furniture","sheet_name":"Outdoor Furniture","item":"Moonstone 10-Piece Wicker Patio Set","brand":"Moonstone","qty":"1","price":"1439","url":"https://www.homedepot.com/p/example","img":"https://firebasestorage.googleapis.com/.../command_center%2Fai_images%2F1234-abc.jpg?alt=media&token=...","notes":"Gray cushions, fire pit table included"}%%
 
+UPDATING EXISTING ITEMS (Rev 9.5.19): If you emit a save block for an item that already exists in the same sheet — matched by item name + brand (case-insensitive) — the system MERGES your fields into the existing row instead of creating a duplicate. Fields you do NOT include stay untouched. So for partial updates, send only what changes:
+- Add an image to an existing item: %%SAVE_TO_HOUSE_DATA:{"sheet_key":"landscaping","sheet_name":"Landscaping","item":"Oregon Green Pine","brand":"Victory Greens","img":"https://..."}%%
+- Change quantity (user bought more): include the NEW TOTAL qty, not the delta.
+- Same item, different brand → treated as a new row (brand is part of the match key).
+Never resend full row data just to add one field — that risks the AI accidentally overwriting fields the user manually edited in the sheet.
+
 ## POOL CHEMICALS
 - EASYTEST 7-Way Pool Test Strips
 - In The Swim pH Increase
@@ -3415,6 +3421,34 @@ async function hdEnsureLoaded() {
   return hdLoaded;
 }
 
+// Rev 9.5.19: match key for "is this item already in the sheet?" — used by
+// aiSaveToHouseData so the AI can update an existing row (e.g., add an image)
+// without creating a duplicate. Case-insensitive, trimmed. Prefers a match
+// where brand also matches; falls back to item-only when no brand provided
+// or no brand-matched row exists.
+function hdFindMatchingRow(rows, itemName, brand) {
+  if (!Array.isArray(rows) || !itemName) return -1;
+  var nItem = String(itemName).toLowerCase().trim();
+  if (!nItem) return -1;
+  var nBrand = brand ? String(brand).toLowerCase().trim() : '';
+  if (nBrand) {
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r || !r.item) continue;
+      if (String(r.item).toLowerCase().trim() === nItem &&
+          r.brand && String(r.brand).toLowerCase().trim() === nBrand) {
+        return i;
+      }
+    }
+  }
+  for (var j = 0; j < rows.length; j++) {
+    var r2 = rows[j];
+    if (!r2 || !r2.item) continue;
+    if (String(r2.item).toLowerCase().trim() === nItem) return j;
+  }
+  return -1;
+}
+
 async function aiSaveToHouseData(itemJson) {
   // Rev 9.5.14: load-guard. If House Data isn't loaded yet, load it before
   // touching hdAllSheets. Without this guard, an AI save fired pre-load
@@ -3445,20 +3479,44 @@ async function aiSaveToHouseData(itemJson) {
     }
     if (!hdAllSheets[sheetKey].rows) hdAllSheets[sheetKey].rows = [];
     var imgVal = item.img || item.pic || item.pics || item.photo || item.image || '';
-    var row = { added: new Date().toLocaleDateString('en-US') };
-    if (imgVal)       row.img     = imgVal;
-    if (item.item)    row.item    = item.item;
-    if (item.brand)   row.brand   = item.brand;
-    if (item.qty)     row.qty     = String(item.qty);
-    if (item.price)   row.price   = String(item.price);
-    if (item.variant) row.variant = item.variant;
-    if (item.url)     row.url     = item.url;
-    if (item.notes)   row.notes   = item.notes;
-    hdAllSheets[sheetKey].rows.push(row);
-    hdAllSheets[sheetKey].row_count = hdAllSheets[sheetKey].rows.length;
+    var rows = hdAllSheets[sheetKey].rows;
+    // Rev 9.5.19: match-and-merge. Previously every save did rows.push() —
+    // which meant re-emitting a save block for the same item (e.g. AI adding
+    // an image to an existing row) created a duplicate row with only the new
+    // fields populated, leaving the user's original row stale next to it.
+    var existingIdx = hdFindMatchingRow(rows, item.item, item.brand);
+    var targetRow;
+    var mode;
+    if (existingIdx >= 0) {
+      targetRow = rows[existingIdx] || {};
+      // Only non-empty incoming fields overwrite. 'added' is preserved.
+      if (imgVal)       targetRow.img     = imgVal;
+      if (item.item)    targetRow.item    = item.item;
+      if (item.brand)   targetRow.brand   = item.brand;
+      if (item.qty)     targetRow.qty     = String(item.qty);
+      if (item.price)   targetRow.price   = String(item.price);
+      if (item.variant) targetRow.variant = item.variant;
+      if (item.url)     targetRow.url     = item.url;
+      if (item.notes)   targetRow.notes   = item.notes;
+      rows[existingIdx] = targetRow;
+      mode = 'updated';
+    } else {
+      targetRow = { added: new Date().toLocaleDateString('en-US') };
+      if (imgVal)       targetRow.img     = imgVal;
+      if (item.item)    targetRow.item    = item.item;
+      if (item.brand)   targetRow.brand   = item.brand;
+      if (item.qty)     targetRow.qty     = String(item.qty);
+      if (item.price)   targetRow.price   = String(item.price);
+      if (item.variant) targetRow.variant = item.variant;
+      if (item.url)     targetRow.url     = item.url;
+      if (item.notes)   targetRow.notes   = item.notes;
+      rows.push(targetRow);
+      mode = 'created';
+    }
+    hdAllSheets[sheetKey].row_count = rows.length;
     await db.ref('command_center/house_data/' + sheetKey).set(hdAllSheets[sheetKey]);
-    console.log('[ai save] firebase write OK: sheet=', sheetKey, 'rows now=', hdAllSheets[sheetKey].row_count);
-    return { success: true, sheet: sheetName, item: row.item };
+    console.log('[ai save] firebase write OK: sheet=', sheetKey, 'mode=', mode, 'rows now=', hdAllSheets[sheetKey].row_count);
+    return { success: true, sheet: sheetName, item: targetRow.item, mode: mode };
   } catch(e) {
     console.warn('[ai save] threw:', e && e.message);
     return { success: false, error: e.message };
@@ -3521,7 +3579,12 @@ async function aiHandleResponse(rawReply) {
       var result = await aiSaveToHouseData(parsed);
       if (result && result.success) {
         if (typeof showToast === 'function') {
-          showToast('\u2705 Saved \u201c' + (result.item || 'item') + '\u201d to ' + (result.sheet || 'sheet'));
+          // Rev 9.5.19: distinguish create vs merge so the user can tell when
+          // a save folded into an existing row instead of adding a new one.
+          var isUpdate = result.mode === 'updated';
+          var verb = isUpdate ? '\u270f\ufe0f Updated' : '\u2705 Saved';
+          var prep = isUpdate ? ' in ' : ' to ';
+          showToast(verb + ' \u201c' + (result.item || 'item') + '\u201d' + prep + (result.sheet || 'sheet'));
         }
         // Refresh House Data render only if the page was already showing it.
         // Rev 9.5.16: also re-render the active sheet's table — hdInit() only
@@ -8271,7 +8334,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.18
+// Philinity Command Center © Rev 9.5.19
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
