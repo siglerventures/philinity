@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.34</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.35</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2902,7 +2902,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.34</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.35</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4741,15 +4741,22 @@ function hdRenderTable(rows) {
       if (allKeys.indexOf(k) === -1) allKeys.push(k);
     });
   });
-  // Rev 9.5.26: include keys the user has registered via "+ Col" but for
-  // which no row yet has a value. Without this, an empty column would never
-  // appear in the rendered table (allKeys is built strictly from row keys).
+  // Rev 9.5.35: include col_order keys ONLY when they were explicitly added
+  // via "+ Col" (i.e., have a col_names entry registered). Pre-9.5.35 we
+  // folded every col_order key into allKeys to surface user-added empty
+  // columns — but that also kept stale legacy entries alive (e.g., `price`
+  // after the price→cost migration emptied every row's price field). Now
+  // legacy entries with no row data and no col_names mapping fall off the
+  // render naturally.
   if (hdCurrentSheet) {
     var renderCfg = hdColConfig[hdCurrentSheet];
     if (renderCfg && Array.isArray(renderCfg.col_order)) {
+      var renderNames = renderCfg.col_names || {};
       renderCfg.col_order.forEach(function(k) {
         if (k === '_sheet' || k === '_tagged' || k === 'tags') return;
-        if (allKeys.indexOf(k) === -1) allKeys.push(k);
+        if (allKeys.indexOf(k) !== -1) return;
+        if (renderNames[k] === undefined) return; // not user-added — skip stale
+        allKeys.push(k);
       });
     }
   }
@@ -4774,20 +4781,21 @@ function hdRenderTable(rows) {
     }
   }
 
-  // Rev 9.5.25: virtual Total column. Inject after `price` ONLY if the sheet
-  // has at least one priced row AND no rows carry an explicit total field
-  // (total_price/extended_price/extended) — otherwise the existing column
-  // already shows the same thing and a virtual one would just duplicate.
-  var hasExplicitTotal = rows.some(function(r) {
-    return r && (r.total_price || r.extended_price || r.extended);
+  // Rev 9.5.35: Total Price is ALWAYS a virtual computed column. The legacy
+  // total_price / extended / extended_price row fields stay in the data
+  // (hdRowTotal reads them as preferred source) but aren't displayed as their
+  // own columns anymore — previously, having even one row with total_price
+  // suppressed the virtual _total injection, so newer rows (cost only) showed
+  // an empty Total Price cell.
+  allKeys = allKeys.filter(function(k) {
+    return k !== 'total_price' && k !== 'extended_price' && k !== 'extended';
   });
-  var hasAnyPrice = rows.some(function(r) {
+  var hasAnyTotalSource = rows.some(function(r) {
     if (!r) return false;
+    if (r.total_price || r.extended_price || r.extended) return true;
     return !isNaN(hdParsePrice(r.cost)) || !isNaN(hdParsePrice(r.price));
   });
-  if (!hasExplicitTotal && hasAnyPrice && allKeys.indexOf('_total') === -1) {
-    // Rev 9.5.32: anchor virtual Total after `cost` (canonical) when present,
-    // else after `price` (legacy), else at the end.
+  if (hasAnyTotalSource && allKeys.indexOf('_total') === -1) {
     var anchorIdx = allKeys.indexOf('cost');
     if (anchorIdx === -1) anchorIdx = allKeys.indexOf('price');
     if (anchorIdx >= 0) allKeys.splice(anchorIdx + 1, 0, '_total');
@@ -9023,7 +9031,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.34
+// Philinity Command Center © Rev 9.5.35
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
