@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.36</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.37</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2604,7 +2604,8 @@ async function googleSignIn() {
   <!-- House Data Column Context Menu -->
   <div id="hd-col-ctx-menu" style="display:none;position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border-bright);border-radius:8px;padding:6px 0;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
     <div style="padding:6px 16px 4px;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:4px" id="hd-col-ctx-label"></div>
-    <div onclick="hdColCtxRename()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#9999;&#65039; Rename Column</div>
+    <div onclick="hdColCtxRename()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#9999;&#65039; Rename Column (display)</div>
+    <div onclick="hdColCtxConvertKey()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128229; Convert to Canonical Field…</div>
     <div onclick="hdColCtxMoveLeft()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#8592; Move Left</div>
     <div onclick="hdColCtxMoveRight()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#8594; Move Right</div>
     <div onclick="hdColCtxHide()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-dim)'">&#128584; Hide Column</div>
@@ -2882,7 +2883,14 @@ async function googleSignIn() {
           <button onclick="ccMigratePriceToCost()" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">🔍 Scan &amp; Migrate</button>
         </div>
 
-        <!-- Card 6 — Reset All Column Orders (Rev 9.5.36) -->
+        <!-- Card 6 — Normalize Photo Fields (Rev 9.5.37) -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">📸 Normalize Photo Fields</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Consolidate legacy photo field names so every photo lives on the canonical key. Migrates <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">pic → img</code>, <code>photo → img</code>, and <code>pics → photos</code> wherever the canonical field is empty. Rows where both fields already have values are listed and <strong>skipped</strong>.</div>
+          <button onclick="ccNormalizePhotoFields()" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">🔍 Scan &amp; Normalize</button>
+        </div>
+
+        <!-- Card 7 — Reset All Column Orders (Rev 9.5.36) -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
           <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">📐 Reset All Column Orders</div>
           <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Apply the default column order to <strong>every sheet</strong>: <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">Pic → Item → Qty → Cost → Total Price → Notes → URL → Brand → ...</code> Hidden columns, custom rename / format choices, and column widths are <strong>preserved</strong>. Any per-sheet manual reorder you've done will be overwritten.</div>
@@ -2909,7 +2917,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.36</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.37</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4768,7 +4776,7 @@ function hdRenderTable(rows) {
     }
   }
 
-  var priority = ['img','photo','item','name','title','description','qty','cost','total_price','extended_price','extended','notes','notes_details','url','brand','price','variant','model','style','product','company','contact','email','phone','added','updated','photos','pics'];
+  var priority = ['img','photo','pic','item','name','title','description','qty','cost','total_price','extended_price','extended','notes','notes_details','url','brand','price','variant','model','style','product','company','contact','email','phone','added','updated','photos','pics'];
   allKeys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -4839,7 +4847,7 @@ function hdRenderTable(rows) {
       th.textContent = 'Total $';
       th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;user-select:none';
       th.title = 'Derived from qty × price';
-    } else if (k === 'img' || k === 'photo') {
+    } else if (k === 'img' || k === 'photo' || k === 'pic') {
       th.textContent = 'Pic';
       th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left;cursor:grab;user-select:none';
       th.title = 'Drag to reorder · Right-click for menu';
@@ -4954,7 +4962,7 @@ function hdRenderTable(rows) {
         return;
       }
 
-      if (k === 'img' || k === 'photo') {
+      if (k === 'img' || k === 'photo' || k === 'pic') {
         if (val) {
           var img = document.createElement('img');
           img.src = val;
@@ -6042,7 +6050,7 @@ function hdSnapshotColOrder(sheetKey) {
       if (keys.indexOf(k) === -1) keys.push(k);
     });
   }
-  var priority = ['img','photo','item','name','title','description','qty','cost','total_price','extended_price','extended','notes','notes_details','url','brand','price','variant','model','style','product','company','contact','email','phone','added','updated','photos','pics'];
+  var priority = ['img','photo','pic','item','name','title','description','qty','cost','total_price','extended_price','extended','notes','notes_details','url','brand','price','variant','model','style','product','company','contact','email','phone','added','updated','photos','pics'];
   keys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -6113,6 +6121,92 @@ async function hdColCtxHide() {
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
   showToast('🙈 Hid “' + hdGetColDisplayName(savedSheet, savedKey) + '” · Right-click → Show All to restore');
+}
+
+// Rev 9.5.37: convert a column's underlying field key — not just the
+// display name. Use this for sheets where the data lives under non-canonical
+// keys (e.g. "Col 3", "Cabinets") that should be renamed to canonical
+// equivalents (cost, item, etc.) so priority sorting picks them up. Walks
+// every row in the sheet, copies row[oldKey] → row[newKey] (only when the
+// new key is empty on that row), deletes the old key. Updates col_order /
+// col_names / col_hidden / col_formats to reference the new key.
+async function hdColCtxConvertKey() {
+  var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  if (!savedKey || !savedSheet) { showToast('⚠ Convert: missing target'); return; }
+  if (savedKey === '_total') { showToast('⚠ Cannot convert the virtual Total column'); return; }
+  var sheet = hdAllSheets[savedSheet];
+  if (!sheet || !Array.isArray(sheet.rows)) { showToast('⚠ Sheet not loaded'); return; }
+  var displayName = hdGetColDisplayName(savedSheet, savedKey);
+  var promptMsg = 'Convert column key "' + savedKey + '" (displayed as "' + displayName + '") to a canonical field name.\n\n' +
+                  'Common targets: item, cost, qty, notes, url, img, brand, variant, total_price\n\n' +
+                  'All row values move from "' + savedKey + '" to the new key. Rows that already have a value on the new key are SKIPPED (their data is preserved).';
+  var newKey = prompt(promptMsg, '');
+  if (newKey === null) return;
+  newKey = String(newKey).trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!newKey || newKey === savedKey) return;
+  if (newKey === '_total' || newKey === '_sheet' || newKey === '_tagged' || newKey === 'tags') {
+    showToast('⚠ "' + newKey + '" is reserved'); return;
+  }
+
+  // Count: how many rows would actually migrate, how many skip.
+  var migrated = 0, skipped = 0;
+  sheet.rows.forEach(function(row) {
+    if (!row) return;
+    var oldVal = row[savedKey];
+    if (oldVal === undefined || oldVal === '' || oldVal === null) return;
+    var newVal = row[newKey];
+    if (newVal === undefined || newVal === '' || newVal === null) migrated++;
+    else skipped++;
+  });
+  var confirmMsg = 'Migrate ' + migrated + ' row(s) from "' + savedKey + '" → "' + newKey + '"?';
+  if (skipped > 0) confirmMsg += '\n\n' + skipped + ' row(s) already have a value on "' + newKey + '" and will be SKIPPED (their data is preserved, but "' + savedKey + '" is NOT cleared on those rows).';
+  if (!confirm(confirmMsg)) return;
+
+  sheet.rows.forEach(function(row) {
+    if (!row) return;
+    var oldVal = row[savedKey];
+    if (oldVal === undefined || oldVal === '' || oldVal === null) return;
+    var newVal = row[newKey];
+    if (newVal === undefined || newVal === '' || newVal === null) {
+      row[newKey] = oldVal;
+      delete row[savedKey];
+    }
+    // else: leave both — user can resolve later
+  });
+
+  // Update col config to point to the new key.
+  var cfg = hdColConfig[savedSheet];
+  if (cfg) {
+    if (Array.isArray(cfg.col_order)) {
+      var idx = cfg.col_order.indexOf(savedKey);
+      if (idx >= 0) {
+        if (cfg.col_order.indexOf(newKey) === -1) cfg.col_order[idx] = newKey;
+        else cfg.col_order.splice(idx, 1);
+      }
+    }
+    if (cfg.col_names && cfg.col_names[savedKey] !== undefined) {
+      if (cfg.col_names[newKey] === undefined) cfg.col_names[newKey] = cfg.col_names[savedKey];
+      delete cfg.col_names[savedKey];
+    }
+    if (Array.isArray(cfg.col_hidden) && cfg.col_hidden.indexOf(savedKey) >= 0) {
+      cfg.col_hidden = cfg.col_hidden.map(function(k) { return k === savedKey ? newKey : k; });
+    }
+    if (cfg.col_formats && cfg.col_formats[savedKey] !== undefined) {
+      if (cfg.col_formats[newKey] === undefined) cfg.col_formats[newKey] = cfg.col_formats[savedKey];
+      delete cfg.col_formats[savedKey];
+    }
+  }
+
+  try {
+    await db.ref(HD_PATH + '/' + savedSheet).set(sheet);
+    if (cfg) await hdSaveColConfig(savedSheet);
+    showToast('✅ Converted ' + migrated + ' value(s) · "' + savedKey + '" → "' + newKey + '"' + (skipped > 0 ? ' (' + skipped + ' skipped)' : ''));
+    hdRerenderCurrentSheet();
+  } catch (e) {
+    showToast('⚠ Convert failed: ' + (e && e.message ? e.message : 'unknown'));
+    console.warn('[convert key]', e);
+  }
 }
 
 // Rev 9.5.32: drop the user's saved col_order for this sheet so the next
@@ -6932,6 +7026,128 @@ async function ccMigratePriceToCost() {
     _ccSetStatus('<span style="color:var(--red)">⚠ Migration error: ' + (e && e.message ? e.message : 'unknown') + '</span>');
     showToast('⚠ Migration error — see console');
     console.warn('[migration] unexpected:', e);
+  }
+}
+
+// Rev 9.5.37: normalize legacy photo field keys so every photo lives on the
+// canonical key (img for single-URL, photos for arrays). Three migrations:
+//   pic   → img    (when img is empty / unset)
+//   photo → img    (when img is empty / unset)
+//   pics  → photos (when photos is empty / unset)
+// Conflicts (both fields populated with different values) are listed and
+// skipped — manual cleanup needed. Mirrors the price→cost pattern.
+async function ccNormalizePhotoFields() {
+  if (typeof hdEnsureLoaded === 'function') {
+    try { await hdEnsureLoaded(); } catch (_) {}
+  }
+  if (!hdAllSheets || Object.keys(hdAllSheets).length === 0) {
+    showToast('⚠ House Data not loaded — open House Data and try again');
+    return;
+  }
+  function strVal(v) {
+    if (Array.isArray(v)) return v.join('|');
+    return v === undefined || v === null ? '' : String(v).trim();
+  }
+  var stats = { picToImg: 0, photoToImg: 0, picsToPhotos: 0, conflicts: 0, total: 0 };
+  var conflicts = [];
+  Object.keys(hdAllSheets).forEach(function(sheetKey) {
+    var sheet = hdAllSheets[sheetKey];
+    if (!sheet || !Array.isArray(sheet.rows)) return;
+    sheet.rows.forEach(function(row, idx) {
+      stats.total++;
+      var img = strVal(row.img);
+      var pic = strVal(row.pic);
+      var photo = strVal(row.photo);
+      var photos = strVal(row.photos);
+      var pics = strVal(row.pics);
+      var name = row.item || row.name || ('Row ' + (idx + 1));
+      // pic → img
+      if (pic && !img) stats.picToImg++;
+      else if (pic && img && pic !== img) {
+        stats.conflicts++;
+        conflicts.push({ sheet: sheet.sheet_name || sheetKey, item: name, from: 'pic', to: 'img', a: pic, b: img });
+      }
+      // photo → img (after pic, so img might have just been pre-claimed)
+      if (photo && !img && !pic) stats.photoToImg++;
+      else if (photo && (img || pic) && photo !== img && photo !== pic) {
+        stats.conflicts++;
+        conflicts.push({ sheet: sheet.sheet_name || sheetKey, item: name, from: 'photo', to: 'img', a: photo, b: img || pic });
+      }
+      // pics → photos
+      if (pics && !photos) stats.picsToPhotos++;
+      else if (pics && photos && pics !== photos) {
+        stats.conflicts++;
+        conflicts.push({ sheet: sheet.sheet_name || sheetKey, item: name, from: 'pics', to: 'photos', a: pics, b: photos });
+      }
+    });
+  });
+
+  var migrationCount = stats.picToImg + stats.photoToImg + stats.picsToPhotos;
+  var lines = [
+    'Scanned ' + stats.total + ' rows across ' + Object.keys(hdAllSheets).length + ' sheets.',
+    '',
+    '• ' + stats.picToImg + ' row(s): pic → img',
+    '• ' + stats.photoToImg + ' row(s): photo → img',
+    '• ' + stats.picsToPhotos + ' row(s): pics → photos',
+    '• ' + stats.conflicts + ' row(s): SKIPPED (both fields have values that differ)',
+    '',
+    'Migrate ' + migrationCount + ' row' + (migrationCount === 1 ? '' : 's') + '?'
+  ];
+  if (stats.conflicts > 0) {
+    lines.push('');
+    lines.push('Conflicts (will be SKIPPED):');
+    conflicts.slice(0, 10).forEach(function(c) {
+      lines.push('  • [' + c.sheet + '] ' + c.item + ' — ' + c.from + '=' + (c.a.length > 40 ? c.a.slice(0, 40) + '…' : c.a) + ', ' + c.to + '=' + (c.b.length > 40 ? c.b.slice(0, 40) + '…' : c.b));
+    });
+    if (conflicts.length > 10) lines.push('  ...and ' + (conflicts.length - 10) + ' more');
+  }
+  if (!confirm(lines.join('\n'))) return;
+  if (migrationCount === 0) { showToast('Nothing to migrate'); return; }
+
+  _ccSetStatus('<span style="color:var(--text-muted)">⏳ Normalizing ' + migrationCount + ' rows…</span>');
+  var sheetsToWrite = [];
+  Object.keys(hdAllSheets).forEach(function(sheetKey) {
+    var sheet = hdAllSheets[sheetKey];
+    if (!sheet || !Array.isArray(sheet.rows)) return;
+    var changed = false;
+    sheet.rows.forEach(function(row) {
+      var img = strVal(row.img);
+      var pic = strVal(row.pic);
+      var photo = strVal(row.photo);
+      var photos = strVal(row.photos);
+      var pics = strVal(row.pics);
+      if (pic && !img) { row.img = row.pic; delete row.pic; changed = true; img = pic; }
+      else if (pic && img && pic === img) { delete row.pic; changed = true; }
+      if (photo && !img && !pic) { row.img = row.photo; delete row.photo; changed = true; }
+      else if (photo && (img === photo)) { delete row.photo; changed = true; }
+      if (pics && !photos) { row.photos = row.pics; delete row.pics; changed = true; }
+      else if (pics && pics === photos) { delete row.pics; changed = true; }
+    });
+    if (changed) sheetsToWrite.push(sheetKey);
+  });
+
+  var writes = sheetsToWrite.map(function(sheetKey) {
+    return db.ref(HD_PATH + '/' + sheetKey).set(hdAllSheets[sheetKey]).then(
+      function() { return { ok: true, sheetKey: sheetKey }; },
+      function(err) { return { ok: false, sheetKey: sheetKey, err: err && err.message ? err.message : String(err) }; }
+    );
+  });
+  try {
+    var results = await Promise.all(writes);
+    var failed = results.filter(function(r) { return !r.ok; });
+    if (failed.length > 0) {
+      console.warn('[normalize photos] failed:', failed);
+      _ccSetStatus('<span style="color:var(--red)">⚠ ' + failed.length + '/' + results.length + ' sheets failed</span>');
+      showToast('⚠ ' + failed.length + ' sheet write(s) failed — see console');
+    } else {
+      _ccSetStatus('<span style="color:var(--green)">✓ Normalized ' + migrationCount + ' rows across ' + sheetsToWrite.length + ' sheets</span>');
+      showToast('✅ Normalized ' + migrationCount + ' rows · ' + sheetsToWrite.length + ' sheets updated');
+    }
+    if (hdLoaded && hdCurrentSheet && typeof hdRerenderCurrentSheet === 'function') hdRerenderCurrentSheet();
+  } catch (e) {
+    _ccSetStatus('<span style="color:var(--red)">⚠ Error: ' + (e && e.message ? e.message : 'unknown') + '</span>');
+    showToast('⚠ Normalize error — see console');
+    console.warn('[normalize photos]', e);
   }
 }
 
@@ -9096,7 +9312,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.36
+// Philinity Command Center © Rev 9.5.37
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
