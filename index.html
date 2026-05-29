@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.28</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.29</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2894,7 +2894,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.28</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.29</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4570,6 +4570,33 @@ async function hdSelectSheet(key) {
   if (tableWrap) tableWrap.scrollTop = 0;
 }
 
+// Rev 9.5.29: re-render the currently selected sheet WITHOUT round-tripping
+// through Firebase to reload col config. Used by Move Left/Right/Hide/Show
+// All after a local cfg.col_order or cfg.col_hidden mutation. The previous
+// approach (call hdSelectSheet, which awaits hdLoadColConfig, which does
+// db.ref().get()) was racing — the fresh fetch returned the OLD value and
+// clobbered the local swap. Awaiting the set() wasn't enough; .get()
+// apparently still hits a cached/stale value in this SDK setup. Local state
+// is the source of truth right after a user-driven mutation, so trust it.
+function hdRerenderCurrentSheet() {
+  var key = hdCurrentSheet;
+  if (!key) return;
+  var sheet = hdAllSheets[key];
+  if (!sheet) return;
+  var ownRows = (sheet.rows || []).map(function(r) { return Object.assign({}, r, {_sheet: key}); });
+  var taggedRows = [];
+  Object.keys(hdAllSheets).forEach(function(k) {
+    if (k === key) return;
+    (hdAllSheets[k].rows || []).forEach(function(row) {
+      if (row.tags && row.tags.indexOf(key) > -1) {
+        taggedRows.push(Object.assign({}, row, {_sheet: k, _tagged: true}));
+      }
+    });
+  });
+  hdCurrentRows = ownRows.concat(taggedRows);
+  hdRenderTable(hdCurrentRows);
+}
+
 // ── Populate Sheet Select (for Add/Edit modals) ──
 function hdPopulateSheetSelect() {
   var sel = document.getElementById('hd-item-sheet');
@@ -5912,8 +5939,8 @@ async function hdColCtxMoveLeft() {
   var idx = cfg.col_order.indexOf(savedKey);
   if (idx <= 0) return;
   var tmp = cfg.col_order[idx-1]; cfg.col_order[idx-1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
-  await hdSaveColConfig(savedSheet);
-  hdSelectSheet(hdCurrentSheet);
+  hdRerenderCurrentSheet();
+  hdSaveColConfig(savedSheet);
 }
 
 async function hdColCtxMoveRight() {
@@ -5929,8 +5956,8 @@ async function hdColCtxMoveRight() {
   var idx = cfg.col_order.indexOf(savedKey);
   if (idx === -1 || idx >= cfg.col_order.length - 1) return;
   var tmp = cfg.col_order[idx+1]; cfg.col_order[idx+1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
-  await hdSaveColConfig(savedSheet);
-  hdSelectSheet(hdCurrentSheet);
+  hdRerenderCurrentSheet();
+  hdSaveColConfig(savedSheet);
 }
 
 async function hdColCtxHide() {
@@ -5941,8 +5968,8 @@ async function hdColCtxHide() {
   var cfg = hdColConfig[savedSheet];
   if (!cfg.col_hidden) cfg.col_hidden = [];
   if (cfg.col_hidden.indexOf(savedKey) === -1) cfg.col_hidden.push(savedKey);
-  await hdSaveColConfig(savedSheet);
-  hdSelectSheet(hdCurrentSheet);
+  hdRerenderCurrentSheet();
+  hdSaveColConfig(savedSheet);
   showToast('Column hidden. Right-click any header > Show All to restore.');
 }
 
@@ -5953,8 +5980,8 @@ async function hdColCtxShowAll() {
   if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
   cfg.col_hidden = [];
-  await hdSaveColConfig(savedSheet);
-  hdSelectSheet(hdCurrentSheet);
+  hdRerenderCurrentSheet();
+  hdSaveColConfig(savedSheet);
   showToast('All columns visible');
 }
 
@@ -8666,7 +8693,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.28
+// Philinity Command Center © Rev 9.5.29
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
