@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.35</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.36</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2882,6 +2882,13 @@ async function googleSignIn() {
           <button onclick="ccMigratePriceToCost()" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">🔍 Scan &amp; Migrate</button>
         </div>
 
+        <!-- Card 6 — Reset All Column Orders (Rev 9.5.36) -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">📐 Reset All Column Orders</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Apply the default column order to <strong>every sheet</strong>: <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">Pic → Item → Qty → Cost → Total Price → Notes → URL → Brand → ...</code> Hidden columns, custom rename / format choices, and column widths are <strong>preserved</strong>. Any per-sheet manual reorder you've done will be overwritten.</div>
+          <button onclick="ccResetAllColOrders()" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">📐 Reset All Sheets</button>
+        </div>
+
         <!-- Card 6 — Live Sync (Rev 9.5.28; relocated from footer Reconnect link) -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
           <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">🔄 Live Sync</div>
@@ -2902,7 +2909,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.35</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.36</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6928,6 +6935,64 @@ async function ccMigratePriceToCost() {
   }
 }
 
+// Rev 9.5.36: bulk reset col_order on every sheet so the global default
+// priority kicks in (Pic → Item → Qty → Cost → Total → Notes → URL → ...).
+// Preserves col_hidden, col_names, col_formats, and saved column widths —
+// only the order is wiped. Per-sheet "Reset Column Order" right-click is
+// still there for one-off resets; this is the bulk equivalent.
+async function ccResetAllColOrders() {
+  if (typeof hdEnsureLoaded === 'function') {
+    try { await hdEnsureLoaded(); } catch (_) {}
+  }
+  if (!hdAllSheets || Object.keys(hdAllSheets).length === 0) {
+    showToast('⚠ House Data not loaded — open House Data and try again');
+    return;
+  }
+  var sheetCount = Object.keys(hdAllSheets).length;
+  var msg = 'Reset column order on all ' + sheetCount + ' sheets to the default?\n\n' +
+            'New order: Pic → Item → Qty → Cost → Total Price → Notes → URL → Brand → Variant → ...\n\n' +
+            'Hidden columns, custom names, formats, and column widths are preserved.\n' +
+            'Any per-sheet manual reorder you have done will be overwritten.';
+  if (!confirm(msg)) return;
+
+  _ccSetStatus('<span style="color:var(--text-muted)">⏳ Resetting ' + sheetCount + ' sheets…</span>');
+  var sheetsToWrite = [];
+  Object.keys(hdAllSheets).forEach(function(sheetKey) {
+    if (!hdColConfig[sheetKey]) hdColConfig[sheetKey] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
+    // Clear order only — leave the rest of cfg intact.
+    hdColConfig[sheetKey].col_order = [];
+    sheetsToWrite.push(sheetKey);
+  });
+
+  var writes = sheetsToWrite.map(function(sheetKey) {
+    return db.ref(HD_COL_CONFIG_PATH + '/' + hdColConfigKey(sheetKey)).set(hdColConfig[sheetKey]).then(
+      function() { return { sheetKey: sheetKey, ok: true }; },
+      function(err) { return { sheetKey: sheetKey, ok: false, err: err && err.message ? err.message : String(err) }; }
+    );
+  });
+
+  try {
+    var results = await Promise.all(writes);
+    var failed = results.filter(function(r) { return !r.ok; });
+    if (failed.length > 0) {
+      console.warn('[reset col orders] failed writes:', failed);
+      _ccSetStatus('<span style="color:var(--red)">⚠ ' + failed.length + '/' + results.length + ' sheets failed — see console</span>');
+      showToast('⚠ ' + failed.length + ' sheet config write(s) failed — see console');
+    } else {
+      _ccSetStatus('<span style="color:var(--green)">✓ Reset column order on ' + sheetsToWrite.length + ' sheets</span>');
+      showToast('✅ Reset column order on ' + sheetsToWrite.length + ' sheets');
+    }
+    // Refresh the open House Data sheet so user sees the new order immediately.
+    if (hdCurrentSheet && typeof hdRerenderCurrentSheet === 'function') {
+      hdRerenderCurrentSheet();
+    }
+  } catch (e) {
+    _ccSetStatus('<span style="color:var(--red)">⚠ Reset error: ' + (e && e.message ? e.message : 'unknown') + '</span>');
+    showToast('⚠ Reset error — see console');
+    console.warn('[reset col orders]', e);
+  }
+}
+
 // Backup — downloads /command_center as JSON.
 // Reuses the same shape as the existing hdBackupDatabase() but writes status
 // into the modal rather than the toast.
@@ -9031,7 +9096,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.35
+// Philinity Command Center © Rev 9.5.36
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
