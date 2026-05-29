@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.32</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.33</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2895,7 +2895,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.32</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.33</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -5319,8 +5319,32 @@ function hdOpenEditRow(rowIdx, sheetKey) {
   hdGalleryRender('hd-gallery-grid', photoVal);
 
   // All other fields
-  hdEditRowKeys.forEach(function(k) {
-    if (k === 'img' || k === 'photo' || k === 'added' || k === 'updated' || k === 'tags') return;
+  // Rev 9.5.33: filter out keys that have dedicated UI elsewhere or are
+  // auto-managed, and sort what's left into a preferred edit-form order so
+  // Item/Cost/Qty appear at the top regardless of row key insertion order.
+  // - img/photo/photos/pic/pics: handled by the gallery above
+  // - added/updated/_sheet/_tagged/tags: auto-managed or system fields
+  // - price: legacy synonym; hidden when canonical `cost` is set on this row
+  //   (preserved in data; just not shown for edit to avoid the "Price + Cost
+  //   both 495.88" confusion)
+  // - total_price/extended/extended_price: replaced by a computed readonly
+  //   field appended after the input loop (Total = qty × cost)
+  var EDIT_SKIP = { img:1, photo:1, photos:1, pic:1, pics:1, added:1, updated:1, tags:1, _sheet:1, _tagged:1, total_price:1, extended:1, extended_price:1 };
+  var EDIT_ORDER = ['item','name','title','description','cost','qty','notes','notes_details','url','brand','variant','model','style','product','company','contact','email','phone'];
+  var rowHasCost = row.cost !== undefined && row.cost !== null && row.cost !== '';
+  var editableKeys = hdEditRowKeys.filter(function(k) {
+    if (EDIT_SKIP[k]) return false;
+    if (k === 'price' && rowHasCost) return false;
+    return true;
+  });
+  editableKeys.sort(function(a, b) {
+    var ai = EDIT_ORDER.indexOf(a), bi = EDIT_ORDER.indexOf(b);
+    if (ai > -1 && bi > -1) return ai - bi;
+    if (ai > -1) return -1;
+    if (bi > -1) return 1;
+    return a.localeCompare(b);
+  });
+  editableKeys.forEach(function(k) {
     var div = document.createElement('div');
     div.className = 'form-group'; div.style.marginBottom = '10px';
     var lbl = document.createElement('label');
@@ -5342,6 +5366,39 @@ function hdOpenEditRow(rowIdx, sheetKey) {
     }
     body.appendChild(div);
   });
+
+  // Rev 9.5.33: computed Total Price (readonly, live-updates from Cost × Qty).
+  // Always appended after the editable fields so it sits visually below them.
+  var totalDiv = document.createElement('div');
+  totalDiv.className = 'form-group'; totalDiv.style.marginBottom = '10px';
+  var totalLbl = document.createElement('label');
+  totalLbl.className = 'form-label'; totalLbl.textContent = 'TOTAL PRICE (auto)';
+  totalDiv.appendChild(totalLbl);
+  var totalInp = document.createElement('input');
+  totalInp.className = 'form-input';
+  totalInp.id = 'hd-edit-field-total-display';
+  totalInp.readOnly = true;
+  totalInp.tabIndex = -1;
+  totalInp.style.opacity = '0.65';
+  totalInp.style.cursor = 'not-allowed';
+  totalInp.value = (function() { var t = hdRowTotal(row); return isNaN(t) ? '' : hdFmtMoney(t); })();
+  totalDiv.appendChild(totalInp);
+  body.appendChild(totalDiv);
+  // Wire live recompute on Cost / Qty edits.
+  (function() {
+    var costEl = document.getElementById('hd-edit-field-cost');
+    var qtyEl = document.getElementById('hd-edit-field-qty');
+    function recompute() {
+      var virtual = {
+        cost: costEl ? costEl.value : row.cost,
+        qty: qtyEl ? qtyEl.value : row.qty
+      };
+      var t = hdRowTotal(virtual);
+      totalInp.value = isNaN(t) ? '' : hdFmtMoney(t);
+    }
+    if (costEl) costEl.addEventListener('input', recompute);
+    if (qtyEl) qtyEl.addEventListener('input', recompute);
+  })();
 
   // Tags picker
   var tagDiv = document.createElement('div');
@@ -5370,8 +5427,16 @@ async function hdSaveEditRow() {
   var row = rows[sourceIdx];
   if (!row) { showToast('Could not find row to save'); return; }
 
+  // Rev 9.5.33: mirror the edit-form skip filter. Anything that wasn't
+  // rendered as an input must not be overwritten on save — otherwise we'd
+  // wipe legacy `price` values (hidden because `cost` is canonical), strip
+  // the photo arrays (managed by gallery below), or clobber auto-managed
+  // timestamps with "".
+  var SAVE_SKIP = { img:1, photo:1, photos:1, pic:1, pics:1, added:1, updated:1, tags:1, _sheet:1, _tagged:1, total_price:1, extended:1, extended_price:1 };
+  var rowHasCostNow = row.cost !== undefined && row.cost !== null && row.cost !== '';
   hdEditRowKeys.forEach(function(k) {
-    if (k === 'img' || k === 'photo' || k === 'added' || k === 'updated' || k === 'tags') return;
+    if (SAVE_SKIP[k]) return;
+    if (k === 'price' && rowHasCostNow) return;
     var el = document.getElementById('hd-edit-field-' + k);
     if (el) row[k] = el.value.trim();
   });
@@ -8817,7 +8882,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.32
+// Philinity Command Center © Rev 9.5.33
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
