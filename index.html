@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.27</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.28</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2873,6 +2873,13 @@ async function googleSignIn() {
             <span id="cc-data-modal-filename" style="font-size:0.7rem;color:var(--text-muted);font-family:'DM Mono',monospace">No file selected</span>
           </div>
         </div>
+
+        <!-- Card 5 — Live Sync (Rev 9.5.28; relocated from footer Reconnect link) -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">🔄 Live Sync</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Force a fresh fetch from Firebase. Rarely needed — the app stays in sync automatically. Use if data looks stale after a network drop.</div>
+          <button onclick="forceRTDBReconnect('manual')" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">🔄 Reconnect Now</button>
+        </div>
       </div>
 
       <div id="cc-data-modal-status" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);font-family:'DM Mono',monospace;min-height:16px"></div>
@@ -2887,11 +2894,9 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.27</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.28</span>
   <span class="ftr-sep">·</span>
-  <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
-  <span class="ftr-sep">·</span>
-  <span class="ftr-link" onclick="forceRTDBReconnect('manual')" title="Re-fetch live data from Firebase">🔄 Reconnect</span>
+  <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-user" title="Hardcoded admin label — People system rollout pending">👥📋 Phil Sigler<span class="star">★</span></span>
   <span class="ftr-sep">·</span>
@@ -8661,7 +8666,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.27
+// Philinity Command Center © Rev 9.5.28
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
