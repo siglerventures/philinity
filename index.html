@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.37</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.38</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2917,7 +2917,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.37</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.38</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6130,6 +6130,103 @@ async function hdColCtxHide() {
 // every row in the sheet, copies row[oldKey] → row[newKey] (only when the
 // new key is empty on that row), deletes the old key. Updates col_order /
 // col_names / col_hidden / col_formats to reference the new key.
+// Rev 9.5.38: canonical field set surfaced as a dropdown rather than a
+// free-text prompt. The list below is the source of truth — keep it in sync
+// with the AI system prompt's allowed keys (see Rev 9.5.32 prompt update).
+var HD_CANONICAL_FIELDS = [
+  { key: 'item',     label: 'item — what was purchased' },
+  { key: 'cost',     label: 'cost — unit price (canonical)' },
+  { key: 'qty',      label: 'qty — quantity' },
+  { key: 'notes',    label: 'notes — description, model #, where used' },
+  { key: 'url',      label: 'url — product page link' },
+  { key: 'img',      label: 'img — single photo URL' },
+  { key: 'photos',   label: 'photos — array of photo URLs' },
+  { key: 'brand',    label: 'brand — manufacturer / seller' },
+  { key: 'variant',  label: 'variant — color, size, finish' },
+  { key: 'added',    label: 'added — date added' },
+  { key: 'updated',  label: 'updated — last modified date' },
+  { key: 'company',  label: 'company — vendor / contractor name' },
+  { key: 'contact',  label: 'contact — point of contact' },
+  { key: 'email',    label: 'email — contact email' },
+  { key: 'phone',    label: 'phone — contact phone' }
+];
+// Show the canonical-key picker for Convert Field Key. Returns a Promise
+// that resolves with the chosen key string, or null on cancel.
+function hdPromptCanonicalKey(oldKey, displayName) {
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10001;backdrop-filter:blur(2px)';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface);border:1px solid var(--border-bright);border-radius:var(--radius);padding:22px;width:min(90vw,460px);box-shadow:0 12px 40px rgba(0,0,0,0.5)';
+
+    var title = document.createElement('div');
+    title.style.cssText = 'font-family:Cormorant Garamond,serif;font-size:1.3rem;color:var(--gold);margin-bottom:6px';
+    title.textContent = '📥 Convert Field Key';
+    box.appendChild(title);
+
+    var desc = document.createElement('div');
+    desc.style.cssText = 'font-size:0.78rem;color:var(--text-dim);margin-bottom:16px;line-height:1.5';
+    desc.innerHTML = 'Migrating column key <code style="font-family:DM Mono,monospace;color:var(--text);background:var(--surface2);padding:1px 6px;border-radius:4px">' + oldKey + '</code> (currently displayed as &ldquo;' + displayName + '&rdquo;).<br><br>Row values will move from this key to the canonical target you choose. Rows that already have a value on the target are <strong>skipped</strong> (their data is preserved).';
+    box.appendChild(desc);
+
+    var label = document.createElement('div');
+    label.style.cssText = 'font-family:DM Mono,monospace;font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;margin-bottom:6px';
+    label.textContent = 'Target Canonical Field';
+    box.appendChild(label);
+
+    var select = document.createElement('select');
+    select.style.cssText = 'width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border-bright);padding:10px 12px;border-radius:8px;font-family:Outfit,sans-serif;font-size:0.85rem;cursor:pointer;outline:none';
+    var placeholderOpt = document.createElement('option');
+    placeholderOpt.value = '';
+    placeholderOpt.textContent = '— Choose target field —';
+    select.appendChild(placeholderOpt);
+    HD_CANONICAL_FIELDS.forEach(function(f) {
+      if (f.key === oldKey) return; // can't convert to itself
+      var opt = document.createElement('option');
+      opt.value = f.key;
+      opt.textContent = f.label;
+      select.appendChild(opt);
+    });
+    box.appendChild(select);
+
+    var actions = document.createElement('div');
+    actions.style.cssText = 'margin-top:20px;display:flex;justify-content:flex-end;gap:8px';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);padding:9px 18px;border-radius:8px;font-size:0.82rem;cursor:pointer;font-family:Outfit,sans-serif';
+
+    var saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Convert';
+    saveBtn.style.cssText = 'background:var(--gold);color:var(--bg);border:none;padding:9px 22px;border-radius:8px;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:Outfit,sans-serif';
+
+    function close(result) {
+      document.removeEventListener('keydown', onKey);
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      resolve(result);
+    }
+    cancelBtn.onclick = function() { close(null); };
+    saveBtn.onclick = function() {
+      var val = select.value;
+      if (!val) { select.style.borderColor = 'var(--red)'; select.focus(); return; }
+      close(val);
+    };
+    function onKey(e) {
+      if (e.key === 'Escape') close(null);
+      if (e.key === 'Enter' && select.value) close(select.value);
+    }
+    document.addEventListener('keydown', onKey);
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    box.appendChild(actions);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    setTimeout(function() { select.focus(); }, 50);
+  });
+}
+
 async function hdColCtxConvertKey() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
@@ -6138,16 +6235,9 @@ async function hdColCtxConvertKey() {
   var sheet = hdAllSheets[savedSheet];
   if (!sheet || !Array.isArray(sheet.rows)) { showToast('⚠ Sheet not loaded'); return; }
   var displayName = hdGetColDisplayName(savedSheet, savedKey);
-  var promptMsg = 'Convert column key "' + savedKey + '" (displayed as "' + displayName + '") to a canonical field name.\n\n' +
-                  'Common targets: item, cost, qty, notes, url, img, brand, variant, total_price\n\n' +
-                  'All row values move from "' + savedKey + '" to the new key. Rows that already have a value on the new key are SKIPPED (their data is preserved).';
-  var newKey = prompt(promptMsg, '');
-  if (newKey === null) return;
-  newKey = String(newKey).trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+
+  var newKey = await hdPromptCanonicalKey(savedKey, displayName);
   if (!newKey || newKey === savedKey) return;
-  if (newKey === '_total' || newKey === '_sheet' || newKey === '_tagged' || newKey === 'tags') {
-    showToast('⚠ "' + newKey + '" is reserved'); return;
-  }
 
   // Count: how many rows would actually migrate, how many skip.
   var migrated = 0, skipped = 0;
@@ -9312,7 +9402,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.37
+// Philinity Command Center © Rev 9.5.38
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
