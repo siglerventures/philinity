@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.29</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.30</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2894,7 +2894,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.29</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.30</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -5930,59 +5930,73 @@ async function hdColCtxMoveLeft() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
   hdColCtxKey = savedKey; hdColCtxSheetKey = savedSheet;
-  if (!savedKey || !savedSheet) return;
+  if (!savedKey || !savedSheet) { showToast('⚠ Move Left: missing target'); return; }
+  // Rev 9.5.30: read the actual rendered column order from the DOM (<col>
+  // elements carry data-col). This sidesteps any drift between cfg.col_order
+  // and what's actually on screen — earlier attempts (9.5.27, 9.5.29) kept
+  // operating on a stale or differently-ordered col_order and silently
+  // no-op'd. Whatever's rendered IS the source of truth.
+  var cols = document.querySelectorAll('#hd-table-wrap colgroup col[data-col]');
+  var keys = [];
+  for (var i = 0; i < cols.length; i++) keys.push(cols[i].getAttribute('data-col'));
+  var idx = keys.indexOf(savedKey);
+  if (idx === -1) { showToast('⚠ Could not locate column in table'); return; }
+  if (idx === 0) { showToast('“' + hdGetColDisplayName(savedSheet, savedKey) + '” is already leftmost'); return; }
+  var tmp = keys[idx-1]; keys[idx-1] = keys[idx]; keys[idx] = tmp;
+  // _total is virtual (injected by hdRenderTable per its own rules) — never
+  // persist it into col_order or future renders will fight that placement.
+  keys = keys.filter(function(k) { return k !== '_total'; });
   if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
-  var cfg = hdColConfig[savedSheet];
-  if (!cfg.col_order || !cfg.col_order.length || cfg.col_order.indexOf(savedKey) === -1) {
-    cfg.col_order = hdSnapshotColOrder(savedSheet);
-  }
-  var idx = cfg.col_order.indexOf(savedKey);
-  if (idx <= 0) return;
-  var tmp = cfg.col_order[idx-1]; cfg.col_order[idx-1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
+  hdColConfig[savedSheet].col_order = keys;
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
+  showToast('← Moved “' + hdGetColDisplayName(savedSheet, savedKey) + '” left');
 }
 
 async function hdColCtxMoveRight() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
   hdColCtxKey = savedKey; hdColCtxSheetKey = savedSheet;
-  if (!savedKey || !savedSheet) return;
+  if (!savedKey || !savedSheet) { showToast('⚠ Move Right: missing target'); return; }
+  var cols = document.querySelectorAll('#hd-table-wrap colgroup col[data-col]');
+  var keys = [];
+  for (var i = 0; i < cols.length; i++) keys.push(cols[i].getAttribute('data-col'));
+  var idx = keys.indexOf(savedKey);
+  if (idx === -1) { showToast('⚠ Could not locate column in table'); return; }
+  if (idx >= keys.length - 1) { showToast('“' + hdGetColDisplayName(savedSheet, savedKey) + '” is already rightmost'); return; }
+  var tmp = keys[idx+1]; keys[idx+1] = keys[idx]; keys[idx] = tmp;
+  keys = keys.filter(function(k) { return k !== '_total'; });
   if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
-  var cfg = hdColConfig[savedSheet];
-  if (!cfg.col_order || !cfg.col_order.length || cfg.col_order.indexOf(savedKey) === -1) {
-    cfg.col_order = hdSnapshotColOrder(savedSheet);
-  }
-  var idx = cfg.col_order.indexOf(savedKey);
-  if (idx === -1 || idx >= cfg.col_order.length - 1) return;
-  var tmp = cfg.col_order[idx+1]; cfg.col_order[idx+1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
+  hdColConfig[savedSheet].col_order = keys;
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
+  showToast('→ Moved “' + hdGetColDisplayName(savedSheet, savedKey) + '” right');
 }
 
 async function hdColCtxHide() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
-  if (!savedKey || !savedSheet) return;
+  if (!savedKey || !savedSheet) { showToast('⚠ Hide: missing target'); return; }
   if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
   if (!cfg.col_hidden) cfg.col_hidden = [];
   if (cfg.col_hidden.indexOf(savedKey) === -1) cfg.col_hidden.push(savedKey);
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
-  showToast('Column hidden. Right-click any header > Show All to restore.');
+  showToast('🙈 Hid “' + hdGetColDisplayName(savedSheet, savedKey) + '” · Right-click → Show All to restore');
 }
 
 async function hdColCtxShowAll() {
   var savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
-  if (!savedSheet) return;
+  if (!savedSheet) { showToast('⚠ Show All: missing sheet'); return; }
   if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
+  var hadHidden = (cfg.col_hidden || []).length;
   cfg.col_hidden = [];
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
-  showToast('All columns visible');
+  showToast(hadHidden ? '👁 Restored ' + hadHidden + ' hidden column' + (hadHidden === 1 ? '' : 's') : 'No hidden columns');
 }
 
 function hdColCtxDelete() {
@@ -8693,7 +8707,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.29
+// Philinity Command Center © Rev 9.5.30
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
