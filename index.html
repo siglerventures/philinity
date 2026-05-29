@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.26</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.27</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2887,7 +2887,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.26</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.27</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore Command Center data">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -5855,54 +5855,100 @@ function hdHideColCtxMenu(clearKey) {
   if (clearKey) hdColCtxKey = null;
 }
 
-function hdColCtxMoveLeft() {
+// Rev 9.5.27: snapshot the column order the user actually sees, so move/
+// hide/show ops have a real baseline even when cfg.col_order is empty or
+// missing some keys. Pre-9.5.27, Move Left silently no-op'd whenever the
+// targeted key wasn't already in col_order, plus all four ops raced their
+// own Firebase save against hdSelectSheet's fresh-fetch reload — local
+// change → fire-and-forget set → hdLoadColConfig .get() returned the OLD
+// value and clobbered the swap. Fix: backfill col_order here, and await
+// the save in each caller.
+function hdSnapshotColOrder(sheetKey) {
+  var sheet = hdAllSheets[sheetKey];
+  var rows = (sheet && sheet.rows) || [];
+  var keys = [];
+  rows.forEach(function(r) {
+    if (!r) return;
+    Object.keys(r).forEach(function(k) {
+      if (k === '_sheet' || k === '_tagged' || k === 'tags') return;
+      if (keys.indexOf(k) === -1) keys.push(k);
+    });
+  });
+  var cfg = hdColConfig[sheetKey];
+  if (cfg && Array.isArray(cfg.col_order)) {
+    cfg.col_order.forEach(function(k) {
+      if (k === '_sheet' || k === '_tagged' || k === 'tags') return;
+      if (keys.indexOf(k) === -1) keys.push(k);
+    });
+  }
+  var priority = ['img','photo','item','name','brand','qty','price','cost','extended','extended_price','total_price','variant','notes','notes_details'];
+  keys.sort(function(a, b) {
+    var ai = priority.indexOf(a), bi = priority.indexOf(b);
+    if (ai > -1 && bi > -1) return ai - bi;
+    if (ai > -1) return -1;
+    if (bi > -1) return 1;
+    if (a === 'url' || a === 'urls') return 1;
+    if (b === 'url' || b === 'urls') return -1;
+    return a.localeCompare(b);
+  });
+  return keys;
+}
+
+async function hdColCtxMoveLeft() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
   hdColCtxKey = savedKey; hdColCtxSheetKey = savedSheet;
   if (!savedKey || !savedSheet) return;
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
-  if (!cfg) return;
+  if (!cfg.col_order || !cfg.col_order.length || cfg.col_order.indexOf(savedKey) === -1) {
+    cfg.col_order = hdSnapshotColOrder(savedSheet);
+  }
   var idx = cfg.col_order.indexOf(savedKey);
   if (idx <= 0) return;
   var tmp = cfg.col_order[idx-1]; cfg.col_order[idx-1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
-  hdSaveColConfig(savedSheet);
+  await hdSaveColConfig(savedSheet);
   hdSelectSheet(hdCurrentSheet);
 }
 
-function hdColCtxMoveRight() {
+async function hdColCtxMoveRight() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
   hdColCtxKey = savedKey; hdColCtxSheetKey = savedSheet;
   if (!savedKey || !savedSheet) return;
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
-  if (!cfg) return;
+  if (!cfg.col_order || !cfg.col_order.length || cfg.col_order.indexOf(savedKey) === -1) {
+    cfg.col_order = hdSnapshotColOrder(savedSheet);
+  }
   var idx = cfg.col_order.indexOf(savedKey);
   if (idx === -1 || idx >= cfg.col_order.length - 1) return;
   var tmp = cfg.col_order[idx+1]; cfg.col_order[idx+1] = cfg.col_order[idx]; cfg.col_order[idx] = tmp;
-  hdSaveColConfig(savedSheet);
+  await hdSaveColConfig(savedSheet);
   hdSelectSheet(hdCurrentSheet);
 }
 
-function hdColCtxHide() {
+async function hdColCtxHide() {
   var savedKey = hdColCtxKey, savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
   if (!savedKey || !savedSheet) return;
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
-  if (!cfg) return;
+  if (!cfg.col_hidden) cfg.col_hidden = [];
   if (cfg.col_hidden.indexOf(savedKey) === -1) cfg.col_hidden.push(savedKey);
-  hdSaveColConfig(savedSheet);
+  await hdSaveColConfig(savedSheet);
   hdSelectSheet(hdCurrentSheet);
   showToast('Column hidden. Right-click any header > Show All to restore.');
 }
 
-function hdColCtxShowAll() {
+async function hdColCtxShowAll() {
   var savedSheet = hdColCtxSheetKey;
   hdHideColCtxMenu(true);
   if (!savedSheet) return;
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
   var cfg = hdColConfig[savedSheet];
-  if (!cfg) return;
   cfg.col_hidden = [];
-  hdSaveColConfig(savedSheet);
+  await hdSaveColConfig(savedSheet);
   hdSelectSheet(hdCurrentSheet);
   showToast('All columns visible');
 }
@@ -8615,7 +8661,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.26
+// Philinity Command Center © Rev 9.5.27
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
