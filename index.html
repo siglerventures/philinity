@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.33</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.34</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2875,7 +2875,14 @@ async function googleSignIn() {
           </div>
         </div>
 
-        <!-- Card 5 — Live Sync (Rev 9.5.28; relocated from footer Reconnect link) -->
+        <!-- Card 5 — Migrate Price → Cost (Rev 9.5.34) -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+          <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">🔀 Migrate Price → Cost</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">One-shot cleanup of legacy <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">price</code> fields. Scans every row, reports counts, then on confirm: copies <code>price → cost</code> for rows that only have <code>price</code>, and drops the redundant <code>price</code> from rows where both match. Mismatched values are listed and <strong>skipped</strong> for manual review.</div>
+          <button onclick="ccMigratePriceToCost()" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px 14px;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif">🔍 Scan &amp; Migrate</button>
+        </div>
+
+        <!-- Card 6 — Live Sync (Rev 9.5.28; relocated from footer Reconnect link) -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
           <div style="font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:3px">🔄 Live Sync</div>
           <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px">Force a fresh fetch from Firebase. Rarely needed — the app stays in sync automatically. Use if data looks stale after a network drop.</div>
@@ -2895,7 +2902,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.33</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.34</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -6779,6 +6786,140 @@ function _ccSetStatus(html) {
   if (st) st.innerHTML = html;
 }
 
+// Rev 9.5.34: one-shot price → cost migration. Scans every row across every
+// sheet, reports breakdown, then on user confirmation copies legacy `price`
+// values into canonical `cost` and removes the redundant `price` key from
+// rows where both fields already match. Rows whose price/cost values differ
+// numerically are flagged and SKIPPED — manual review required (could be a
+// shipping included in one, a discount in the other, etc.).
+async function ccMigratePriceToCost() {
+  // Ensure House Data is loaded before scanning.
+  if (typeof hdEnsureLoaded === 'function') {
+    try { await hdEnsureLoaded(); } catch (_) {}
+  }
+  if (!hdAllSheets || Object.keys(hdAllSheets).length === 0) {
+    showToast('⚠ House Data not loaded — open House Data and try again');
+    return;
+  }
+
+  function priceVal(v) {
+    if (v === undefined || v === null || v === '') return NaN;
+    var n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+    return isNaN(n) ? NaN : n;
+  }
+  var stats = { priceOnly: 0, costOnly: 0, bothMatch: 0, bothMismatch: 0, neither: 0, total: 0 };
+  var mismatches = [];
+  Object.keys(hdAllSheets).forEach(function(sheetKey) {
+    var sheet = hdAllSheets[sheetKey];
+    if (!sheet || !Array.isArray(sheet.rows)) return;
+    sheet.rows.forEach(function(row, idx) {
+      stats.total++;
+      var hasPrice = row.price !== undefined && row.price !== null && String(row.price).trim() !== '';
+      var hasCost = row.cost !== undefined && row.cost !== null && String(row.cost).trim() !== '';
+      if (hasPrice && hasCost) {
+        var p = priceVal(row.price), c = priceVal(row.cost);
+        // Both NaN (text that doesn't parse) → fall back to string compare.
+        var match = (isNaN(p) && isNaN(c))
+          ? String(row.price).trim() === String(row.cost).trim()
+          : (!isNaN(p) && !isNaN(c) && Math.abs(p - c) < 0.01);
+        if (match) stats.bothMatch++;
+        else {
+          stats.bothMismatch++;
+          mismatches.push({
+            sheet: sheet.sheet_name || sheetKey,
+            item: row.item || row.name || ('Row ' + (idx + 1)),
+            price: String(row.price),
+            cost: String(row.cost)
+          });
+        }
+      } else if (hasPrice) {
+        stats.priceOnly++;
+      } else if (hasCost) {
+        stats.costOnly++;
+      } else {
+        stats.neither++;
+      }
+    });
+  });
+
+  var migrationCount = stats.priceOnly + stats.bothMatch;
+  var lines = [
+    'Scanned ' + stats.total + ' rows across ' + Object.keys(hdAllSheets).length + ' sheets.',
+    '',
+    '• ' + stats.costOnly + ' row(s): cost only — no action (already canonical)',
+    '• ' + stats.priceOnly + ' row(s): price only — copy to cost, drop price',
+    '• ' + stats.bothMatch + ' row(s): both fields, matching values — drop redundant price',
+    '• ' + stats.bothMismatch + ' row(s): both fields, values DIFFER — SKIPPED, manual review needed',
+    '• ' + stats.neither + ' row(s): neither field — no action',
+    '',
+    'Migrate ' + migrationCount + ' row' + (migrationCount === 1 ? '' : 's') + '?'
+  ];
+  if (stats.bothMismatch > 0) {
+    lines.push('');
+    lines.push('Mismatches that will be SKIPPED:');
+    mismatches.slice(0, 12).forEach(function(m) {
+      lines.push('  • [' + m.sheet + '] ' + m.item + ' — price=' + m.price + ', cost=' + m.cost);
+    });
+    if (mismatches.length > 12) lines.push('  ...and ' + (mismatches.length - 12) + ' more');
+  }
+  if (!confirm(lines.join('\n'))) return;
+  if (migrationCount === 0) { showToast('Nothing to migrate'); return; }
+
+  _ccSetStatus('<span style="color:var(--text-muted)">⏳ Migrating ' + migrationCount + ' rows…</span>');
+  var sheetsToWrite = [];
+  Object.keys(hdAllSheets).forEach(function(sheetKey) {
+    var sheet = hdAllSheets[sheetKey];
+    if (!sheet || !Array.isArray(sheet.rows)) return;
+    var changed = false;
+    sheet.rows.forEach(function(row) {
+      var hasPrice = row.price !== undefined && row.price !== null && String(row.price).trim() !== '';
+      var hasCost = row.cost !== undefined && row.cost !== null && String(row.cost).trim() !== '';
+      if (hasPrice && hasCost) {
+        var p = priceVal(row.price), c = priceVal(row.cost);
+        var match = (isNaN(p) && isNaN(c))
+          ? String(row.price).trim() === String(row.cost).trim()
+          : (!isNaN(p) && !isNaN(c) && Math.abs(p - c) < 0.01);
+        if (match) { delete row.price; changed = true; }
+        // mismatch: leave both, skip
+      } else if (hasPrice) {
+        row.cost = row.price;
+        delete row.price;
+        changed = true;
+      }
+    });
+    if (changed) sheetsToWrite.push(sheetKey);
+  });
+
+  var writes = sheetsToWrite.map(function(sheetKey) {
+    return db.ref(HD_PATH + '/' + sheetKey).set(hdAllSheets[sheetKey]).then(
+      function() { return { sheetKey: sheetKey, ok: true }; },
+      function(err) { return { sheetKey: sheetKey, ok: false, err: err && err.message ? err.message : String(err) }; }
+    );
+  });
+  try {
+    var results = await Promise.all(writes);
+    var failed = results.filter(function(r) { return !r.ok; });
+    if (failed.length > 0) {
+      console.warn('[migration] failed writes:', failed);
+      _ccSetStatus('<span style="color:var(--red)">⚠ ' + failed.length + '/' + results.length + ' sheets failed — see console</span>');
+      showToast('⚠ ' + failed.length + ' sheet write(s) failed — see console');
+    } else {
+      _ccSetStatus('<span style="color:var(--green)">✓ Migrated ' + migrationCount + ' rows across ' + sheetsToWrite.length + ' sheets</span>');
+      showToast('✅ Migrated ' + migrationCount + ' rows · ' + sheetsToWrite.length + ' sheets updated');
+    }
+    // Refresh House Data view if currently shown.
+    if (hdLoaded && hdCurrentSheet && typeof hdSelectSheet === 'function') {
+      hdLoaded = false;
+      if (typeof hdInit === 'function') await hdInit();
+      await hdSelectSheet(hdCurrentSheet);
+    }
+  } catch (e) {
+    _ccSetStatus('<span style="color:var(--red)">⚠ Migration error: ' + (e && e.message ? e.message : 'unknown') + '</span>');
+    showToast('⚠ Migration error — see console');
+    console.warn('[migration] unexpected:', e);
+  }
+}
+
 // Backup — downloads /command_center as JSON.
 // Reuses the same shape as the existing hdBackupDatabase() but writes status
 // into the modal rather than the toast.
@@ -8882,7 +9023,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.33
+// Philinity Command Center © Rev 9.5.34
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
