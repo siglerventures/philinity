@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.30</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.31</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2894,7 +2894,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.30</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.31</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -4791,13 +4791,19 @@ function hdRenderTable(rows) {
       th.title = 'Derived from qty × price';
     } else if (k === 'img' || k === 'photo') {
       th.textContent = 'Pic';
-      th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left;cursor:pointer;user-select:none';
-      th.title = 'Right-click to rename/reorder';
+      th.style.cssText = 'padding:8px 12px;width:68px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);text-align:left;cursor:grab;user-select:none';
+      th.title = 'Drag to reorder · Right-click for menu';
+      th.setAttribute('draggable', 'true');
       th.onmouseover = function() { this.style.color = 'var(--text)'; };
       th.onmouseout = function() { this.style.color = 'var(--gold)'; };
       (function(colKey, sk) {
         th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
         th.ontouchstart = function(e) { hdHandleColTap(e, colKey, sk); };
+        th.ondragstart = function(e) { hdHandleColDragStart(e, colKey); };
+        th.ondragover = function(e) { hdHandleColDragOver(e, colKey); };
+        th.ondragleave = function(e) { hdHandleColDragLeave(e); };
+        th.ondrop = function(e) { hdHandleColDrop(e, colKey); };
+        th.ondragend = function(e) { hdHandleColDragEnd(e); };
       })(k, hdCurrentSheet);
     } else {
       var arrow = hdSortKey === k ? (hdSortDir === 1 ? ' \u2191' : ' \u2193') : '';
@@ -4805,8 +4811,9 @@ function hdRenderTable(rows) {
       var hdFmt = hdCurrentSheet ? hdGetColFormat(hdCurrentSheet, k) : 'auto';
       var hdFmtBadge = hdFmt === 'currency' ? ' $' : hdFmt === 'date' ? ' [D]' : hdFmt === 'number' ? ' #' : hdFmt === 'text' ? ' T' : '';
       th.textContent = displayName + hdFmtBadge + arrow;
-      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:relative;overflow:hidden;';
-      th.title = 'Click to sort  |  Right-click to format/rename/reorder';
+      th.style.cssText = 'padding:8px 12px;text-align:left;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--gold);border-bottom:1px solid var(--border);white-space:nowrap;cursor:grab;user-select:none;position:relative;overflow:hidden;';
+      th.title = 'Drag to reorder · Click to sort · Right-click for menu';
+      if (k !== '_total') th.setAttribute('draggable', 'true');
       // Resize handle — updates <col> element width for table-layout:fixed
       (function(colKey, thEl) {
         var handle = document.createElement('div');
@@ -4837,6 +4844,13 @@ function hdRenderTable(rows) {
         th.onclick = function(e) { if (!e.ctrlKey) hdSortBy(colKey); };
         th.oncontextmenu = function(e) { hdShowColCtxMenu(e, colKey, sk); };
         th.ontouchstart = function(e) { hdHandleColTap(e, colKey, sk); };
+        if (colKey !== '_total') {
+          th.ondragstart = function(e) { hdHandleColDragStart(e, colKey); };
+          th.ondragover = function(e) { hdHandleColDragOver(e, colKey); };
+          th.ondragleave = function(e) { hdHandleColDragLeave(e); };
+          th.ondrop = function(e) { hdHandleColDrop(e, colKey); };
+          th.ondragend = function(e) { hdHandleColDragEnd(e); };
+        }
       })(k, hdCurrentSheet);
     }
     hrow.appendChild(th);
@@ -5997,6 +6011,60 @@ async function hdColCtxShowAll() {
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
   showToast(hadHidden ? '👁 Restored ' + hadHidden + ' hidden column' + (hadHidden === 1 ? '' : 's') : 'No hidden columns');
+}
+
+// Rev 9.5.31: drag-and-drop column reorder. Drop semantics = "insert before
+// the target column" (so dragging col A onto col B places A immediately
+// left of B). Uses the same DOM-as-source-of-truth pattern as Move Left /
+// Right — read currently rendered <col data-col> attributes, splice, save.
+// _total (virtual) is excluded from being dragged and from being persisted.
+var hdDraggedColKey = null;
+function hdHandleColDragStart(e, colKey) {
+  if (!colKey || colKey === '_total') { e.preventDefault(); return; }
+  hdDraggedColKey = colKey;
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', colKey); } catch (_) {}
+  e.currentTarget.style.opacity = '0.4';
+}
+function hdHandleColDragOver(e, targetKey) {
+  if (!hdDraggedColKey || targetKey === '_total' || targetKey === hdDraggedColKey) return;
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+  e.currentTarget.style.boxShadow = 'inset 3px 0 0 var(--gold)';
+}
+function hdHandleColDragLeave(e) {
+  e.currentTarget.style.boxShadow = '';
+}
+function hdHandleColDrop(e, targetKey) {
+  e.preventDefault();
+  e.currentTarget.style.boxShadow = '';
+  var sourceKey = hdDraggedColKey || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  hdDraggedColKey = null;
+  if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+  if (sourceKey === '_total' || targetKey === '_total') return;
+  var cols = document.querySelectorAll('#hd-table-wrap colgroup col[data-col]');
+  var keys = [];
+  for (var i = 0; i < cols.length; i++) keys.push(cols[i].getAttribute('data-col'));
+  var srcIdx = keys.indexOf(sourceKey);
+  var tgtIdx = keys.indexOf(targetKey);
+  if (srcIdx === -1 || tgtIdx === -1) return;
+  keys.splice(srcIdx, 1);
+  // Re-compute target index — if we removed an item before it, the target
+  // shifted left by 1.
+  var insertAt = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
+  keys.splice(insertAt, 0, sourceKey);
+  keys = keys.filter(function(k) { return k !== '_total'; });
+  if (!hdColConfig[hdCurrentSheet]) hdColConfig[hdCurrentSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
+  hdColConfig[hdCurrentSheet].col_order = keys;
+  hdRerenderCurrentSheet();
+  hdSaveColConfig(hdCurrentSheet);
+  showToast('↔ Moved “' + hdGetColDisplayName(hdCurrentSheet, sourceKey) + '” before “' + hdGetColDisplayName(hdCurrentSheet, targetKey) + '”');
+}
+function hdHandleColDragEnd(e) {
+  e.currentTarget.style.opacity = '';
+  hdDraggedColKey = null;
+  // Clear any lingering drop indicators on other headers.
+  var ths = document.querySelectorAll('#hd-table-wrap thead th');
+  for (var i = 0; i < ths.length; i++) ths[i].style.boxShadow = '';
 }
 
 function hdColCtxDelete() {
@@ -8707,7 +8775,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.30
+// Philinity Command Center © Rev 9.5.31
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
