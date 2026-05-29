@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.31</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.32</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2611,6 +2611,7 @@ async function googleSignIn() {
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div onclick="hdColCtxShowAll()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#128065; Show All Columns</div>
     <div onclick="hdResetColWidths(hdCurrentSheet)" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#8596; Reset Column Widths</div>
+    <div onclick="hdColCtxResetOrder()" style="padding:8px 16px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--gold-dim)';this.style.color='var(--gold)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&#8635; Reset Column Order</div>
     <div onclick="hdColCtxDelete()" style="padding:8px 16px;font-size:0.82rem;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(196,106,90,0.1)'" onmouseout="this.style.background=''">&#128465;&#65039; Delete Column</div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div style="padding:4px 16px 2px;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-muted)">FORMAT AS</div>
@@ -2894,7 +2895,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.31</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.32</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3165,18 +3166,33 @@ Phil's health: Major burn injury (~30% body), skin grafts on arm and leg, ~99% h
 
 ## HOUSE DATA — SAVING ITEMS
 When the user asks you to add, save, or log any item to House Data, respond naturally then emit one %%SAVE_TO_HOUSE_DATA:...%% block per distinct item at the END of your reply.
-Format (single line, valid JSON): %%SAVE_TO_HOUSE_DATA:{"sheet_key":"office-furniture","sheet_name":"Office Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","price":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
-Fields: sheet_key (lowercase-hyphenated), sheet_name, item, brand, qty, price, url (product page), notes, img (URL of primary photo — provided in [System note:] when user attaches photos; never invent).
-sheet_key examples: furniture, appliances, office-furniture, blinds, lighting, electronics, etc.
+
+Rev 9.5.32 CANONICAL FIELD SET — use EXACTLY these keys, never invent synonyms:
+- sheet_key (lowercase-hyphenated, e.g. "furniture", "office-furniture", "landscaping")
+- sheet_name (display name, e.g. "Furniture")
+- item (what was purchased)
+- qty (quantity)
+- cost (unit price as a number, no $ sign — this is the canonical field; do NOT use "price")
+- notes (anything useful — receipt #, date purchased, room destination, etc.)
+- url (product page URL)
+- img (photo URL from the [System note:] block when the user attached one; never invent)
+- brand (manufacturer or seller)
+- variant (color, size, finish — only when the item has a meaningful variant)
+
+DO NOT introduce any other keys (no "price", "photo", "photos", "pic", "pics", "name", "title", "description", "cost_each", "total", "company", "contact", etc.). Those collide with legacy columns and create duplicates in the table.
+
+Format (single line, valid JSON): %%SAVE_TO_HOUSE_DATA:{"sheet_key":"office-furniture","sheet_name":"Office Furniture","item":"Amseatec Office Chair White","brand":"Amseatec","qty":"2","cost":"139","url":"https://www.amazon.com/dp/B0CRV5G3VG","notes":"Phil's office, big and tall ergonomic with footrest"}%%
+
 Never fabricate prices or quantities not stated by the user. Multiple items = multiple blocks.
 
 When the user attaches photos to a save request, the frontend uploads them to Firebase Storage and provides URLs in a [System note:] block at the end of the user message. Use the FIRST URL as the "img" field value in your %%SAVE_TO_HOUSE_DATA%% block. Do not invent or guess URLs — only use URLs from the system note.
 
-Example with photo attached: %%SAVE_TO_HOUSE_DATA:{"sheet_key":"outdoor-furniture","sheet_name":"Outdoor Furniture","item":"Moonstone 10-Piece Wicker Patio Set","brand":"Moonstone","qty":"1","price":"1439","url":"https://www.homedepot.com/p/example","img":"https://firebasestorage.googleapis.com/.../command_center%2Fai_images%2F1234-abc.jpg?alt=media&token=...","notes":"Gray cushions, fire pit table included"}%%
+Example with photo attached: %%SAVE_TO_HOUSE_DATA:{"sheet_key":"outdoor-furniture","sheet_name":"Outdoor Furniture","item":"Moonstone 10-Piece Wicker Patio Set","brand":"Moonstone","qty":"1","cost":"1439","url":"https://www.homedepot.com/p/example","img":"https://firebasestorage.googleapis.com/.../command_center%2Fai_images%2F1234-abc.jpg?alt=media&token=...","notes":"Gray cushions, fire pit table included"}%%
 
 UPDATING EXISTING ITEMS (Rev 9.5.19): If you emit a save block for an item that already exists in the same sheet — matched by item name + brand (case-insensitive) — the system MERGES your fields into the existing row instead of creating a duplicate. Fields you do NOT include stay untouched. So for partial updates, send only what changes:
 - Add an image to an existing item: %%SAVE_TO_HOUSE_DATA:{"sheet_key":"landscaping","sheet_name":"Landscaping","item":"Oregon Green Pine","brand":"Victory Greens","img":"https://..."}%%
 - Change quantity (user bought more): include the NEW TOTAL qty, not the delta.
+- Change cost: include the new "cost" value only.
 - Same item, different brand → treated as a new row (brand is part of the match key).
 Never resend full row data just to add one field — that risks the AI accidentally overwriting fields the user manually edited in the sheet.
 
@@ -3506,7 +3522,10 @@ async function aiSaveToHouseData(itemJson) {
       if (item.item)    targetRow.item    = item.item;
       if (item.brand)   targetRow.brand   = item.brand;
       if (item.qty)     targetRow.qty     = String(item.qty);
-      if (item.price)   targetRow.price   = String(item.price);
+      // Rev 9.5.32: write to canonical `cost` field. Accept legacy `price`
+      // from prompts that haven't caught up to the new schema.
+      if (item.cost)    targetRow.cost    = String(item.cost);
+      else if (item.price) targetRow.cost = String(item.price);
       if (item.variant) targetRow.variant = item.variant;
       if (item.url)     targetRow.url     = item.url;
       if (item.notes)   targetRow.notes   = item.notes;
@@ -3518,7 +3537,10 @@ async function aiSaveToHouseData(itemJson) {
       if (item.item)    targetRow.item    = item.item;
       if (item.brand)   targetRow.brand   = item.brand;
       if (item.qty)     targetRow.qty     = String(item.qty);
-      if (item.price)   targetRow.price   = String(item.price);
+      // Rev 9.5.32: write to canonical `cost` field. Accept legacy `price`
+      // from prompts that haven't caught up to the new schema.
+      if (item.cost)    targetRow.cost    = String(item.cost);
+      else if (item.price) targetRow.cost = String(item.price);
       if (item.variant) targetRow.variant = item.variant;
       if (item.url)     targetRow.url     = item.url;
       if (item.notes)   targetRow.notes   = item.notes;
@@ -4691,9 +4713,11 @@ function hdRowTotal(row) {
     var ep = hdParsePrice(explicit);
     if (!isNaN(ep)) return ep;
   }
-  var price = hdParsePrice(row.price);
-  if (isNaN(price)) return NaN;
-  return price * hdParseQty(row.qty);
+  // Rev 9.5.32: prefer `cost` (canonical going forward) over `price` (legacy).
+  var unitPrice = hdParsePrice(row.cost);
+  if (isNaN(unitPrice)) unitPrice = hdParsePrice(row.price);
+  if (isNaN(unitPrice)) return NaN;
+  return unitPrice * hdParseQty(row.qty);
 }
 
 function hdRenderTable(rows) {
@@ -4723,7 +4747,7 @@ function hdRenderTable(rows) {
     }
   }
 
-  var priority = ['img','photo','item','name','brand','qty','price','cost','extended','extended_price','total_price','variant','notes','notes_details'];
+  var priority = ['img','photo','item','name','title','description','qty','cost','total_price','extended_price','extended','notes','notes_details','url','brand','price','variant','model','style','product','company','contact','email','phone','added','updated','photos','pics'];
   allKeys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -4751,11 +4775,15 @@ function hdRenderTable(rows) {
     return r && (r.total_price || r.extended_price || r.extended);
   });
   var hasAnyPrice = rows.some(function(r) {
-    return r && !isNaN(hdParsePrice(r.price));
+    if (!r) return false;
+    return !isNaN(hdParsePrice(r.cost)) || !isNaN(hdParsePrice(r.price));
   });
   if (!hasExplicitTotal && hasAnyPrice && allKeys.indexOf('_total') === -1) {
-    var priceIdx = allKeys.indexOf('price');
-    if (priceIdx >= 0) allKeys.splice(priceIdx + 1, 0, '_total');
+    // Rev 9.5.32: anchor virtual Total after `cost` (canonical) when present,
+    // else after `price` (legacy), else at the end.
+    var anchorIdx = allKeys.indexOf('cost');
+    if (anchorIdx === -1) anchorIdx = allKeys.indexOf('price');
+    if (anchorIdx >= 0) allKeys.splice(anchorIdx + 1, 0, '_total');
     else allKeys.push('_total');
   }
 
@@ -5927,7 +5955,7 @@ function hdSnapshotColOrder(sheetKey) {
       if (keys.indexOf(k) === -1) keys.push(k);
     });
   }
-  var priority = ['img','photo','item','name','brand','qty','price','cost','extended','extended_price','total_price','variant','notes','notes_details'];
+  var priority = ['img','photo','item','name','title','description','qty','cost','total_price','extended_price','extended','notes','notes_details','url','brand','price','variant','model','style','product','company','contact','email','phone','added','updated','photos','pics'];
   keys.sort(function(a, b) {
     var ai = priority.indexOf(a), bi = priority.indexOf(b);
     if (ai > -1 && bi > -1) return ai - bi;
@@ -5998,6 +6026,20 @@ async function hdColCtxHide() {
   hdRerenderCurrentSheet();
   hdSaveColConfig(savedSheet);
   showToast('🙈 Hid “' + hdGetColDisplayName(savedSheet, savedKey) + '” · Right-click → Show All to restore');
+}
+
+// Rev 9.5.32: drop the user's saved col_order for this sheet so the next
+// render falls back to the default priority order (Pic → Item → Qty →
+// Cost → Total → Notes → URL → ...). Per-sheet; doesn't touch others.
+async function hdColCtxResetOrder() {
+  var savedSheet = hdColCtxSheetKey;
+  hdHideColCtxMenu(true);
+  if (!savedSheet) { showToast('⚠ Reset: missing sheet'); return; }
+  if (!hdColConfig[savedSheet]) hdColConfig[savedSheet] = { col_order: [], col_names: {}, col_hidden: [], col_formats: {} };
+  hdColConfig[savedSheet].col_order = [];
+  hdRerenderCurrentSheet();
+  hdSaveColConfig(savedSheet);
+  showToast('🔄 Column order reset to default');
 }
 
 async function hdColCtxShowAll() {
@@ -8775,7 +8817,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.31
+// Philinity Command Center © Rev 9.5.32
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
