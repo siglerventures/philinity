@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.40</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.41</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1660,7 +1660,6 @@ async function googleSignIn() {
     <!-- Chat -->
     <div class="chat-wrapper">
       <div class="chat-quick" style="padding:10px 16px;border-bottom:1px solid var(--border)">
-        <button class="quick-btn" onclick="openAIBrainModal()" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)" title="View / edit what the AI knows. Saves to Firebase; takes effect on the next message.">🧠 AI Brain</button>
         <button class="quick-btn" onclick="quickSend('What are my current financial obligations this month?')">💰 Monthly obligations</button>
         <button class="quick-btn" onclick="quickSend('What is the status of Synergy Summit and what do I need to do next?')">🏗 Synergy Summit</button>
         <button class="quick-btn" onclick="quickSend('What should I order at Barbacoa tonight?')">🥩 Barbacoa order</button>
@@ -2433,6 +2432,18 @@ async function googleSignIn() {
     </div>
   </div>
 
+  <!-- ELECTRICAL PANEL PAGE (Rev 9.5.41) — labeled CBD for the chuckle.
+       Data here is the visible truth; the AI's system prompt mirrors it. If
+       you discover a wrong/missing circuit, fix it both here AND in AI Brain
+       (or just AI Brain — the AI will be right even if this page lags). -->
+  <div class="page" id="page-electrical">
+    <div class="page-title">
+      <h1>⚡ Electrical Panel</h1>
+      <span class="sub">Panel C → B → D · 4 corners, three panels, CBD for fun</span>
+    </div>
+    <div id="elec-panel-body" style="padding-bottom:40px"></div>
+  </div>
+
   <!-- HOUSE DATA PAGE -->
   <div class="page" id="page-housedata">
     <div class="page-title">
@@ -2942,7 +2953,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.40</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.41</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3002,6 +3013,11 @@ function navigateTo(page, clickedItem) {
     setTimeout(function() {
       if (typeof hdInit === 'function') hdInit();
     }, 100);
+  }
+  if (page === 'electrical') {
+    setTimeout(function() {
+      if (typeof renderElectricalPanels === 'function') renderElectricalPanels();
+    }, 50);
   }
 }
 
@@ -3117,6 +3133,210 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── Navigation handled in inline script above ──
+
+// ── Electrical Panels (Rev 9.5.41) ──
+// Three panels, CBD order for the chuckle. Each circuit is a slot in the
+// panel; even slots = odd numbers on the left column, odd slots are paired
+// across (2/4/6 right column). Some circuits span two slots (the second
+// shows the breaker title in quotes — preserved from the user's PDFs).
+// Sub-letters like 9a/9b are tandem breakers sharing one slot.
+var ELEC_PANELS = [
+  {
+    id: 'C',
+    title: 'PANEL C',
+    sub: 'Critical Panel · Span.io',
+    circuits: [
+      { num: 1,  label: 'A/C #1 (Upstairs)',          amp: '50A',         tags: ['HVAC','main'] },
+      { num: 2,  label: 'A/C #2 (Downstairs)',        amp: '50A',         tags: ['HVAC','main'] },
+      { num: 3,  label: '"A/C #1"',                   amp: '',             tags: ['HVAC','tie'] },
+      { num: 4,  label: '"A/C #2"',                   amp: '',             tags: ['HVAC','tie'] },
+      { num: 5,  label: 'A/C #3 (Pool)',              amp: '40A',         tags: ['HVAC'] },
+      { num: 6,  label: 'Hot Tub',                    amp: '240V · 50A',  tags: ['outdoor','water'] },
+      { num: 7,  label: '"A/C #3"',                   amp: '',             tags: ['HVAC','tie'] },
+      { num: 8,  label: '"Hot Tub"',                  amp: '',             tags: ['outdoor','tie'] },
+      { num: 9,  label: 'Garage Doors (GFCI)',        amp: '',             tags: ['garage'] },
+      { num: 10, label: '10a Garage Outlets (20A) · 10b Garage Lights (15A)', amp: '', tags: ['garage'] },
+      { num: 11, label: 'Fire Sprinkler System',      amp: '',             tags: ['safety'] },
+      { num: 12, label: '12a Fridge & Freezer · 12b Pantry Freezer', amp: '', tags: ['kitchen'] },
+      { num: 13, label: '13a Kitchen Plugmold · 13b Wine Cooler', amp: '', tags: ['kitchen'] },
+      { num: 14, label: 'Walk-In Fridge (GFCI)',      amp: '',             tags: ['kitchen'] },
+      { num: 15, label: 'Kitchen Plugmold #2 (GFCI)', amp: '',             tags: ['kitchen'] },
+      { num: 16, label: 'Guest Bed / Bath Lighting (AFCI)', amp: '',       tags: ['guest','lights'] },
+      { num: 17, label: 'Office Outlets',             amp: '',             tags: ['office'] },
+      { num: 18, label: 'Upstairs Guest Bedroom & Bath Light (AFCI)', amp: '', tags: ['guest','lights'] },
+      { num: 19, label: 'Entry Lighting / Pool Lights (GFCI)', amp: '',    tags: ['lights','pool'] },
+      { num: 20, label: 'Master Bedroom Outlets (AFCI)', amp: '',          tags: ['master'] },
+      { num: 21, label: 'Master Bedroom Outlets (AFCI)', amp: '',          tags: ['master'] },
+      { num: 22, label: 'Master Bed & Bath Lighting (AFCI)', amp: '',      tags: ['master','lights'] },
+      { num: 23, label: '23a Kitchen/Dining Lighting (15A) · 23b Downstairs Alexa Outlets (20A)', amp: '', tags: ['kitchen','lights'] },
+      { num: 24, label: '24a Upstairs Alexa Outlet #1 · 24b Upstairs Alexa Outlet #2', amp: '', tags: ['alexa'] },
+      { num: 25, label: '25a Master Bath Outlets (GFCI) · 25b Upstairs Hallway Lights (15A)', amp: '', tags: ['master','lights'] },
+      { num: 26, label: 'Water Pump',                 amp: '30A',         tags: ['water'] },
+      { num: 27, label: '27a Office/Patio Lighting (15A) · 27b Theater/Gym Lighting (15A)', amp: '', tags: ['lights'] },
+      { num: 28, label: '"Water Pump"',               amp: '',             tags: ['water','tie'] },
+      { num: 29, label: 'Rivian Car Charger',         amp: '50A',         tags: ['garage','ev'] },
+      { num: 30, label: 'POOL PANEL',                 amp: '240V · 50A',  tags: ['pool','sub'] },
+      { num: 31, label: '"Car Charger"',              amp: '',             tags: ['garage','tie'] },
+      { num: 32, label: '"Pool Panel"',               amp: '',             tags: ['pool','tie'] }
+    ]
+  },
+  {
+    id: 'B',
+    title: 'PANEL B',
+    sub: 'Secondary Panel · Span.io',
+    circuits: [
+      { num: 1,  label: 'EV Charger (Small Garage)',  amp: '50A',         tags: ['garage','ev'] },
+      { num: 2,  label: 'Oven',                       amp: '50A',         tags: ['kitchen'] },
+      { num: 3,  label: '"EV Charger"',               amp: '',             tags: ['garage','tie'] },
+      { num: 4,  label: '"Oven"',                     amp: '',             tags: ['kitchen','tie'] },
+      { num: 5,  label: 'Garage Heated Floor (GFCI)', amp: '240V · 7A',   tags: ['garage','heat'] },
+      { num: 6,  label: 'Garage Floors (GFI)',        amp: '120V',         tags: ['garage'] },
+      { num: 7,  label: '"Garage Heated Floor"',      amp: '',             tags: ['garage','tie'] },
+      { num: 8,  label: 'Cadette Heater',             amp: '240V · 20A',  tags: ['heat'] },
+      { num: 9,  label: '9a Garage & Exterior Outlets · 9b Exterior Rear Outlets (GFCI)', amp: '', tags: ['garage','outdoor'] },
+      { num: 10, label: '"Cadette Heater"',           amp: '',             tags: ['heat','tie'] },
+      { num: 11, label: '11a Mud Room/Pantry Outlets · 11b Mud Room/Pantry/Island Outlets', amp: '', tags: ['kitchen'] },
+      { num: 12, label: 'Central Vac',                amp: '240V · 20A',  tags: ['utility'] },
+      { num: 13, label: '13a Oven Hood + Wall Mount Oven',  amp: '',       tags: ['kitchen'] },
+      { num: 14, label: '"Central Vac"',              amp: '',             tags: ['utility','tie'] },
+      { num: 15, label: '"Wall Mount Oven 30A" · 15b Trash Compactor', amp: '', tags: ['kitchen'] },
+      { num: 16, label: 'Kitchen Plugmold (GFCI)',    amp: '',             tags: ['kitchen'] },
+      { num: 17, label: '17a Entry/Living Outlets · 17b Entry/Living Outlets', amp: '', tags: ['living'] },
+      { num: 18, label: '18a Dishwasher/Garb Disposal · 18b Island D/W & Garb Disposal', amp: '', tags: ['kitchen'] },
+      { num: 19, label: '19a Powder Bathroom Outlets · 19b Guest Bathroom Outlets', amp: '', tags: ['guest'] },
+      { num: 20, label: 'Guest Bedroom & Wine Outlets (AFCI)', amp: '',    tags: ['guest','wine'] },
+      { num: 21, label: 'Dehumidifier (GFCI)',        amp: '',             tags: ['pool','water'] },
+      { num: 22, label: 'Guest Bedroom & Wine Outlets (AFCI)', amp: '',    tags: ['guest','wine'] },
+      { num: 23, label: '23a Unused/Available · A/C #4 (Theater/Gym 40A)', amp: '', tags: ['HVAC'] },
+      { num: 24, label: '24a Guest Washing Machine (20A) · 24b Pool Bathroom HVL', amp: '', tags: ['utility'] },
+      { num: 25, label: '25b Warming Drawer',         amp: '',             tags: ['kitchen'] },
+      { num: 26, label: 'Guest Dryer',                amp: '30A',         tags: ['utility'] },
+      { num: 27, label: 'Master Tub (GFCI)',          amp: '20A',         tags: ['master','water'] },
+      { num: 28, label: '"Guest Dryer"',              amp: '',             tags: ['utility','tie'] },
+      { num: 29, label: 'Steam Spa',                  amp: '50A',         tags: ['master','spa'] },
+      { num: 30, label: 'SUB PANEL (Panel D)',        amp: '90A',         tags: ['sub'] },
+      { num: 31, label: '"Steam Spa"',                amp: '',             tags: ['master','tie'] },
+      { num: 32, label: '"Sub Panel"',                amp: '',             tags: ['sub','tie'] }
+    ]
+  },
+  {
+    id: 'D',
+    title: 'PANEL D',
+    sub: 'Sub-Panel · Non-Span · Craft Room',
+    circuits: [
+      { num: 1,  label: '1a Laundry Outlets · 1b Gym Outlets', amp: '',    tags: ['utility','gym'] },
+      { num: 2,  label: '2a Theater Outlets · 2b Master Closet Outlets', amp: '', tags: ['theater','master'] },
+      { num: 3,  label: '3a W. Bath Outlets · 3b W. Bath HVL', amp: '',    tags: ['guest'] },
+      { num: 4,  label: '4a Laundry HVL · 4b UP G Bath Outlets', amp: '', tags: ['utility','guest'] },
+      { num: 5,  label: 'Air Dryer',                  amp: '',             tags: ['utility'] },
+      { num: 6,  label: '6a UP Guess Bathroom HVL · RV Circuit (Garage & Outside, 30A)', amp: '', tags: ['guest','garage'] },
+      { num: 7,  label: 'Upstairs Guest Bedroom Outlets (AFCI)', amp: '', tags: ['guest'] },
+      { num: 8,  label: '8b Upstairs Exterior Outlets', amp: '30A',       tags: ['outdoor'] },
+      { num: 9,  label: 'Upstairs Guest Bedroom Outlets (AFCI)', amp: '', tags: ['guest'] },
+      { num: 10, label: 'Heater #2',                  amp: '20A',         tags: ['heat'] },
+      { num: 11, label: 'Master Bath HVL (GFI)',      amp: '',             tags: ['master'] },
+      { num: 12, label: '"Heater #2"',                amp: '20A',         tags: ['heat','tie'] },
+      { num: 13, label: 'Heater #1',                  amp: '',             tags: ['heat'] },
+      { num: 14, label: 'Balcony Heater',             amp: '20A',         tags: ['outdoor','heat'] },
+      { num: 15, label: '"Heater #1"',                amp: '',             tags: ['heat','tie'] },
+      { num: 16, label: '"Balcony Heater"',           amp: '20A',         tags: ['outdoor','tie'] },
+      { num: 17, label: 'Heater #3',                  amp: '',             tags: ['heat'] },
+      { num: 18, label: 'Gym Patio Heater',           amp: '20A',         tags: ['gym','heat'] },
+      { num: 19, label: '"Heater #3"',                amp: '',             tags: ['heat','tie'] },
+      { num: 20, label: '"Gym Patio Heater"',         amp: '',             tags: ['gym','tie'] },
+      { num: 21, label: 'Upstairs Dryer #2',          amp: '30A',         tags: ['utility'] },
+      { num: 22, label: 'Upstairs Dryer #1',          amp: '30A',         tags: ['utility'] },
+      { num: 23, label: '"Upstairs Dryer #2"',        amp: '',             tags: ['utility','tie'] },
+      { num: 24, label: '"Upstairs Dryer #1"',        amp: '',             tags: ['utility','tie'] },
+      { num: 25, label: '25a Upstairs Washer #1 · 25b Upstairs Washer #2', amp: '', tags: ['utility'] },
+      { num: 26, label: 'Master Fireplace',           amp: '',             tags: ['master'] },
+      { num: 27, label: '27a Gym Drinking Fountain · 27b Projector', amp: '', tags: ['gym','theater'] },
+      { num: 28, label: '28a Master Closet Outlets · 28b Master Bathroom Outlets', amp: '', tags: ['master'] },
+      { num: 29, label: 'Smoke Detector',             amp: '15A',         tags: ['safety'] },
+      { num: 30, label: 'ERVs',                       amp: '15A',         tags: ['HVAC'] }
+    ]
+  }
+];
+
+function renderElectricalPanels() {
+  var body = document.getElementById('elec-panel-body');
+  if (!body) return;
+  body.innerHTML = '';
+  // Filter bar — lets the user narrow by tag (HVAC, kitchen, master, etc.)
+  var allTags = {};
+  ELEC_PANELS.forEach(function(p) { p.circuits.forEach(function(c) { (c.tags||[]).forEach(function(t) { allTags[t] = (allTags[t]||0)+1; }); }); });
+  var tagBar = document.createElement('div');
+  tagBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;align-items:center';
+  var label = document.createElement('span');
+  label.style.cssText = 'font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.15em;color:var(--text-muted);text-transform:uppercase;margin-right:4px';
+  label.textContent = 'Filter';
+  tagBar.appendChild(label);
+  var searchBox = document.createElement('input');
+  searchBox.placeholder = 'Search circuit name…';
+  searchBox.style.cssText = 'flex:0 0 220px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:0.78rem;outline:none;font-family:Outfit,sans-serif';
+  searchBox.oninput = function() { applyElecFilter(); };
+  searchBox.id = 'elec-search';
+  tagBar.appendChild(searchBox);
+  Object.keys(allTags).sort().forEach(function(t) {
+    var chip = document.createElement('span');
+    chip.textContent = '#' + t + ' (' + allTags[t] + ')';
+    chip.style.cssText = 'cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:3px 9px;border-radius:14px;font-size:0.66rem;font-family:DM Mono,monospace;letter-spacing:0.05em;user-select:none';
+    chip.dataset.tag = t;
+    chip.onclick = function() {
+      var active = chip.classList.toggle('elec-tag-active');
+      if (active) { chip.style.background = 'var(--gold-dim)'; chip.style.color = 'var(--gold)'; chip.style.borderColor = 'var(--gold-dim)'; }
+      else { chip.style.background = 'var(--surface2)'; chip.style.color = 'var(--text-dim)'; chip.style.borderColor = 'var(--border)'; }
+      applyElecFilter();
+    };
+    tagBar.appendChild(chip);
+  });
+  body.appendChild(tagBar);
+
+  // Render each panel section in CBD order.
+  ELEC_PANELS.forEach(function(panel) {
+    var section = document.createElement('section');
+    section.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px';
+    var head = document.createElement('div');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px';
+    var heading = document.createElement('div');
+    heading.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:1.45rem;color:var(--gold)">' + panel.title + '</span>';
+    var subtitle = document.createElement('span');
+    subtitle.style.cssText = 'font-family:DM Mono,monospace;font-size:0.62rem;letter-spacing:0.12em;color:var(--text-muted);text-transform:uppercase';
+    subtitle.textContent = panel.sub;
+    head.appendChild(heading); head.appendChild(subtitle);
+    section.appendChild(head);
+    var grid = document.createElement('div');
+    grid.className = 'elec-grid';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px';
+    panel.circuits.forEach(function(c) {
+      var cell = document.createElement('div');
+      cell.className = 'elec-cell';
+      cell.dataset.panel = panel.id;
+      cell.dataset.tags = (c.tags||[]).join(',');
+      cell.dataset.label = String(c.label).toLowerCase();
+      var isTie = (c.tags||[]).indexOf('tie') > -1;
+      cell.style.cssText = 'display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;background:' + (isTie ? 'rgba(201,169,110,0.04)' : 'var(--surface2)') + ';border:1px solid ' + (isTie ? 'var(--border)' : 'var(--border-bright)') + ';border-radius:8px;padding:8px 12px';
+      cell.innerHTML =
+        '<span style="font-family:DM Mono,monospace;font-size:0.78rem;color:var(--gold);text-align:right">' + c.num + '</span>' +
+        '<span style="font-size:0.82rem;color:' + (isTie ? 'var(--text-muted)' : 'var(--text)') + ';font-style:' + (isTie ? 'italic' : 'normal') + '">' + c.label + '</span>' +
+        '<span style="font-family:DM Mono,monospace;font-size:0.66rem;letter-spacing:0.05em;color:var(--text-muted)">' + (c.amp || '') + '</span>';
+      grid.appendChild(cell);
+    });
+    section.appendChild(grid);
+    body.appendChild(section);
+  });
+}
+
+function applyElecFilter() {
+  var q = String((document.getElementById('elec-search') || {}).value || '').toLowerCase().trim();
+  var activeTags = Array.prototype.slice.call(document.querySelectorAll('.elec-tag-active')).map(function(c) { return c.dataset.tag; });
+  document.querySelectorAll('.elec-cell').forEach(function(cell) {
+    var labelMatch = !q || cell.dataset.label.indexOf(q) > -1;
+    var cellTags = (cell.dataset.tags || '').split(',').filter(Boolean);
+    var tagMatch = !activeTags.length || activeTags.every(function(t) { return cellTags.indexOf(t) > -1; });
+    cell.style.display = (labelMatch && tagMatch) ? '' : 'none';
+  });
+}
 
 // ── AI Brain (Rev 9.5.40) ──
 // SYSTEM_PROMPT below is the BUILT-IN DEFAULT. The user can override it via
@@ -6725,6 +6945,8 @@ var DEFAULT_NAV = [
       { emoji: '🌍', label: 'Philinity AI', type: 'external', url: 'https://claude.ai/project/019ce77e-2ed2-774b-9a36-72fb6036a043' },
       { emoji: '💼', label: 'Sigler Ventures AI', type: 'external', url: 'https://claude.ai/project/019d31b6-f622-76c1-993c-0617adb8530d' },
       { emoji: '🚩', label: 'AutoFlag FSI', type: 'external', url: 'https://claude.ai/project/019ce413-3ddc-701b-9694-1aac4715af54' },
+      { emoji: '🧠', label: 'AI Brain',           type: 'internal', page: 'aibrain' },
+      { emoji: '⚡', label: 'Electrical Panel',   type: 'internal', page: 'electrical' },
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
       { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
       { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' },
@@ -6766,6 +6988,26 @@ async function navEditorInit() {
         var hasImporter = items.some(function(i) { return i.page === 'importer'; });
         var hasExport   = items.some(function(i) { return i.page === 'export'; });
         var hasBackup   = items.some(function(i) { return i.page === 'backup'; });
+        // Rev 9.5.41: backfill AI Brain + Electrical Panel into the Apps group
+        // for users whose nav structure was saved before these items existed.
+        // Inserted right after the AI project links (above Dining Guide).
+        var hasAIBrain  = items.some(function(i) { return i.page === 'aibrain'; });
+        var hasElec     = items.some(function(i) { return i.page === 'electrical'; });
+        function insertAfterAIProjects(item) {
+          var lastAIIdx = -1;
+          for (var ii = 0; ii < items.length; ii++) {
+            if (items[ii].url && items[ii].url.indexOf('claude.ai/project/') > -1) lastAIIdx = ii;
+          }
+          items.splice(lastAIIdx + 1, 0, item);
+        }
+        if (!hasAIBrain) {
+          insertAfterAIProjects({ emoji: '🧠', label: 'AI Brain', type: 'internal', page: 'aibrain' });
+          needsSave = true;
+        }
+        if (!hasElec) {
+          insertAfterAIProjects({ emoji: '⚡', label: 'Electrical Panel', type: 'internal', page: 'electrical' });
+          needsSave = true;
+        }
         if (!hasImporter) {
           items.push({ emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' });
           needsSave = true;
@@ -7006,6 +7248,9 @@ function applyNavStructure() {
         itemDiv.onclick = function() { openDataImporter(); closeMobileNav(); };
       } else if (item.page === 'export') {
         itemDiv.onclick = function() { openDataExporter(); closeMobileNav(); };
+      } else if (item.page === 'aibrain') {
+        // Rev 9.5.41: AI Brain stays a modal — opens over whatever page is active.
+        itemDiv.onclick = function() { openAIBrainModal(); closeMobileNav(); };
       } else {
         itemDiv.setAttribute('data-page', item.page || '');
         (function(el, pg) { el.onclick = function() { navigateTo(pg, el); closeMobileNav(); }; })(itemDiv, item.page);
@@ -9541,7 +9786,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.40
+// Philinity Command Center © Rev 9.5.41
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
