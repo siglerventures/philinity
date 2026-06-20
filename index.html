@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.41</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.42</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2432,16 +2432,41 @@ async function googleSignIn() {
     </div>
   </div>
 
-  <!-- ELECTRICAL PANEL PAGE (Rev 9.5.41) — labeled CBD for the chuckle.
-       Data here is the visible truth; the AI's system prompt mirrors it. If
-       you discover a wrong/missing circuit, fix it both here AND in AI Brain
-       (or just AI Brain — the AI will be right even if this page lags). -->
+  <!-- ELECTRICAL PANEL PAGE (Rev 9.5.41 · live editing Rev 9.5.42) — labeled
+       CBD for the chuckle. Double-click any circuit to edit. Edits persist
+       to Firebase at command_center/electrical_panels and flow into the AI's
+       knowledge automatically on the very next message. -->
   <div class="page" id="page-electrical">
     <div class="page-title">
-      <h1>⚡ Electrical Panel</h1>
-      <span class="sub">Panel C → B → D · 4 corners, three panels, CBD for fun</span>
+      <h1>🔌 Electrical Panel</h1>
+      <span class="sub">Panel C → B → D · Double-click any circuit to edit</span>
     </div>
     <div id="elec-panel-body" style="padding-bottom:40px"></div>
+  </div>
+
+  <!-- Edit Circuit modal (Rev 9.5.42) -->
+  <div class="modal-overlay" id="elec-edit-modal">
+    <div class="modal-box" style="max-width:480px">
+      <div class="modal-title">⚡ Edit Circuit</div>
+      <div id="elec-edit-slot" style="font-family:DM Mono,monospace;font-size:0.62rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;margin-bottom:14px"></div>
+      <div class="form-group">
+        <label class="form-label">Label</label>
+        <input id="elec-edit-label-input" class="form-input" placeholder="e.g. Master Bath Toilet Area Fan">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amp / Voltage</label>
+        <input id="elec-edit-amp-input" class="form-input" placeholder="50A · or · 240V · 20A · or leave blank">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma-separated)</label>
+        <input id="elec-edit-tags-input" class="form-input" placeholder="master, lights, kitchen, etc. · add 'tie' for paired slots">
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Saves to Firebase. Effective on the next page load and on the AI's very next message — no deploy needed.</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeElecEdit()">Cancel</button>
+        <button class="btn-save" onclick="saveElecEdit()">💾 Save</button>
+      </div>
+    </div>
   </div>
 
   <!-- HOUSE DATA PAGE -->
@@ -2953,7 +2978,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.41</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.42</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3107,6 +3132,10 @@ const authReadyPromise = new Promise(function(resolve) {
         if (typeof loadAIBrainOverride === 'function') {
           loadAIBrainOverride().catch(function(e) { console.warn('[ai-brain] background load:', e && e.message); });
         }
+        // Rev 9.5.42: same for the electrical panel data. Non-fatal too.
+        if (typeof loadElectricalData === 'function') {
+          loadElectricalData().catch(function(e) { console.warn('[elec] background load:', e && e.message); });
+        }
       }
     });
   });
@@ -3258,6 +3287,86 @@ var ELEC_PANELS = [
   }
 ];
 
+// Rev 9.5.42: persist any edits the user makes to circuits. ELEC_PANELS
+// above is the BUILT-IN DEFAULT. Once a Firebase override exists, that
+// takes over and is what the page renders + what the AI sees.
+var ELEC_PANELS_PATH = 'command_center/electrical_panels';
+async function loadElectricalData() {
+  try {
+    if (typeof db === 'undefined' || !db) return;
+    var snap = await db.ref(ELEC_PANELS_PATH).get();
+    if (snap && snap.exists()) {
+      var val = snap.val();
+      if (Array.isArray(val) && val.length > 0) {
+        ELEC_PANELS = val;
+        console.log('[elec] loaded override; panels=', ELEC_PANELS.length);
+      }
+    }
+  } catch (e) {
+    console.warn('[elec] load failed:', e && e.message);
+  }
+}
+async function saveElectricalData() {
+  try {
+    await db.ref(ELEC_PANELS_PATH).set(ELEC_PANELS);
+  } catch (e) {
+    showToast('⚠ Save failed: ' + (e && e.message ? e.message : 'unknown'));
+    throw e;
+  }
+}
+// Plain-text serialization sent to the AI as a knowledge supplement so it
+// always sees the user's latest edits. One row per circuit; pipe-separated
+// fields so the model can parse it deterministically.
+function serializeElectricalForAI() {
+  if (!Array.isArray(ELEC_PANELS) || !ELEC_PANELS.length) return '';
+  return ELEC_PANELS.map(function(panel) {
+    var lines = (panel.circuits || []).map(function(c) {
+      var tags = (c.tags || []).filter(function(t) { return t && t !== 'tie'; });
+      return 'C' + c.num + ': ' + c.label + (c.amp ? ' [' + c.amp + ']' : '') + (tags.length ? ' {' + tags.join(',') + '}' : '');
+    });
+    return '### ' + panel.title + ' — ' + panel.sub + '\n' + lines.join('\n');
+  }).join('\n\n');
+}
+
+// Edit modal state + handlers.
+var elecEditingRef = null; // { panelIdx, circuitIdx }
+function openElecEdit(panelIdx, circuitIdx) {
+  var panel = ELEC_PANELS[panelIdx];
+  if (!panel) return;
+  var c = (panel.circuits || [])[circuitIdx];
+  if (!c) return;
+  elecEditingRef = { panelIdx: panelIdx, circuitIdx: circuitIdx };
+  document.getElementById('elec-edit-slot').textContent = 'Panel ' + panel.id + ' · Slot ' + c.num;
+  document.getElementById('elec-edit-label-input').value = c.label || '';
+  document.getElementById('elec-edit-amp-input').value = c.amp || '';
+  document.getElementById('elec-edit-tags-input').value = (c.tags || []).join(', ');
+  document.getElementById('elec-edit-modal').classList.add('open');
+  setTimeout(function() { var inp = document.getElementById('elec-edit-label-input'); if (inp) { inp.focus(); inp.select(); } }, 60);
+}
+function closeElecEdit() {
+  elecEditingRef = null;
+  document.getElementById('elec-edit-modal').classList.remove('open');
+}
+async function saveElecEdit() {
+  if (!elecEditingRef) return;
+  var panel = ELEC_PANELS[elecEditingRef.panelIdx];
+  if (!panel) return;
+  var c = panel.circuits[elecEditingRef.circuitIdx];
+  if (!c) return;
+  var newLabel = document.getElementById('elec-edit-label-input').value.trim();
+  if (!newLabel) { showToast('⚠ Label cannot be empty'); return; }
+  c.label = newLabel;
+  c.amp = document.getElementById('elec-edit-amp-input').value.trim();
+  var rawTags = document.getElementById('elec-edit-tags-input').value.trim();
+  c.tags = rawTags ? rawTags.split(/[,\s]+/).map(function(t) { return t.toLowerCase().replace(/^#/, ''); }).filter(Boolean) : [];
+  try {
+    await saveElectricalData();
+    showToast('✅ Slot ' + c.num + ' updated · saved to Firebase');
+    closeElecEdit();
+    renderElectricalPanels();
+  } catch (_) { /* already toasted */ }
+}
+
 function renderElectricalPanels() {
   var body = document.getElementById('elec-panel-body');
   if (!body) return;
@@ -3293,7 +3402,7 @@ function renderElectricalPanels() {
   body.appendChild(tagBar);
 
   // Render each panel section in CBD order.
-  ELEC_PANELS.forEach(function(panel) {
+  ELEC_PANELS.forEach(function(panel, panelIdx) {
     var section = document.createElement('section');
     section.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px';
     var head = document.createElement('div');
@@ -3308,18 +3417,24 @@ function renderElectricalPanels() {
     var grid = document.createElement('div');
     grid.className = 'elec-grid';
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px';
-    panel.circuits.forEach(function(c) {
+    panel.circuits.forEach(function(c, circuitIdx) {
       var cell = document.createElement('div');
       cell.className = 'elec-cell';
       cell.dataset.panel = panel.id;
       cell.dataset.tags = (c.tags||[]).join(',');
       cell.dataset.label = String(c.label).toLowerCase();
       var isTie = (c.tags||[]).indexOf('tie') > -1;
-      cell.style.cssText = 'display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;background:' + (isTie ? 'rgba(201,169,110,0.04)' : 'var(--surface2)') + ';border:1px solid ' + (isTie ? 'var(--border)' : 'var(--border-bright)') + ';border-radius:8px;padding:8px 12px';
+      cell.style.cssText = 'display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;background:' + (isTie ? 'rgba(201,169,110,0.04)' : 'var(--surface2)') + ';border:1px solid ' + (isTie ? 'var(--border)' : 'var(--border-bright)') + ';border-radius:8px;padding:8px 12px;cursor:pointer;user-select:none';
+      cell.title = 'Double-click to edit · Panel ' + panel.id + ' Circuit ' + c.num;
       cell.innerHTML =
         '<span style="font-family:DM Mono,monospace;font-size:0.78rem;color:var(--gold);text-align:right">' + c.num + '</span>' +
         '<span style="font-size:0.82rem;color:' + (isTie ? 'var(--text-muted)' : 'var(--text)') + ';font-style:' + (isTie ? 'italic' : 'normal') + '">' + c.label + '</span>' +
         '<span style="font-family:DM Mono,monospace;font-size:0.66rem;letter-spacing:0.05em;color:var(--text-muted)">' + (c.amp || '') + '</span>';
+      (function(pi, ci) {
+        cell.ondblclick = function() { openElecEdit(pi, ci); };
+      })(panelIdx, circuitIdx);
+      cell.onmouseenter = function() { this.style.boxShadow = 'inset 0 0 0 1px var(--gold-dim)'; };
+      cell.onmouseleave = function() { this.style.boxShadow = ''; };
       grid.appendChild(cell);
     });
     section.appendChild(grid);
@@ -3350,7 +3465,15 @@ function applyElecFilter() {
 var AI_BRAIN_PATH = 'command_center/ai_brain';
 var aiBrainOverride = null; // null = use SYSTEM_PROMPT; string = use this
 function aiBrainCurrent() {
-  return (aiBrainOverride && aiBrainOverride.trim()) ? aiBrainOverride : SYSTEM_PROMPT;
+  var base = (aiBrainOverride && aiBrainOverride.trim()) ? aiBrainOverride : SYSTEM_PROMPT;
+  // Rev 9.5.42: append the live electrical panel data so the AI always sees
+  // the user's latest edits from the 🔌 Electrical Panel page. The static
+  // ELECTRICAL PANELS section in SYSTEM_PROMPT is the seed; this overrides.
+  if (typeof serializeElectricalForAI === 'function') {
+    var elec = serializeElectricalForAI();
+    if (elec) base += '\n\n## ELECTRICAL PANELS — LIVE (authoritative; overrides any earlier panel info)\n' + elec;
+  }
+  return base;
 }
 async function loadAIBrainOverride() {
   try {
@@ -6921,6 +7044,7 @@ var DEFAULT_NAV = [
       { emoji: '🏠', label: 'Philinity', type: 'internal', page: 'house' },
       { emoji: '⚡', label: 'Smart Home', type: 'internal', page: 'systems' },
       { emoji: '🏊', label: 'Pool & Spa', type: 'internal', page: 'pool' },
+      { emoji: '🔌', label: 'Electrical Panel', type: 'internal', page: 'electrical' },
       { emoji: '📋', label: 'House Data', type: 'internal', page: 'housedata' }
     ]
   },
@@ -6946,7 +7070,6 @@ var DEFAULT_NAV = [
       { emoji: '💼', label: 'Sigler Ventures AI', type: 'external', url: 'https://claude.ai/project/019d31b6-f622-76c1-993c-0617adb8530d' },
       { emoji: '🚩', label: 'AutoFlag FSI', type: 'external', url: 'https://claude.ai/project/019ce413-3ddc-701b-9694-1aac4715af54' },
       { emoji: '🧠', label: 'AI Brain',           type: 'internal', page: 'aibrain' },
-      { emoji: '⚡', label: 'Electrical Panel',   type: 'internal', page: 'electrical' },
       { emoji: '🍽', label: 'Dining Guide', type: 'external', url: 'https://siglerventures.github.io/eats/' },
       { emoji: '📋', label: 'Task Board', type: 'external', url: 'https://siglerventures.github.io/taskboard/' },
       { emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' },
@@ -6988,11 +7111,9 @@ async function navEditorInit() {
         var hasImporter = items.some(function(i) { return i.page === 'importer'; });
         var hasExport   = items.some(function(i) { return i.page === 'export'; });
         var hasBackup   = items.some(function(i) { return i.page === 'backup'; });
-        // Rev 9.5.41: backfill AI Brain + Electrical Panel into the Apps group
-        // for users whose nav structure was saved before these items existed.
-        // Inserted right after the AI project links (above Dining Guide).
+        // Rev 9.5.41: backfill AI Brain into the Apps group for users whose
+        // nav was saved before AI Brain existed.
         var hasAIBrain  = items.some(function(i) { return i.page === 'aibrain'; });
-        var hasElec     = items.some(function(i) { return i.page === 'electrical'; });
         function insertAfterAIProjects(item) {
           var lastAIIdx = -1;
           for (var ii = 0; ii < items.length; ii++) {
@@ -7004,9 +7125,27 @@ async function navEditorInit() {
           insertAfterAIProjects({ emoji: '🧠', label: 'AI Brain', type: 'internal', page: 'aibrain' });
           needsSave = true;
         }
-        if (!hasElec) {
-          insertAfterAIProjects({ emoji: '⚡', label: 'Electrical Panel', type: 'internal', page: 'electrical' });
+        // Rev 9.5.42: Electrical Panel moved from Apps → House Info. Strip it
+        // from Apps if a previous backfill (9.5.41) added it there.
+        var elecInAppsIdx = items.findIndex(function(i) { return i.page === 'electrical'; });
+        if (elecInAppsIdx >= 0) {
+          items.splice(elecInAppsIdx, 1);
           needsSave = true;
+        }
+        // Ensure Electrical Panel is in the House Info group; insert before
+        // the existing House Data row.
+        var homeGroup = navStructure.find(function(g) { return g.id === 'home-group'; });
+        if (homeGroup) {
+          var homeItems = homeGroup.items || [];
+          var hasElecInHome = homeItems.some(function(i) { return i.page === 'electrical'; });
+          if (!hasElecInHome) {
+            var hdIdx = homeItems.findIndex(function(i) { return i.page === 'housedata'; });
+            var elecItem = { emoji: '🔌', label: 'Electrical Panel', type: 'internal', page: 'electrical' };
+            if (hdIdx >= 0) homeItems.splice(hdIdx, 0, elecItem);
+            else homeItems.push(elecItem);
+            homeGroup.items = homeItems;
+            needsSave = true;
+          }
         }
         if (!hasImporter) {
           items.push({ emoji: '🗄️', label: 'Data Importer', type: 'internal', page: 'importer' });
@@ -9076,6 +9215,48 @@ async function runGlobalSearch(q) {
   var needle = q.toLowerCase();
   var sections = []; // { key, label, count, items: [{...}] }
 
+  // ── ELECTRICAL CIRCUITS (Rev 9.5.42) ──
+  // Match on label / amp / tags. Rank label hits above tag-only hits via a
+  // matchTier the items push back into the section sort comparator.
+  if (typeof ELEC_PANELS !== 'undefined' && Array.isArray(ELEC_PANELS)) {
+    var elecHits = [];
+    ELEC_PANELS.forEach(function(panel, pi) {
+      (panel.circuits || []).forEach(function(c, ci) {
+        var lbl = String(c.label || '').toLowerCase();
+        var amp = String(c.amp || '').toLowerCase();
+        var tags = (c.tags || []).map(function(t) { return String(t).toLowerCase(); });
+        var labelMatch = lbl.indexOf(needle) > -1;
+        var ampMatch = amp.indexOf(needle) > -1;
+        var tagMatch = tags.some(function(t) { return t.indexOf(needle) > -1; });
+        if (!labelMatch && !ampMatch && !tagMatch) return;
+        elecHits.push({ panel: panel, pIdx: pi, c: c, cIdx: ci, tier: labelMatch ? 1 : (ampMatch ? 2 : 3) });
+      });
+    });
+    if (elecHits.length) {
+      elecHits.sort(function(a, b) { return a.tier - b.tier; });
+      sections.push({
+        kind: 'electrical',
+        key: '__electrical',
+        label: '🔌 Electrical Circuits',
+        count: elecHits.length,
+        items: elecHits.slice(0, 10).map(function(h) {
+          var amp = h.c.amp ? ' · ' + h.c.amp : '';
+          var subText = 'Panel ' + h.panel.id + ' · Circuit ' + h.c.num + amp;
+          return {
+            thumbHtml: '<div class="gs-result-thumb"><span>🔌</span></div>',
+            titleHtml: gsHighlight(String(h.c.label), q),
+            subText: subText,
+            action: (function(pIdx, cIdx) { return function() {
+              closeGlobalSearch();
+              navigateTo('electrical');
+              setTimeout(function() { openElecEdit(pIdx, cIdx); }, 220);
+            }; })(h.pIdx, h.cIdx)
+          };
+        })
+      });
+    }
+  }
+
   // ── CONTACTS ──
   var contactHits = [];
   allContacts.forEach(function(c) {
@@ -9786,7 +9967,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.41
+// Philinity Command Center © Rev 9.5.42
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
