@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.39</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.40</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -1660,6 +1660,7 @@ async function googleSignIn() {
     <!-- Chat -->
     <div class="chat-wrapper">
       <div class="chat-quick" style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <button class="quick-btn" onclick="openAIBrainModal()" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)" title="View / edit what the AI knows. Saves to Firebase; takes effect on the next message.">🧠 AI Brain</button>
         <button class="quick-btn" onclick="quickSend('What are my current financial obligations this month?')">💰 Monthly obligations</button>
         <button class="quick-btn" onclick="quickSend('What is the status of Synergy Summit and what do I need to do next?')">🏗 Synergy Summit</button>
         <button class="quick-btn" onclick="quickSend('What should I order at Barbacoa tonight?')">🥩 Barbacoa order</button>
@@ -2601,6 +2602,30 @@ async function googleSignIn() {
     </div>
   </div>
 
+  <!-- Rev 9.5.40: AI Brain editor — UI to view/edit the SYSTEM_PROMPT live.
+       Persisted at /command_center/ai_brain (single document with .content +
+       .updated_at). Loaded on auth-ready into aiBrainOverride; AI requests
+       use aiBrainOverride if set, else the hardcoded SYSTEM_PROMPT default. -->
+  <div class="modal-overlay" id="ai-brain-modal">
+    <div class="modal-box" style="max-width:920px;width:min(92vw,920px)">
+      <div class="modal-title">🧠 AI Brain</div>
+      <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;line-height:1.5">
+        This is everything the AI knows about you, the house, Sigler Ventures, restaurants, etc. Edit any section, save, and the AI uses the new info on the very next message — no deploy, no waiting. Each <code style="font-family:'DM Mono',monospace;color:var(--text-muted)">## Header</code> is a section. Add new sections, fix wrong info, or paste in your electrical maps / panel charts. Bigger isn't worse — the AI handles long context.
+      </div>
+      <div id="ai-brain-status" style="font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px;text-transform:uppercase">Loading…</div>
+      <textarea id="ai-brain-textarea" spellcheck="false" style="width:100%;height:60vh;min-height:380px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'DM Mono',monospace;font-size:0.78rem;line-height:1.55;resize:vertical;outline:none;white-space:pre-wrap"></textarea>
+      <div class="modal-actions" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="aiBrainResetToDefault()" title="Replace the editor contents with the built-in default. Doesn't save until you hit Save." style="background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:'Outfit',sans-serif">↺ Reset to Default (in editor)</button>
+          <button onclick="aiBrainClearOverride()" title="Permanently delete your custom version from Firebase and revert to the built-in default." style="background:var(--surface2);color:var(--red);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:'Outfit',sans-serif">🗑 Remove Custom Override</button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-cancel" onclick="closeAIBrainModal()">Close</button>
+          <button class="btn-save" onclick="saveAIBrain()">💾 Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- House Data Column Context Menu -->
   <div id="hd-col-ctx-menu" style="display:none;position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border-bright);border-radius:8px;padding:6px 0;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
     <div style="padding:6px 16px 4px;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:4px" id="hd-col-ctx-label"></div>
@@ -2917,7 +2942,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.39</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.40</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -3061,6 +3086,11 @@ const authReadyPromise = new Promise(function(resolve) {
       if (!authReady) {
         authReady = true;
         resolve(user);
+        // Rev 9.5.40: pull the AI Brain override (if any) once we're signed in.
+        // Failure here is non-fatal — fall back to the hardcoded default.
+        if (typeof loadAIBrainOverride === 'function') {
+          loadAIBrainOverride().catch(function(e) { console.warn('[ai-brain] background load:', e && e.message); });
+        }
       }
     });
   });
@@ -3087,6 +3117,87 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── Navigation handled in inline script above ──
+
+// ── AI Brain (Rev 9.5.40) ──
+// SYSTEM_PROMPT below is the BUILT-IN DEFAULT. The user can override it via
+// the 🧠 AI Brain editor (button on the AI page) — the override lives in
+// Firebase at /command_center/ai_brain and is fetched once on auth-ready
+// into aiBrainOverride. Every AI request now reads via aiBrainCurrent() so
+// edits take effect on the very next message — no deploy needed. The whole
+// reason this is split out: the user kept asking "where do I update what
+// the AI knows" and the only honest answer was "edit code and redeploy".
+// Not anymore.
+var AI_BRAIN_PATH = 'command_center/ai_brain';
+var aiBrainOverride = null; // null = use SYSTEM_PROMPT; string = use this
+function aiBrainCurrent() {
+  return (aiBrainOverride && aiBrainOverride.trim()) ? aiBrainOverride : SYSTEM_PROMPT;
+}
+async function loadAIBrainOverride() {
+  try {
+    if (typeof db === 'undefined' || !db) return;
+    var snap = await db.ref(AI_BRAIN_PATH).get();
+    if (snap && snap.exists()) {
+      var val = snap.val();
+      if (val && typeof val.content === 'string' && val.content.trim()) {
+        aiBrainOverride = val.content;
+        console.log('[ai-brain] override loaded; length=', aiBrainOverride.length, 'updated_at=', val.updated_at);
+      }
+    }
+  } catch (e) {
+    console.warn('[ai-brain] load failed:', e && e.message);
+  }
+}
+function openAIBrainModal() {
+  var ta = document.getElementById('ai-brain-textarea');
+  var status = document.getElementById('ai-brain-status');
+  if (ta) ta.value = aiBrainCurrent();
+  if (status) {
+    status.textContent = aiBrainOverride
+      ? '● USING YOUR CUSTOM VERSION · edit + save to update'
+      : '○ USING BUILT-IN DEFAULT · edit + save to override';
+  }
+  var modal = document.getElementById('ai-brain-modal');
+  if (modal) modal.classList.add('open');
+}
+function closeAIBrainModal() {
+  var modal = document.getElementById('ai-brain-modal');
+  if (modal) modal.classList.remove('open');
+}
+function aiBrainResetToDefault() {
+  var ta = document.getElementById('ai-brain-textarea');
+  if (ta) ta.value = SYSTEM_PROMPT;
+  showToast('Editor contents reset to default. Hit Save to commit, or Close to discard.');
+}
+async function saveAIBrain() {
+  var ta = document.getElementById('ai-brain-textarea');
+  if (!ta) return;
+  var content = ta.value;
+  if (!content || !content.trim()) { showToast('⚠ AI Brain cannot be empty'); return; }
+  try {
+    await db.ref(AI_BRAIN_PATH).set({ content: content, updated_at: new Date().toISOString() });
+    aiBrainOverride = content;
+    showToast('✅ AI Brain saved · effective on next message');
+    var status = document.getElementById('ai-brain-status');
+    if (status) status.textContent = '● USING YOUR CUSTOM VERSION · edit + save to update';
+  } catch (e) {
+    showToast('⚠ Save failed: ' + (e && e.message ? e.message : 'unknown'));
+    console.warn('[ai-brain] save failed:', e);
+  }
+}
+async function aiBrainClearOverride() {
+  if (!confirm('Permanently delete your custom AI Brain and revert to the built-in default?\n\nYour edits will be lost. The default ships with every release.')) return;
+  try {
+    await db.ref(AI_BRAIN_PATH).remove();
+    aiBrainOverride = null;
+    var ta = document.getElementById('ai-brain-textarea');
+    if (ta) ta.value = SYSTEM_PROMPT;
+    var status = document.getElementById('ai-brain-status');
+    if (status) status.textContent = '○ USING BUILT-IN DEFAULT · edit + save to override';
+    showToast('✅ Reverted to built-in default');
+  } catch (e) {
+    showToast('⚠ Remove failed: ' + (e && e.message ? e.message : 'unknown'));
+  }
+}
 
 // ── AI Chat System Prompt ──
 const SYSTEM_PROMPT = `You are the Philinity AI — a personal assistant for Phil & Trinity Sigler. You have comprehensive knowledge of their home, investments, dining preferences, and lifestyle. Be concise, warm, and direct. Phil prefers targeted answers over long explanations.
@@ -4220,7 +4331,7 @@ window.askAI = async function() {
       },
       body: JSON.stringify({
         app: 'cc',
-        system: (typeof SYSTEM_PROMPT !== 'undefined') ? SYSTEM_PROMPT : 'You are a helpful assistant.',
+        system: (typeof aiBrainCurrent === 'function') ? aiBrainCurrent() : ((typeof SYSTEM_PROMPT !== 'undefined') ? SYSTEM_PROMPT : 'You are a helpful assistant.'),
         messages: messages
       })
     });
@@ -4283,7 +4394,7 @@ window.sendMessage = async function() {
       },
       body: JSON.stringify({
         app: 'cc',
-        system: SYSTEM_PROMPT,
+        system: aiBrainCurrent(),
         messages: messages
       })
     });
@@ -9430,7 +9541,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.39
+// Philinity Command Center © Rev 9.5.40
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
