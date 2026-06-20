@@ -1409,7 +1409,7 @@ mark.gs-hit { background: rgba(201,169,110,0.3); color: var(--gold); border-radi
 <div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0f0c08;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:#c9a84c">🏠 Philinity</div>
   <div style="font-size:14px;color:#9a8870;margin-bottom:8px">Command Center</div>
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.38</div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a3f30;letter-spacing:0.12em">Rev 9.5.39</div>
   <button onclick="googleSignIn()" style="background:#d4860a;color:#0f0c08;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Sign in with Google</button>
   <div id="pw-error" style="color:#e74c3c;font-size:13px;display:none">Not authorized</div>
 </div>
@@ -2917,7 +2917,7 @@ async function googleSignIn() {
 
 <!-- Rev 9.4 — Global footer (matches AutoFlag Rev 1.76 pattern) -->
 <footer class="cc-footer">
-  <span class="ftr-rev">Philinity© Rev v9.5.38</span>
+  <span class="ftr-rev">Philinity© Rev v9.5.39</span>
   <span class="ftr-sep">·</span>
   <span class="ftr-link" onclick="openCcDataModal()" title="Backup / Restore / Reconnect">📦 Data</span>
   <span class="ftr-sep">·</span>
@@ -8810,37 +8810,65 @@ async function runGlobalSearch(q) {
     // section. Sort sheets by hit count descending so most-relevant sheet
     // appears first.
     var sheetBuckets = {}; // key → { name, hits: [] }
+    // Rev 9.5.39: focused field search + title-priority ranking.
+    // Pre-9.5.39 walked every row field and matched on the first hit (only
+    // skipping a handful of metadata keys). That meant a search for
+    // "outdoor" returned rows where the word only appeared in a URL slug,
+    // a sheet-tag list, or a long notes paragraph — burying actual title
+    // matches under noise. Two-phase scan now: title fields first (item/
+    // name/title/description/brand/model/style/product), then descriptive
+    // fields (notes/notes_details/variant) only if no title hit. The
+    // matched-field metadata travels with each hit so we can sort title
+    // matches above notes matches per sheet at render time.
+    var SEARCH_TITLE_FIELDS = ['item','name','title','description','brand','model','style','product'];
+    var SEARCH_NOTES_FIELDS = ['notes','notes_details','variant'];
     hdSheetOrder.forEach(function(key) {
       var sheet = hdAllSheets[key];
       if (!sheet || !sheet.rows) return;
       var sheetName = sheet.sheet_name || key;
       if (hdSearchSheetExcluded(key, sheetName)) return;
       sheet.rows.forEach(function(row, rowIdx) {
-        // Rev 9.5.10: walk keys (not values) so we can skip internal fields
-        // and capture the matching value. Captured value passes to
-        // hdRowTitle as stage 3 fallback when no identifying field exists.
-        // Skip-list = internal metadata + photo URLs (URLs as titles look bad).
         var matchedFieldValue = '';
-        var keys = Object.keys(row);
-        for (var ki = 0; ki < keys.length; ki++) {
-          var k = keys[ki];
-          if (k === '_sheet' || k === '_tagged' || k === 'tags' || k === 'photos' ||
-              k === 'img' || k === 'photo' || k === 'url') continue;
-          var v = row[k];
-          if (v && typeof v === 'string' && v.toLowerCase().includes(needle)) {
-            matchedFieldValue = v;
-            break;
+        var matchedField = '';
+        var matchTier = 0; // 1 = title field, 2 = notes/description field
+        for (var ti = 0; ti < SEARCH_TITLE_FIELDS.length; ti++) {
+          var tk = SEARCH_TITLE_FIELDS[ti];
+          var tv = row[tk];
+          if (tv && typeof tv === 'string' && tv.toLowerCase().includes(needle)) {
+            matchedFieldValue = tv; matchedField = tk; matchTier = 1; break;
           }
         }
-        if (matchedFieldValue) {
+        if (!matchTier) {
+          for (var ni = 0; ni < SEARCH_NOTES_FIELDS.length; ni++) {
+            var nk = SEARCH_NOTES_FIELDS[ni];
+            var nv = row[nk];
+            if (nv && typeof nv === 'string' && nv.toLowerCase().includes(needle)) {
+              matchedFieldValue = nv; matchedField = nk; matchTier = 2; break;
+            }
+          }
+        }
+        if (matchTier) {
           if (!sheetBuckets[key]) sheetBuckets[key] = { name: sheetName, hits: [] };
-          sheetBuckets[key].hits.push({ row: row, rowIdx: rowIdx, matchedFieldValue: matchedFieldValue });
+          sheetBuckets[key].hits.push({ row: row, rowIdx: rowIdx, matchedFieldValue: matchedFieldValue, matchedField: matchedField, matchTier: matchTier });
         }
       });
+      // Sort hits in each bucket: title-tier first, then notes-tier; within
+      // each tier preserve row order so results are stable.
+      if (sheetBuckets[key]) {
+        sheetBuckets[key].hits.sort(function(a, b) {
+          if (a.matchTier !== b.matchTier) return a.matchTier - b.matchTier;
+          return a.rowIdx - b.rowIdx;
+        });
+      }
     });
     var bucketKeys = Object.keys(sheetBuckets);
-    // Sort by hit count desc, then by sheet display name asc as tiebreaker.
+    // Sort sheets by title-match count first, then total hit count, then
+    // name. So a sheet with 1 title hit ranks above a sheet with 5 notes-
+    // only hits — closer to "did the thing I typed match an item name?"
     bucketKeys.sort(function(a, b) {
+      var aTitle = sheetBuckets[a].hits.filter(function(h) { return h.matchTier === 1; }).length;
+      var bTitle = sheetBuckets[b].hits.filter(function(h) { return h.matchTier === 1; }).length;
+      if (aTitle !== bTitle) return bTitle - aTitle;
       var d = sheetBuckets[b].hits.length - sheetBuckets[a].hits.length;
       if (d !== 0) return d;
       return sheetBuckets[a].name.localeCompare(sheetBuckets[b].name);
@@ -9402,7 +9430,7 @@ async function importFullBackup(event) {
 
 
 // ============================================================
-// Philinity Command Center © Rev 9.5.38
+// Philinity Command Center © Rev 9.5.39
 // Detailed rev history lives in the Philinity Tech Infrastructure doc.
 // ============================================================
 
