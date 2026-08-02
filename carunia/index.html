@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="app-rev" content="1.0">
+<script>
+// ===== Cache-bust bootstrap — rev comes from meta[app-rev] (single source of truth) =====
+// Forces a one-time ?v={rev} reload whenever the served rev doesn't match
+// localStorage, defeating browser/CDN caching of index.html. Same deploy
+// behaviour as the other Sigler apps: bump ONLY the meta tag to release.
+(function(){
+  try {
+    var meta = document.querySelector('meta[name="app-rev"]');
+    var rev = meta && meta.content;
+    if(!rev) return;
+    var params = new URLSearchParams(window.location.search);
+    if(params.get('v') === rev){
+      try { localStorage.setItem('carunia_lastRev', rev); } catch(_){}
+      return;
+    }
+    var lastRev = null;
+    try { lastRev = localStorage.getItem('carunia_lastRev'); } catch(_){}
+    if(lastRev !== rev){
+      params.set('v', rev);
+      window.location.replace(window.location.pathname + '?' + params.toString() + window.location.hash);
+    }
+  } catch(_){ /* localStorage disabled — site still works, just no cache-bust */ }
+})();
+</script>
+<script>
+// Single source of truth: the version is defined ONCE in <meta name="app-rev">
+// above. The footer version is filled from it at load. Bump ONLY the meta tag.
+document.addEventListener('DOMContentLoaded', function(){
+  var rev = (document.querySelector('meta[name="app-rev"]') || {}).content || '';
+  var f = document.getElementById('ch-version');
+  if(f && rev) f.textContent = 'v' + rev;
+  var y = document.getElementById('ch-year');
+  if(y) y.textContent = new Date().getFullYear();
+});
+</script>
+
+<!-- ===== Primary SEO ===== -->
+<title>Carunia Children's Home | Visakhapatnam, India — Restoring Hope, Building Futures</title>
+<meta name="description" content="Carunia Children's Home in Visakhapatnam, India has provided orphaned and at-risk children with a loving home, nutritious meals, education, and Christ-centered care since 2005. A mission of The Living Church, Boise, Idaho.">
+<meta name="keywords" content="Carunia Children's Home, children's home India, Visakhapatnam orphanage, sponsor a child India, Christian missions India, The Living Church Boise, nonprofit children's home, orphan care India">
+<meta name="author" content="The Living Church, Boise, Idaho">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://siglerventures.github.io/Carunia/">
+
+<!-- ===== Open Graph ===== -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Carunia Children's Home">
+<meta property="og:title" content="Carunia Children's Home — Visakhapatnam, India">
+<meta property="og:description" content="Restoring hope. Building futures. Transforming lives through love and care since 2005. A mission of The Living Church, Boise, Idaho.">
+<meta property="og:url" content="https://siglerventures.github.io/Carunia/">
+<meta property="og:image" content="https://siglerventures.github.io/Carunia/images/hero.jpg">
+<meta property="og:image:alt" content="Children and caretakers smiling in the courtyard of Carunia Children's Home">
+<meta property="og:locale" content="en_US">
+
+<!-- ===== Twitter Card ===== -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carunia Children's Home — Visakhapatnam, India">
+<meta name="twitter:description" content="Restoring hope. Building futures. Transforming lives through love and care since 2005.">
+<meta name="twitter:image" content="https://siglerventures.github.io/Carunia/images/hero.jpg">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- ===== Structured data (JSON-LD) ===== -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NGO",
+  "name": "Carunia Children's Home",
+  "alternateName": "Carunia, India Children's Home",
+  "url": "https://siglerventures.github.io/Carunia/",
+  "logo": "https://siglerventures.github.io/Carunia/images/hero.jpg",
+  "image": "https://siglerventures.github.io/Carunia/images/hero.jpg",
+  "foundingDate": "2005",
+  "slogan": "Restoring hope. Building futures. Transforming lives through love and care.",
+  "description": "Carunia Children's Home provides orphaned and at-risk children in Visakhapatnam, India with a safe home, nutritious meals, quality education, and Christ-centered care.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Visakhapatnam",
+    "addressRegion": "Andhra Pradesh",
+    "addressCountry": "IN"
+  },
+  "parentOrganization": {
+    "@type": "Church",
+    "name": "The Living Church",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Boise",
+      "addressRegion": "ID",
+      "addressCountry": "US"
+    }
+  },
+  "nonprofitStatus": "Nonprofit"
+}
+</script>
+
+<style>
+:root{
+  --blue:#1a4f9c; --blue-dark:#123a75; --gold:#d9a520; --ink:#2b2b2b;
+  --cream:#faf6ef; --white:#ffffff; --muted:#6b6255;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Source Sans 3',system-ui,sans-serif;color:var(--ink);background:var(--cream);line-height:1.7}
+h1,h2,h3{font-family:'Playfair Display',Georgia,serif;color:var(--blue);line-height:1.2}
+img{max-width:100%;display:block}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 1.25rem}
+
+/* Header */
+header{position:sticky;top:0;z-index:50;background:rgba(250,246,239,.95);backdrop-filter:blur(6px);border-bottom:1px solid #e8e0d2}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.25rem;max-width:1100px;margin:0 auto}
+.brand{font-family:'Playfair Display',serif;font-weight:700;font-size:1.15rem;color:var(--blue);text-decoration:none}
+nav ul{display:flex;gap:1.4rem;list-style:none;flex-wrap:wrap}
+nav a{text-decoration:none;font-weight:600;font-size:.95rem;color:var(--ink)}
+nav a:hover{color:var(--blue)}
+.btn{display:inline-block;background:var(--gold);color:#fff !important;padding:.55rem 1.2rem;border-radius:999px;text-decoration:none;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.blue{background:var(--blue)}
+
+/* Hero */
+.hero{position:relative;min-height:78vh;display:flex;align-items:center;color:#fff;
+  background:linear-gradient(100deg,rgba(18,58,117,.72) 0%,rgba(18,58,117,.25) 60%,rgba(0,0,0,.15) 100%),url('images/hero.jpg') center/cover no-repeat,var(--blue-dark)}
+.hero .wrap{padding:5rem 1.25rem}
+.hero h1{color:#fff;font-size:clamp(2.2rem,5.5vw,3.8rem);max-width:14ch}
+.hero .rule{width:64px;height:4px;background:var(--gold);margin:1.2rem 0}
+.hero p{font-size:clamp(1.05rem,2.2vw,1.35rem);max-width:34ch;font-weight:300}
+.hero .cta{margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap}
+
+/* Sections */
+section{padding:4.5rem 0}
+.kicker{letter-spacing:.18em;text-transform:uppercase;font-size:.8rem;font-weight:700;color:var(--gold)}
+h2{font-size:clamp(1.7rem,3.5vw,2.4rem);margin:.35rem 0 1.2rem}
+.lede{font-size:1.12rem;max-width:65ch}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:center}
+.two-col img{border-radius:14px;box-shadow:0 12px 30px rgba(30,30,30,.18)}
+@media(max-width:820px){.two-col{grid-template-columns:1fr}}
+
+/* Programs */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.6rem;margin-top:2rem}
+.card{background:var(--white);border-radius:14px;overflow:hidden;box-shadow:0 8px 22px rgba(30,30,30,.1)}
+.card img{height:220px;width:100%;object-fit:cover;background:#e8e0d2}
+.card .pad{padding:1.3rem 1.4rem 1.6rem}
+.card h3{font-size:1.25rem;margin-bottom:.5rem}
+.card p{font-size:.98rem;color:var(--muted)}
+
+/* Stats */
+.stats{background:var(--blue);color:#fff;text-align:center}
+.stats .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem}
+.stats .num{font-family:'Playfair Display',serif;font-size:2.6rem;color:var(--gold);font-weight:700}
+.stats p{opacity:.9}
+
+/* Verse */
+.verse{text-align:center;background:var(--cream)}
+.verse blockquote{font-family:'Playfair Display',serif;font-size:clamp(1.3rem,3vw,1.8rem);font-style:italic;color:var(--blue-dark);max-width:32ch;margin:0 auto}
+.verse cite{display:block;margin-top:1rem;font-style:normal;color:var(--gold);font-weight:700;letter-spacing:.1em}
+
+/* Involved */
+.involve{background:var(--white)}
+.involve .cards .pad{text-align:center}
+.involve .pad .btn{margin-top:1rem}
+
+/* Footer */
+footer{background:var(--blue-dark);color:#dfe7f4;padding:3rem 0 2rem;font-size:.95rem}
+footer .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:2rem;margin-bottom:2rem}
+footer h3{color:#fff;font-size:1.05rem;margin-bottom:.6rem}
+footer a{color:#cfe0ff}
+footer .fine{border-top:1px solid rgba(255,255,255,.18);padding-top:1.2rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;opacity:.8}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="#top">Carunia Children's Home</a>
+    <nav aria-label="Main navigation">
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#programs">Our Work</a></li>
+        <li><a href="#church">Our Church</a></li>
+        <li><a href="#involved">Get Involved</a></li>
+        <li><a href="#contact" class="btn">Donate</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero" aria-label="Welcome">
+    <div class="wrap">
+      <h1>Carunia, India Children's Home</h1>
+      <div class="rule" aria-hidden="true"></div>
+      <p>Restoring hope. Building futures. Transforming lives through love and care.</p>
+      <div class="cta">
+        <a class="btn" href="#involved">Sponsor a Child</a>
+        <a class="btn blue" href="#about">Our Story</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="wrap two-col">
+      <div>
+        <span class="kicker">Since 2005</span>
+        <h2>A safe, loving home in Visakhapatnam, India</h2>
+        <p class="lede">Carunia Children's Home was established in 2005 to give orphaned and at-risk
+        children something every child deserves: a family. Today, children who once faced life alone
+        are growing up surrounded by love — with warm beds, full plates, classrooms to learn in, and
+        caretakers who know each of them by name.</p>
+        <p style="margin-top:1rem">The name <em>Carunia</em> reflects our heart — compassion and grace
+        in action. Every child who walks through our gates is welcomed with the words painted on our
+        wall: <strong>prem, asha, vishwas</strong> — love, hope, faith.</p>
+      </div>
+      <img src="images/welcome.jpg" alt="A caretaker in a sari serves rice and curry to smiling boys at the dining table beneath a hand-painted 'We Welcome You' sign" loading="lazy" width="1200" height="900">
+    </div>
+  </section>
+
+  <!-- PROGRAMS -->
+  <section id="programs" style="background:var(--white)">
+    <div class="wrap">
+      <span class="kicker">Our Work</span>
+      <h2>How we care for every child</h2>
+      <p class="lede">Whole-child care — body, mind, and spirit — from the day a child arrives
+      until they step into adulthood with confidence.</p>
+      <div class="cards">
+        <article class="card">
+          <img src="images/welcome.jpg" alt="Children enjoying a hot meal of rice and vegetables together" loading="lazy" width="800" height="600">
+          <div class="pad">
+            <h3>Nutritious Meals</h3>
+            <p>Three healthy meals every day, prepared with love in our own kitchen. For many
+            children, reliable food is the first step from survival to childhood.</p>
+          </div>
+        </article>
+        <article class="card">
+          <img src="images/classroom.jpg" alt="Students smiling over open workbooks as a teacher helps in the Carunia classroom, beneath the words 'Let your light shine'" loading="lazy" width="800" height="600">
+          <div class="pad">
+            <h3>Quality Education</h3>
+            <p>Daily schooling, tutoring, and encouragement to dream big. Our motto is painted on
+            the classroom wall: <em>let your light shine.</em></p>
+          </div>
+        </article>
+        <article class="card">
+          <img src="images/play.jpg" alt="Children holding hands in a circle game in the courtyard of Carunia Children's Home" loading="lazy" width="800" height="600">
+          <div class="pad">
+            <h3>A Real Childhood</h3>
+            <p>Safe housing, medical care, play, and the security of a family. Laughter in the
+            courtyard is the sound of healing.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats" aria-label="Our impact">
+    <div class="wrap grid">
+      <div><div class="num">2005</div><p>Serving children since</p></div>
+      <div><div class="num">3</div><p>Nutritious meals a day, every day</p></div>
+      <div><div class="num">100%</div><p>Of children enrolled in school</p></div>
+      <div><div class="num">1</div><p>Big family under one roof</p></div>
+    </div>
+  </section>
+
+  <!-- VERSE -->
+  <section class="verse">
+    <div class="wrap">
+      <blockquote>&ldquo;Religion that God our Father accepts as pure and faultless is this:
+      to look after orphans and widows in their distress.&rdquo;</blockquote>
+      <cite>James 1:27</cite>
+    </div>
+  </section>
+
+  <!-- CHURCH -->
+  <section id="church">
+    <div class="wrap two-col">
+      <img src="images/play.jpg" alt="Children playing a circle game outside the Carunia Children's Home building in Visakhapatnam, India" loading="lazy" width="1200" height="900">
+      <div>
+        <span class="kicker">Our Sending Church</span>
+        <h2>A mission of The Living Church, Boise, Idaho</h2>
+        <p class="lede">Carunia Children's Home is a nonprofit mission supported through
+        <strong>The Living Church</strong> in Boise, Idaho. Across two continents, one church family
+        prays for, gives to, and visits the children of Carunia — a living partnership between
+        Boise and Visakhapatnam.</p>
+        <p style="margin-top:1rem">Every dollar given goes directly to the care of the children:
+        food, schooling, clothing, medical care, and the faithful staff who love them daily.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- GET INVOLVED -->
+  <section id="involved" class="involve">
+    <div class="wrap">
+      <span class="kicker">Get Involved</span>
+      <h2>You can change a child's story</h2>
+      <div class="cards">
+        <article class="card"><div class="pad">
+          <h3>🤝 Sponsor a Child</h3>
+          <p>Monthly sponsorship provides a child's meals, schooling, and care — and a friendship
+          that spans the globe.</p>
+          <a class="btn" href="#contact">Become a Sponsor</a>
+        </div></article>
+        <article class="card"><div class="pad">
+          <h3>💛 Give a Gift</h3>
+          <p>One-time gifts fund needs like school supplies, medical checkups, building repairs,
+          and celebrations for the children.</p>
+          <a class="btn" href="#contact">Donate</a>
+        </div></article>
+        <article class="card"><div class="pad">
+          <h3>🙏 Pray &amp; Visit</h3>
+          <p>Join us in praying for the children, or ask about joining a mission trip from Boise
+          to Visakhapatnam.</p>
+          <a class="btn" href="#contact">Learn More</a>
+        </div></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap" style="text-align:center">
+      <span class="kicker">Contact</span>
+      <h2>Reach out to us</h2>
+      <p class="lede" style="margin:0 auto">To sponsor a child, give, or learn more about
+      Carunia Children's Home, contact The Living Church in Boise, Idaho.</p>
+      <p style="margin-top:1.5rem"><a class="btn blue" href="mailto:info@thelivingchurchboise.org">Email The Living Church</a></p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <h3>Carunia Children's Home</h3>
+        <p>Visakhapatnam, Andhra Pradesh, India<br>Established 2005</p>
+      </div>
+      <div>
+        <h3>The Living Church</h3>
+        <p>Boise, Idaho, USA<br>Sending &amp; supporting church</p>
+      </div>
+      <div>
+        <h3>Quick Links</h3>
+        <p><a href="#about">About</a> · <a href="#programs">Our Work</a> ·
+        <a href="#involved">Get Involved</a> · <a href="#contact">Contact</a></p>
+      </div>
+    </div>
+    <div class="fine">
+      <span>© <span id="ch-year">2026</span> Carunia Children's Home · A nonprofit mission of The Living Church, Boise, Idaho</span>
+      <span id="ch-version">v1.0</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://siglerventures.github.io/Carunia/sitemap.xml
